@@ -1,21 +1,21 @@
 "use client";
 
 import { useState } from "react";
-// import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import Link from "next/link";
-import { ArrowRight, Mail, Lock, GraduationCap, School } from "lucide-react";
+import { ArrowRight, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
-
+import { useAuth } from "@/contexts/AuthContext";
+import { getRoleHomePath } from "@/contexts/AuthContext";
 import { loginUser } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useLang();
-  const [role, setRole] = useState<"STUDENT" | "TEACHER">("STUDENT");
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,11 +36,8 @@ export default function LoginPage() {
         password,
       });
 
-      // Lưu JWT token
-      localStorage.setItem("token", result.token);
-
-      // Lưu thông tin user
-      localStorage.setItem("user", JSON.stringify(result.user));
+      // Lưu auth state vào context (context sẽ tự lưu localStorage)
+      login(result);
 
       toast.success(
         `${t("common.success")} - ${
@@ -50,7 +47,7 @@ export default function LoginPage() {
         }!`,
       );
 
-      router.push("/dashboard");
+      router.push(getRoleHomePath(result.user.role));
     } catch (error) {
       const message =
         error instanceof Error
@@ -72,34 +69,6 @@ export default function LoginPage() {
         <p className="text-muted-foreground text-sm">
           {t("auth.login.subtitle")}
         </p>
-      </div>
-
-      {/* Role Toggle */}
-      <div className="grid grid-cols-2 gap-2 bg-muted/50 p-1 rounded-2xl mb-6 border border-border">
-        <button
-          type="button"
-          onClick={() => setRole("STUDENT")}
-          className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition-all ${
-            role === "STUDENT"
-              ? "bg-background text-blue-600 dark:text-blue-400 shadow-sm"
-              : "text-muted-foreground"
-          }`}
-        >
-          <GraduationCap className="w-4 h-4" />
-          {t("auth.register.role.student")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setRole("TEACHER")}
-          className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition-all ${
-            role === "TEACHER"
-              ? "bg-background text-purple-600 dark:text-purple-400 shadow-sm"
-              : "text-muted-foreground"
-          }`}
-        >
-          <School className="w-4 h-4" />
-          {t("auth.register.role.teacher")}
-        </button>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4 mb-6">
@@ -146,7 +115,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl py-6 text-base font-semibold group mt-2 shadow-md"
+          className="w-full bg-linear-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl py-6 text-base font-semibold group mt-2 shadow-md"
         >
           {isLoading ? "Đang đăng nhập..." : t("auth.login.submit")}
 
@@ -167,17 +136,18 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <Button
-        onClick={() => {
-          toast.success(`${t("common.success")}`);
-          router.push("/dashboard");
+      <GoogleSignInButton
+        onSuccess={(result) => {
+          login(result);
+          toast.success(t("common.success"));
+          router.push(getRoleHomePath(result.user.role));
         }}
-        variant="outline"
-        className="w-full rounded-xl border-border bg-background hover:bg-muted py-6 flex items-center justify-center gap-3 transition-colors"
-      >
-        <FcGoogle className="w-5 h-5" />
-        <span className="text-sm font-semibold">Google</span>
-      </Button>
+        onError={(error) =>
+          toast.error(
+            error instanceof Error ? error.message : "Google sign-in failed",
+          )
+        }
+      />
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
         {t("auth.login.no_acc")}{" "}

@@ -1,6 +1,7 @@
 "use client";
 import { useLang } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/lib/i18n";
+import { motion } from "motion/react";
 
 /**
  * Features Section: Showcases key capabilities of SmartExplorer.
@@ -96,36 +97,59 @@ export default function FeaturesSection() {
     <section className="py-20 md:py-28 bg-background">
       <div className="mx-auto max-w-7xl px-6">
         {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground mb-4">
+        <motion.div 
+          className="mx-auto max-w-2xl text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 mb-6 backdrop-blur-md">
             {t("features.badge")}
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          <h2 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl mb-6">
             {t("features.title1")}{" "}
-            <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 bg-clip-text text-transparent drop-shadow-sm">
               {t("features.title2")}
             </span>
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg leading-relaxed">
+          <p className="text-muted-foreground text-lg md:text-xl leading-relaxed font-medium">
             {t("features.subtitle")}
           </p>
-        </div>
+        </motion.div>
 
         {/* Features grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div 
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } },
+            hidden: {}
+          }}
+        >
           {FEATURES.map((feature, index) => (
-            <div
+            <motion.div
               key={index}
-              className={`group rounded-2xl border ${feature.border} bg-card p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1`}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+              }}
+              className={`group relative overflow-hidden rounded-3xl border border-border/50 bg-background/50 p-8 shadow-sm backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2`}
             >
-              <div className={`mb-4 inline-flex rounded-xl ${feature.bg} ${feature.color} p-3`}>
+              {/* Hover glow effect */}
+              <div className={`absolute -inset-px rounded-3xl bg-gradient-to-br from-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className={`absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full ${feature.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              
+              <div className={`relative mb-6 inline-flex rounded-2xl ${feature.bg} ${feature.color} p-4 shadow-inner ring-1 ring-white/10`}>
                 {feature.icon}
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-foreground">{t(feature.titleKey)}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{t(feature.descKey)}</p>
-            </div>
+              <h3 className="relative mb-3 text-xl font-bold text-foreground">{t(feature.titleKey)}</h3>
+              <p className="relative text-base text-muted-foreground leading-relaxed font-medium">{t(feature.descKey)}</p>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

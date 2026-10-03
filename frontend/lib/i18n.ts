@@ -9,6 +9,7 @@ export const translations = {
     "nav.home": "Trang chủ",
     "nav.courses": "Khóa học",
     "nav.classes": "Lớp học",
+    "nav.assignments": "Bài tập của tôi",
     "nav.dashboard": "Dashboard",
     "nav.ai": "AI",
     "nav.3d": "3D",
@@ -131,9 +132,10 @@ export const translations = {
 
     // ── Dashboard (/dashboard) ────────────────────────────────
     "dashboard.welcome": "Chào mừng trở lại,",
-    "dashboard.subtitle": "Tổng quan tiến độ học tập và thành tích STEM của bạn.",
+    "dashboard.subtitle":
+      "Tổng quan tiến độ học tập và thành tích STEM của bạn.",
     "dashboard.today": "Hôm nay:",
-    "dashboard.stat.enrolled": "Khóa học đang học",
+    "dashboard.stat.enrolled": "Khóa học đã bắt đầu",
     "dashboard.stat.completed": "Bài học hoàn thành",
     "dashboard.stat.avg_score": "Điểm trung bình",
     "dashboard.stat.streak": "Chuỗi ngày học",
@@ -149,7 +151,8 @@ export const translations = {
     "dashboard.recent.continue": "Tiếp tục học",
     "dashboard.recent.view_all": "Xem tất cả",
     "dashboard.ach.math_genius": "Thần đồng Toán học",
-    "dashboard.ach.math_genius_desc": "Hoàn thành 5 bài học Toán đạt điểm tuyệt đối",
+    "dashboard.ach.math_genius_desc":
+      "Hoàn thành 5 bài học Toán đạt điểm tuyệt đối",
     "dashboard.ach.scientist": "Nhà khoa học nhí",
     "dashboard.ach.scientist_desc": "Khám phá 3 mô hình 3D trong thư viện",
     "dashboard.ach.streak7": "Chuỗi 7 ngày",
@@ -266,6 +269,7 @@ export const translations = {
     "nav.home": "Home",
     "nav.courses": "Courses",
     "nav.classes": "Classes",
+    "nav.assignments": "My Assignments",
     "nav.dashboard": "Dashboard",
     "nav.ai": "AI",
     "nav.3d": "3D",
@@ -346,7 +350,8 @@ export const translations = {
     "cta.courses": "View Courses",
 
     // ── Footer ────────────────────────────────────────────────
-    "footer.desc": "A platform to learn Math and Science in English for K-9 students.",
+    "footer.desc":
+      "A platform to learn Math and Science in English for K-9 students.",
     "footer.bilingual": "Bilingual Vietnamese – English support",
     "footer.col.learn": "Learning",
     "footer.col.resources": "Resources",
@@ -387,9 +392,10 @@ export const translations = {
 
     // ── Dashboard (/dashboard) ────────────────────────────────
     "dashboard.welcome": "Welcome back,",
-    "dashboard.subtitle": "Your STEM learning progress and achievements at a glance.",
+    "dashboard.subtitle":
+      "Your STEM learning progress and achievements at a glance.",
     "dashboard.today": "Today:",
-    "dashboard.stat.enrolled": "Enrolled Courses",
+    "dashboard.stat.enrolled": "Courses Started",
     "dashboard.stat.completed": "Completed Lessons",
     "dashboard.stat.avg_score": "Average Score",
     "dashboard.stat.streak": "Study Streak",
@@ -405,7 +411,8 @@ export const translations = {
     "dashboard.recent.continue": "Continue",
     "dashboard.recent.view_all": "View all",
     "dashboard.ach.math_genius": "Math Genius",
-    "dashboard.ach.math_genius_desc": "Completed 5 Math lessons with perfect scores",
+    "dashboard.ach.math_genius_desc":
+      "Completed 5 Math lessons with perfect scores",
     "dashboard.ach.scientist": "Young Scientist",
     "dashboard.ach.scientist_desc": "Explored 3 3D models in the library",
     "dashboard.ach.streak7": "7-Day Streak",

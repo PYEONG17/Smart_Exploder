@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import multer from "multer";
 import { ZodError } from "zod";
 import { AppError } from "../utils/app-error.js";
 import { failure } from "../utils/api-response.js";
@@ -10,6 +11,15 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ) {
+  if (err instanceof multer.MulterError) {
+    const statusCode = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Uploaded file exceeds the allowed size limit"
+        : "Invalid media upload";
+    return res.status(statusCode).json(failure(message));
+  }
+
   if (err instanceof AppError) {
     return res.status(err.statusCode).json(failure(err.message, err.errors));
   }

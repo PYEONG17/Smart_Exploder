@@ -55,6 +55,8 @@ async function main() {
   await prisma.class.deleteMany();
   await prisma.course.deleteMany();
   await prisma.lesson.deleteMany();
+  await prisma.userRole.deleteMany();
+  await prisma.tenantMembership.deleteMany();
   await prisma.user.deleteMany();
 
   // Create Classes
@@ -73,13 +75,47 @@ async function main() {
   }
 
   // Create User
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       id: "u1",
       name: "Nguyễn Tiến Bình",
       email: "binh.nguyen@example.com",
       passwordHash: "$2b$10$xyz123", // mock hash
       role: "STUDENT",
+    },
+  });
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: "smart-stem" },
+  });
+  if (!tenant) {
+    throw new Error("Apply the tenant migration before running the seed");
+  }
+  const studentRole = await prisma.tenantRole.findUnique({
+    where: {
+      tenantId_roleKey: {
+        tenantId: tenant.id,
+        roleKey: "STUDENT",
+      },
+    },
+  });
+  if (!studentRole) {
+    throw new Error("The default tenant is missing the STUDENT role");
+  }
+
+  const membership = await prisma.tenantMembership.create({
+    data: {
+      tenantId: tenant.id,
+      userId: user.id,
+      status: "ACTIVE",
+      joinedAt: new Date(),
+    },
+  });
+  await prisma.userRole.create({
+    data: {
+      tenantId: tenant.id,
+      membershipId: membership.id,
+      roleId: studentRole.id,
     },
   });
 

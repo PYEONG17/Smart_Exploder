@@ -4,7 +4,17 @@ export type SubjectType = "math" | "science";
 
 export type MaterialType = "PDF" | "DOCUMENT" | "MODEL_3D" | "OTHER";
 
-export type ActivityType = "QUESTION" | "EXPLANATION" | "QUIZ";
+export type ActivityType =
+  | "QUESTION"
+  | "EXPLANATION"
+  | "QUIZ"
+  | "DRAG_DROP"
+  | "MATCHING"
+  | "FILL_BLANK"
+  | "POLL"
+  | "REFLECTION"
+  | "VOCABULARY"
+  | "AI_EXPLANATION";
 
 export type QuestionType = "MULTIPLE_CHOICE" | "TRUE_FALSE" | "FILL_IN_BLANK";
 
@@ -68,12 +78,40 @@ export interface Quiz {
 export interface InteractiveActivity {
   id: string;
   timestamp: number; // in seconds
+  timestampMs?: number | null;
   type: ActivityType;
   content: {
-    question: string;
-    options: string[];
-    correctIndex: number;
+    question?: string;
+    questionEn?: string;
+    options?: string[];
+    optionsEn?: string[];
     explanation?: string;
+    explanationEn?: string;
+    text?: string;
+    textEn?: string;
+    prompt?: string;
+    promptEn?: string;
+    items?: { id: string; label: string; labelEn?: string }[];
+    zones?: { id: string; label: string; labelEn?: string }[];
+    leftItems?: { id: string; label: string; labelEn?: string }[];
+    rightItems?: { id: string; label: string; labelEn?: string }[];
+    blanks?: { id: string }[];
+    allowMultiple?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    dataNotice?: string;
+    dataNoticeEn?: string;
+    term?: string;
+    termEn?: string;
+    pronunciation?: string;
+    definition?: string;
+    definitionEn?: string;
+    example?: string;
+    exampleEn?: string;
+    context?: string;
+    contextEn?: string;
+    rewindSeconds?: number;
+    skipAfterAttempts?: number;
   };
   videoId: string;
 }
@@ -158,11 +196,12 @@ export interface AIChatMessage {
 export interface CreateCourseDTO {
   title: string;
   titleEn?: string;
-  description: string;
+  description?: string;
   descEn?: string;
   thumbnail?: string;
   subject: SubjectType;
   level: string;
+  sourceLanguage?: "vi" | "en";
 }
 
 export interface CreateLessonDTO {
@@ -170,8 +209,10 @@ export interface CreateLessonDTO {
   title: string;
   titleEn?: string;
   description?: string;
+  descEn?: string;
   order: number;
   duration?: string;
+  sourceLanguage?: "vi" | "en";
 }
 
 export interface CreateMaterialDTO {

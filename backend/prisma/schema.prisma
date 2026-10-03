@@ -16,18 +16,145 @@ enum Role {
   ADMIN
 }
 
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  LEFT
+}
+
 model User {
   id           String     @id @default(uuid())
   name         String
   email        String     @unique
-  passwordHash String
+  passwordHash String?
+  googleSub    String?    @unique
   role         Role       @default(STUDENT)
-  
+  avatar       String?    // URL to avatar image (uploaded or DiceBear)
+  bio          String?    // Short bio, max 200 chars
+
   // Relations
   progress     Progress[]
-  
+  quizAttempts QuizAttempt[]
+  createdCourses Course[]
+  memberships  TenantMembership[]
+  interactiveResponses InteractiveResponse[]
+  videoWatchEvents VideoWatchEvent[]
+  lessonQuestions LessonQuestion[] @relation("LessonQuestionAuthor")
+  lessonAnswers LessonQuestion[] @relation("LessonQuestionAnswerer")
+
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+model Tenant {
+  id          String             @id @default(uuid()) @db.Uuid
+  slug        String             @unique
+  name        String
+  status      String             @default("ACTIVE")
+  createdAt   DateTime           @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt   DateTime           @updatedAt @db.Timestamptz(3) @map("updated_at")
+  deletedAt   DateTime?          @db.Timestamptz(3) @map("deleted_at")
+  school      School?
+  memberships TenantMembership[]
+  roles       TenantRole[]
+  videoWatchEvents VideoWatchEvent[]
+
+  @@map("tenants")
+}
+
+model School {
+  tenantId      String    @id @db.Uuid @map("tenant_id")
+  officialName  String    @map("official_name")
+  shortName     String?   @map("short_name")
+  externalCode  String?   @map("external_code")
+  address       Json      @default("{}")
+  settings      Json      @default("{}")
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3) @map("updated_at")
+  deletedAt     DateTime? @db.Timestamptz(3) @map("deleted_at")
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, externalCode])
+  @@map("schools")
+}
+
+model TenantMembership {
+  id            String           @id @default(uuid()) @db.Uuid
+  tenantId      String           @db.Uuid @map("tenant_id")
+  userId        String           @map("user_id")
+  status        MembershipStatus @default(INVITED)
+  memberCode    String?          @map("member_code")
+  joinedAt      DateTime?        @db.Timestamptz(3) @map("joined_at")
+  endedAt       DateTime?        @db.Timestamptz(3) @map("ended_at")
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(3) @map("updated_at")
+  deletedAt     DateTime?        @db.Timestamptz(3) @map("deleted_at")
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userRoles     UserRole[]       @relation("MembershipRoles")
+  grantedRoles  UserRole[]       @relation("RoleGrantedBy")
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, userId])
+  @@unique([tenantId, memberCode])
+  @@index([userId, status])
+  @@index([tenantId, status, createdAt])
+  @@map("tenant_memberships")
+}
+
+model TenantRole {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @db.Uuid @map("tenant_id")
+  roleKey         String           @map("role_key")
+  displayName     String           @map("display_name")
+  isSystemRole    Boolean          @default(false) @map("is_system_role")
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3) @map("created_at")
+  deletedAt       DateTime?        @db.Timestamptz(3) @map("deleted_at")
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles       UserRole[]
+  permissions     RolePermission[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, roleKey])
+  @@map("tenant_roles")
+}
+
+model Permission {
+  id            Int              @id @default(autoincrement())
+  permissionKey String           @unique @map("permission_key")
+  description   String
+  roles         RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  tenantId     String     @db.Uuid @map("tenant_id")
+  roleId       String     @db.Uuid @map("role_id")
+  permissionId Int        @map("permission_id")
+  createdAt    DateTime   @default(now()) @db.Timestamptz(3) @map("created_at")
+  role         TenantRole @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([tenantId, roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  tenantId              String           @db.Uuid @map("tenant_id")
+  membershipId          String           @db.Uuid @map("membership_id")
+  roleId                String           @db.Uuid @map("role_id")
+  grantedByMembershipId String?          @db.Uuid @map("granted_by_membership_id")
+  grantedAt             DateTime         @default(now()) @db.Timestamptz(3) @map("granted_at")
+  revokedAt             DateTime?        @db.Timestamptz(3) @map("revoked_at")
+  membership            TenantMembership @relation("MembershipRoles", fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  role                  TenantRole       @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
+  grantedByMembership  TenantMembership? @relation("RoleGrantedBy", fields: [tenantId, grantedByMembershipId], references: [tenantId, id], onDelete: Restrict)
+
+  @@id([tenantId, membershipId, roleId])
+  @@index([tenantId, roleId, revokedAt])
+  @@map("user_roles")
 }
 
 // -----------------------------------------------------------------------------
@@ -51,12 +178,17 @@ model Course {
   thumbnail   String?
   subject     String
   level       String
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   
   // Relations
   lessons     Lesson[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([createdById])
 }
 
 model Lesson {
@@ -66,6 +198,7 @@ model Lesson {
   description String?
   descEn      String?
   order       Int
+  duration    String?
   
   // Foreign Keys
   courseId    String
@@ -76,6 +209,7 @@ model Lesson {
   videos      Video[]
   quizzes     Quiz[]
   progress    Progress[]
+  questions   LessonQuestion[]
   
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -106,11 +240,53 @@ model Material {
   updatedAt   DateTime     @updatedAt
 }
 
+model LessonQuestion {
+  id                String   @id @default(uuid())
+  lessonId          String
+  authorId          String
+  question          String   @db.Text
+  questionLanguage  String   @default("vi") @db.VarChar(2)
+  questionTranslated String  @db.Text
+  answer            String?  @db.Text
+  answerLanguage    String?  @db.VarChar(2)
+  answerTranslated  String?  @db.Text
+  answeredById      String?
+  answeredAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lesson            Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  author            User     @relation("LessonQuestionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  answeredBy        User?    @relation("LessonQuestionAnswerer", fields: [answeredById], references: [id], onDelete: SetNull)
+
+  @@index([lessonId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([answeredById, answeredAt])
+}
+
+model InteractiveResponse {
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  activityId     String              @map("activity_id")
+  clientEventId  String              @map("client_event_id")
+  response       Json
+  isCorrect      Boolean?            @map("is_correct")
+  score          Float?
+  durationMs     Int                 @map("duration_ms")
+  submittedAt    DateTime            @default(now()) @map("submitted_at")
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity       InteractiveActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientEventId])
+  @@index([activityId, submittedAt])
+  @@index([userId, submittedAt])
+}
+
 model Video {
   id          String                @id @default(uuid())
   title       String
   titleEn     String?
   url         String
+  order       Int                   @default(0)
   
   // Foreign Keys
   lessonId    String
@@ -118,29 +294,65 @@ model Video {
   
   // Relations
   activities  InteractiveActivity[]
+  watchEvents VideoWatchEvent[]
   
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
+
+  @@index([lessonId, order])
+}
+
+model VideoWatchEvent {
+  id               String   @id @default(uuid())
+  clientEventId    String   @unique @map("client_event_id")
+  sessionId        String   @map("session_id")
+  positionMs       Int      @map("position_ms")
+  watchedMs        Int      @default(0) @map("watched_ms")
+  clientOccurredAt DateTime @map("client_occurred_at") @db.Timestamptz(3)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId           String   @map("user_id")
+  videoId          String   @map("video_id")
+  tenantId         String?  @db.Uuid @map("tenant_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video            Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([userId, sessionId, clientOccurredAt])
+  @@index([videoId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("video_watch_events")
 }
 
 enum ActivityType {
   QUESTION
   EXPLANATION
   QUIZ
+  DRAG_DROP
+  MATCHING
+  FILL_BLANK
+  POLL
+  REFLECTION
+  VOCABULARY
+  AI_EXPLANATION
 }
 
 model InteractiveActivity {
   id          String       @id @default(uuid())
   timestamp   Int          // Time in seconds when the activity appears
+  timestampMs Int          @map("timestamp_ms")
   type        ActivityType
   content     String       // JSON string storing the activity content
   
   // Foreign Keys
   videoId     String
   video       Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  responses   InteractiveResponse[]
   
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  @@index([videoId, timestampMs])
 }
 
 // -----------------------------------------------------------------------------
@@ -157,6 +369,7 @@ model Quiz {
   
   // Relations
   questions   Question[]
+  attempts    QuizAttempt[]
   
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -223,4 +436,23 @@ model Progress {
   
   // Ensure a user has only one progress record per lesson
   @@unique([userId, lessonId])
+}
+
+model QuizAttempt {
+  id             String   @id @default(uuid())
+  answers        Json
+  score          Int
+  totalQuestions Int
+  percentage     Int
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  quizId         String
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([quizId, userId])
 }

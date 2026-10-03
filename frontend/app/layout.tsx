@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -37,13 +38,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <LanguageProvider>
-            {/* Fixed Navbar sits outside <main> for correct semantic HTML */}
-            <Navbar />
-            {/* pt-16 offsets content below the fixed 64px navbar */}
-            <main className="min-h-screen pt-16">{children}</main>
-            <Toaster richColors position="top-right" />
-          </LanguageProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              {/* Fixed Navbar sits outside <main> for correct semantic HTML */}
+              <Navbar />
+              {/* pt-16 offsets content below the fixed 64px navbar */}
+              <main className="min-h-screen pt-16">{children}</main>
+              <Toaster richColors position="top-right" />
+            </LanguageProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -17,21 +17,46 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import type { Course, Lesson } from "@/lib/mock-data";
+import type { Course, Lesson } from "@/types";
+
+export type CourseDetailCourse = Course & {
+  descriptionEn?: string;
+  subjectLabelEn?: string;
+  duration?: string;
+  enrolled?: number;
+  rating: number;
+  color?: string;
+};
+
+export type CourseDetailLesson = Lesson & {
+  descriptionEn?: string;
+  isLocked?: boolean;
+  isCompleted?: boolean;
+};
 
 interface CourseDetailClientProps {
-  course: Course;
-  lessons: Lesson[];
+  course: CourseDetailCourse;
+  lessons: CourseDetailLesson[];
 }
 
-export default function CourseDetailClient({ course, lessons }: CourseDetailClientProps) {
+export default function CourseDetailClient({
+  course,
+  lessons,
+}: CourseDetailClientProps) {
   const [activeTab, setActiveTab] = useState<"lessons" | "info" | "reviews">(
-    "lessons"
+    "lessons",
   );
-  const [expandedLesson, setExpandedLesson] = useState<string | null>(lessons[0]?.id || null);
+  const [expandedLesson, setExpandedLesson] = useState<string | null>(
+    lessons[0]?.id || null,
+  );
 
   const completedCount = lessons.filter((l) => l.isCompleted).length;
-  const progressPercent = Math.round((completedCount / lessons.length) * 100);
+  const progressPercent = lessons.length
+    ? Math.round((completedCount / lessons.length) * 100)
+    : 0;
+  const nextLesson =
+    lessons.find((lesson) => !lesson.isCompleted && !lesson.isLocked) ||
+    lessons[0];
 
   const tabs = [
     { id: "lessons" as const, label: "Bài học", count: lessons.length },
@@ -127,16 +152,19 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
                   </p>
                 </div>
 
-                <Link
-                  href={`/courses/${course.id}/lessons/${
-                    lessons.find((l) => !l.isCompleted && !l.isLocked)?.id ||
-                    lessons[0].id
-                  }`}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-white/90 font-semibold shadow-lg rounded-lg px-6 py-3 text-sm transition-colors"
-                >
-                  <PlayCircle className="h-4 w-4" />
-                  {completedCount > 0 ? "Tiếp tục học" : "Bắt đầu học"}
-                </Link>
+                {nextLesson ? (
+                  <Link
+                    href={`/courses/${course.id}/lessons/${nextLesson.id}`}
+                    className="w-full inline-flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-white/90 font-semibold shadow-lg rounded-lg px-6 py-3 text-sm transition-colors"
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                    {completedCount > 0 ? "Tiếp tục học" : "Bắt đầu học"}
+                  </Link>
+                ) : (
+                  <p className="text-center text-sm text-white/75">
+                    Khóa học chưa có bài học.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -157,16 +185,19 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
               {completedCount}/{lessons.length} bài hoàn thành
             </p>
           </div>
-          <Link
-            href={`/courses/${course.id}/lessons/${
-              lessons.find((l) => !l.isCompleted && !l.isLocked)?.id ||
-              lessons[0].id
-            }`}
-            className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            <PlayCircle className="h-4 w-4" />
-            {completedCount > 0 ? "Tiếp tục" : "Bắt đầu"}
-          </Link>
+          {nextLesson ? (
+            <Link
+              href={`/courses/${course.id}/lessons/${nextLesson.id}`}
+              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              <PlayCircle className="h-4 w-4" />
+              {completedCount > 0 ? "Tiếp tục" : "Bắt đầu"}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              Chưa có bài học
+            </span>
+          )}
         </div>
       </div>
 
@@ -200,6 +231,11 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Lessons list */}
               <div className="lg:col-span-2 flex flex-col gap-3">
+                {lessons.length === 0 && (
+                  <p className="py-10 text-center text-muted-foreground">
+                    Khóa học chưa có bài học.
+                  </p>
+                )}
                 {lessons.map((lesson) => (
                   <div
                     key={lesson.id}
@@ -207,14 +243,14 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
                       lesson.isLocked
                         ? "border-border bg-muted/30 opacity-60"
                         : lesson.isCompleted
-                        ? "border-emerald-500/30 bg-emerald-500/5"
-                        : "border-border bg-card hover:border-blue-500/30 hover:shadow-sm"
+                          ? "border-emerald-500/30 bg-emerald-500/5"
+                          : "border-border bg-card hover:border-blue-500/30 hover:shadow-sm"
                     }`}
                   >
                     <button
                       onClick={() =>
                         setExpandedLesson(
-                          expandedLesson === lesson.id ? null : lesson.id
+                          expandedLesson === lesson.id ? null : lesson.id,
                         )
                       }
                       className="w-full flex items-center gap-4 p-4 text-left"
@@ -226,8 +262,8 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
                           lesson.isCompleted
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : lesson.isLocked
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                         }`}
                       >
                         {lesson.isCompleted ? (
@@ -368,12 +404,8 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
                       Nắm vững kiến thức nền tảng về{" "}
                       {course.title.toLowerCase()}
                     </li>
-                    <li>
-                      Hiểu và sử dụng thuật ngữ STEM bằng tiếng Anh
-                    </li>
-                    <li>
-                      Áp dụng kiến thức vào bài toán thực tế
-                    </li>
+                    <li>Hiểu và sử dụng thuật ngữ STEM bằng tiếng Anh</li>
+                    <li>Áp dụng kiến thức vào bài toán thực tế</li>
                     <li>
                       Phát triển tư duy phản biện và kỹ năng giải quyết vấn đề
                     </li>
@@ -422,12 +454,12 @@ export default function CourseDetailClient({ course, lessons }: CourseDetailClie
                         rating === 5
                           ? 68
                           : rating === 4
-                          ? 22
-                          : rating === 3
-                          ? 7
-                          : rating === 2
-                          ? 2
-                          : 1;
+                            ? 22
+                            : rating === 3
+                              ? 7
+                              : rating === 2
+                                ? 2
+                                : 1;
                       return (
                         <div
                           key={rating}

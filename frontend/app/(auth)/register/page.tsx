@@ -2,9 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 
-import { FcGoogle } from "react-icons/fc";
-
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 import Link from "next/link";
 
@@ -22,12 +21,15 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 import { useLang } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { getRoleHomePath } from "@/contexts/AuthContext";
 
 import { registerUser } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { t } = useLang();
+  const { login } = useAuth();
 
   const [role, setRole] = useState<"STUDENT" | "TEACHER">("STUDENT");
 
@@ -54,19 +56,17 @@ export default function RegisterPage() {
         name: name.trim(),
         email: email.trim(),
         password,
+        role,
       });
 
-      // Lưu JWT token
-      localStorage.setItem("token", result.token);
-
-      // Lưu thông tin user
-      localStorage.setItem("user", JSON.stringify(result.user));
+      // Lưu auth state vào context
+      login(result);
 
       // Thông báo thành công
       toast.success("Đăng ký tài khoản thành công!");
 
       // Chuyển sang dashboard
-      router.push("/dashboard");
+      router.push(getRoleHomePath(result.user.role));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Đăng ký thất bại";
@@ -182,7 +182,7 @@ export default function RegisterPage() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl py-6 text-base font-semibold group mt-2 shadow-md"
+          className="w-full bg-linear-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl py-6 text-base font-semibold group mt-2 shadow-md"
         >
           {loading ? "Đang đăng ký..." : t("auth.register.submit")}
 
@@ -206,19 +206,19 @@ export default function RegisterPage() {
       </div>
 
       {/* Google */}
-      <Button
-        onClick={() => {
-          toast.success(`${t("common.success")}`);
-
-          router.push(role === "TEACHER" ? "/teacher" : "/dashboard");
+      <GoogleSignInButton
+        role={role}
+        onSuccess={(result) => {
+          login(result);
+          toast.success("Đăng nhập bằng Google thành công!");
+          router.push(getRoleHomePath(result.user.role));
         }}
-        variant="outline"
-        className="w-full rounded-xl border-border bg-background hover:bg-muted py-6 flex items-center justify-center gap-3 transition-colors"
-      >
-        <FcGoogle className="w-5 h-5" />
-
-        <span className="text-sm font-semibold">Google</span>
-      </Button>
+        onError={(error) =>
+          toast.error(
+            error instanceof Error ? error.message : "Google sign-in failed",
+          )
+        }
+      />
 
       {/* Login */}
       <p className="mt-8 text-center text-sm text-muted-foreground">

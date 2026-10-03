@@ -6,6 +6,8 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: Role;
+  tenantId?: string;
+  membershipId?: string;
 }
 
 function getSecret(): string {
@@ -33,6 +35,9 @@ export function verifyAccessToken(token: string): JwtPayload {
       sub: decoded.sub,
       email: decoded.email as string,
       role: decoded.role as Role,
+      tenantId: typeof decoded.tenantId === "string" ? decoded.tenantId : undefined,
+      membershipId:
+        typeof decoded.membershipId === "string" ? decoded.membershipId : undefined,
     };
   } catch (error) {
     if (error instanceof AppError) {

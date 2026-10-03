@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { ChangeEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Search, LayoutGrid, List, SlidersHorizontal, Sparkles, BookOpen, Clock, Star } from "lucide-react";
+import { Search, LayoutGrid, List, Sparkles, BookOpen, Clock, Star } from "lucide-react";
 import { motion } from "motion/react";
 import type { SubjectType as Subject, Course } from "@/types";
 import { useLang } from "@/contexts/LanguageContext";
 type Level = "6" | "7" | "8" | "9";
 
 export default function CoursesClient({ initialCourses }: { initialCourses: Course[] }) {
-  const { t, locale } = useLang();
+  const { t } = useLang();
 
   const subjects: { value: Subject | "all"; label: string }[] = [
     { value: "all", label: t("courses.page.all_sub") },
@@ -28,19 +29,20 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
   ];
 
   const searchParams = useSearchParams();
-  const initialLevelParam = searchParams.get("level") as Level | null;
+  const initialLevelParam = searchParams.get("level");
+  const queryLevel: Level | "all" =
+    initialLevelParam && ["6", "7", "8", "9"].includes(initialLevelParam)
+      ? (initialLevelParam as Level)
+      : "all";
 
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<Subject | "all">("all");
-  const [selectedLevel, setSelectedLevel] = useState<Level | "all">(initialLevelParam || "all");
+  const [selectedLevelOverride, setSelectedLevelOverride] = useState<
+    Level | "all" | null
+  >(null);
+  const selectedLevel = selectedLevelOverride ?? queryLevel;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<"popular" | "rating" | "lessons">("popular");
-
-  useEffect(() => {
-    if (initialLevelParam && ["6", "7", "8", "9"].includes(initialLevelParam)) {
-      setSelectedLevel(initialLevelParam as Level);
-    }
-  }, [initialLevelParam]);
 
   const filteredCourses = useMemo(() => {
     let result = initialCourses.filter((course) => {
@@ -72,27 +74,28 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
   return (
     <>
       {/* Hero banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-16 md:py-20">
+      <section className="relative isolate overflow-hidden border-b border-border/70 bg-gradient-to-br from-sky-50 via-background to-indigo-50/70 py-14 dark:from-slate-950 dark:via-[#111b32] dark:to-indigo-950/60 md:py-20">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -left-20 h-[300px] w-[300px] rounded-full bg-blue-600/20 blur-[100px]" />
-          <div className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full bg-cyan-500/15 blur-[100px]" />
+          <div className="absolute -left-20 -top-20 h-[300px] w-[300px] rounded-full bg-blue-400/15 blur-[100px]" />
+          <div className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full bg-cyan-400/15 blur-[100px]" />
+          <div className="absolute inset-0 opacity-[0.22] [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px]" />
         </div>
         <div className="relative z-10 mx-auto max-w-7xl px-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm text-blue-300 mb-4 backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
+          <div className="eyebrow mb-4">
+            <Sparkles className="h-4 w-4" />
             {initialCourses.length} {t("courses.page.badge_count")}
           </div>
-          <h1 className="text-3xl font-extrabold text-white md:text-4xl lg:text-5xl mb-4">
+          <h1 className="mb-4 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl">
             {t("courses.page.title")}
           </h1>
-          <p className="text-slate-300 text-lg max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
             {t("courses.page.subtitle")}
           </p>
         </div>
       </section>
 
       {/* Filters Bar */}
-      <section className="bg-background border-b border-border sticky top-16 z-30 shadow-sm backdrop-blur-md bg-background/90">
+      <section className="sticky top-16 z-30 border-b border-border/70 bg-background/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur-2xl">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
             {/* Search Input */}
@@ -115,6 +118,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                   <button
                     key={s.value}
                     onClick={() => setSelectedSubject(s.value)}
+                    aria-pressed={selectedSubject === s.value}
                     className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                       selectedSubject === s.value
                         ? "bg-blue-600 text-white shadow-sm"
@@ -131,7 +135,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                 {levels.map((l) => (
                   <button
                     key={l.value}
-                    onClick={() => setSelectedLevel(l.value)}
+                    onClick={() => setSelectedLevelOverride(l.value)}
+                    aria-pressed={selectedLevel === l.value}
                     className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                       selectedLevel === l.value
                         ? "bg-blue-600 text-white shadow-sm"
@@ -223,16 +228,19 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                 >
                   <Link
                     href={`/courses/${course.id}`}
-                    className="group flex flex-col h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-xl transition-all duration-300"
+                    className="group premium-card premium-card-hover flex h-full flex-col overflow-hidden"
                   >
                     <div
-                      className={`relative flex h-48 items-center justify-center bg-gradient-to-br ${course.color || "from-blue-500 to-blue-700"} overflow-hidden`}
+                      className={`relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br ${course.color || "from-blue-500 to-blue-700"}`}
                     >
                       {course.thumbnail ? (
-                        <img 
-                          src={course.thumbnail} 
+                        <Image
+                          src={course.thumbnail}
                           alt={course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          unoptimized
+                          className="object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
                         <>
@@ -308,9 +316,16 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                   href={`/courses/${course.id}`}
                   className="group flex flex-col md:flex-row gap-6 p-5 rounded-2xl border border-border bg-card hover:border-blue-500/40 hover:shadow-lg transition-all"
                 >
-                  <div className={`w-full md:w-56 h-36 rounded-xl bg-gradient-to-br ${course.color || "from-blue-500 to-blue-700"} overflow-hidden flex items-center justify-center shrink-0`}>
+                  <div className={`relative flex h-36 w-full shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br ${course.color || "from-blue-500 to-blue-700"} md:w-56`}>
                     {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <Image
+                        src={course.thumbnail}
+                        alt={course.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 224px"
+                        unoptimized
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
                     ) : (
                       <div className="text-center text-white p-4">
                         <div className="text-2xl font-black">{course.subjectLabelEn || "STEM"}</div>

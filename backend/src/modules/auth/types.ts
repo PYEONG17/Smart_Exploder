@@ -5,6 +5,8 @@ export interface PublicUser {
   name: string;
   email: string;
   role: Role;
+  avatar: string | null;
+  bio: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
