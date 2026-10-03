@@ -10,7 +10,7 @@ export const updateProfileSchema = z.object({
   bio: z
     .string()
     .trim()
-    .max(200, "Bio không được vượt quá 200 ký tự")
+    .max(2000, "Bio không được vượt quá 200 ký tự")
     .nullable()
     .optional(),
 });
