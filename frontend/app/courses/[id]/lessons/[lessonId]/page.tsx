@@ -15,8 +15,6 @@ import {
   HelpCircle,
   Box,
   Bot,
-  Send,
-  Loader2,
   MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { mockCourses, mockLessons } from "@/lib/mock-data";
 import { Quiz } from "@/components/lessons/Quiz";
 import { InteractiveEventOverlay } from "@/components/lessons/InteractiveEventOverlay";
-import { TutorAnswer } from "@/components/ai/TutorAnswer";
+import { LessonAIPanel } from "@/components/ai/LessonAIPanel";
 import { ThreeDViewer, type ModelType } from "@/components/ui/ThreeDViewer";
 import {
   fetchLessonById,
@@ -32,7 +30,6 @@ import {
   postLessonQuestion,
   recordVideoWatchHeartbeat,
   saveProgress,
-  sendChatMessage,
   type LessonQuestion,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +43,12 @@ import type {
 import { useInteractiveVideoStore } from "@/stores/interactiveVideoStore";
 import { toast } from "sonner";
 import { getYouTubeEmbedUrl } from "@/lib/video-url";
+import {
+  getYouTubeVideoId,
+  isYouTubePlayerReady,
+  loadYouTubeIframeApi,
+  type YouTubePlayer,
+} from "@/lib/youtube-iframe-api";
 
 function getThreeDModelType(value: unknown): ModelType {
   switch (value) {
@@ -111,7 +114,7 @@ export default function LessonDetailPage({
 }) {
   const { id, lessonId } = use(params);
   const router = useRouter();
-  const { token, user } = useAuth();
+  const { token, user, isLoading: isAuthLoading } = useAuth();
   const { locale } = useLang();
   const isVietnamese = locale === "vi";
   const [course, setCourse] = useState<Course | null>(null);
@@ -119,6 +122,7 @@ export default function LessonDetailPage({
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLessonLocked, setIsLessonLocked] = useState(false);
 
   const [activeTab, setActiveTab] = useState<
     "video" | "content" | "threed" | "materials" | "quiz" | "questions"
@@ -127,6 +131,7 @@ export default function LessonDetailPage({
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isLessonCompleted, setIsLessonCompleted] = useState(false);
   const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [lessonQuizzes, setLessonQuizzes] = useState<LessonQuiz[]>([]);
   const [lessonQuiz, setLessonQuiz] = useState<LessonQuiz | null>(null);
   const [lessonQuestions, setLessonQuestions] = useState<LessonQuestion[]>([]);
   const [questionText, setQuestionText] = useState("");
@@ -159,6 +164,8 @@ export default function LessonDetailPage({
   const rearmEvents = useInteractiveVideoStore((state) => state.rearmEvents);
   const setVideoPhase = useInteractiveVideoStore((state) => state.setPhase);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const youtubeHostRef = useRef<HTMLDivElement>(null);
+  const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
   const watchSessionRef = useRef<{
     videoId: string;
     sessionId: string;
@@ -166,11 +173,7 @@ export default function LessonDetailPage({
     lastHeartbeatAt: number | null;
   } | null>(null);
   const watchHeartbeatQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const [aiInput, setAiInput] = useState("");
-  const [isSendingAi, setIsSendingAi] = useState(false);
-  const [aiChat, setAiChat] = useState<
-    { role: "user" | "assistant"; text: string }[]
-  >([]);
+
 
   useEffect(() => {
     if (!token || !lessonId) return;
@@ -209,7 +212,16 @@ export default function LessonDetailPage({
   }, [lesson?.videos, selectedVideoId, startVideoSession]);
 
   useEffect(() => {
+    if (isAuthLoading) return;
     let isActive = true;
+    if (!token) {
+      setIsLoading(false);
+      router.replace("/login");
+      return () => { isActive = false; };
+    }
+    setIsLoading(true);
+    setIsLessonLocked(false);
+    setLoadError(null);
     const demoData = getDemoCourseLessons(id);
     const applyDemoData = () => {
       const demoLesson = demoData?.lessons.find((item) => item.id === lessonId);
@@ -218,37 +230,31 @@ export default function LessonDetailPage({
       setLessons(demoData.lessons);
       setLesson(demoLesson);
       setIsLessonCompleted(demoLesson.isCompleted ?? false);
-      setAiChat([
-        {
-          role: "assistant",
-          text: `Xin chào! Tôi là Trợ lý AI SmartExplorer. Bạn có thắc mắc gì về bài học "${demoLesson.title}" không?`,
-        },
-      ]);
+
       return true;
     };
 
-    fetchLessonById(lessonId)
+    fetchLessonById(lessonId, token)
       .then((lessonData) => {
         if (!isActive) return;
         if (lessonData?.courseId === id) {
           setCourse(lessonData.course);
           setLessons(lessonData.course.lessons ?? [lessonData]);
           setLesson(lessonData);
+          const quizzes = lessonData.quizzes ?? [];
+          setLessonQuizzes(quizzes);
           setLessonQuiz(lessonData.quizzes?.[0] ?? null);
           setSelectedVideoId(lessonData.videos?.[0]?.id ?? null);
-          setIsLessonCompleted(false);
-          setAiChat([
-            {
-              role: "assistant",
-              text: `Xin chào! Tôi là Trợ lý AI SmartExplorer. Bạn có thắc mắc gì về bài học "${lessonData.title}" không?`,
-            },
-          ]);
+          setIsLessonCompleted(Boolean(lessonData.isCompleted));
+
         } else if (!applyDemoData()) {
           setLoadError("Không tìm thấy bài học.");
         }
       })
       .catch((error: unknown) => {
-        if (isActive && !applyDemoData()) {
+        if (isActive && error instanceof Error && error.message.startsWith("LESSON_LOCKED:")) {
+          setIsLessonLocked(true);
+        } else if (isActive && !applyDemoData()) {
           setLoadError(
             error instanceof Error ? error.message : "Không thể tải bài học.",
           );
@@ -261,13 +267,129 @@ export default function LessonDetailPage({
     return () => {
       isActive = false;
     };
-  }, [id, lessonId]);
+  }, [id, lessonId, token, isAuthLoading, router]);
+
+  useEffect(() => {
+    const video = lesson?.videos?.find((item) => item.id === selectedVideoId) ?? lesson?.videos?.[0];
+    const videoId = video ? getYouTubeVideoId(video.url) : null;
+    const host = youtubeHostRef.current;
+    if (!video || !videoId || !host) return;
+    let disposed = false;
+    let endedReported = false;
+    let playerReady = false;
+    let apiState: { PLAYING: number; ENDED: number } | null = null;
+    let player: YouTubePlayer | null = null;
+    void loadYouTubeIframeApi().then((api) => {
+      if (disposed) return;
+      apiState = api.PlayerState;
+      player = new api.Player(host, {
+        videoId,
+        playerVars: { controls: 1, enablejsapi: 1, origin: window.location.origin, rel: 0 },
+        events: {
+          onReady: ({ target }) => {
+            if (!disposed && isYouTubePlayerReady(target)) {
+              playerReady = true;
+              player = target;
+              youtubePlayerRef.current = target;
+            }
+          },
+        },
+      });
+    }).catch((error: unknown) => console.error("Unable to initialize YouTube player:", error));
+
+    const sendHeartbeat = (seconds: number, force = false) => {
+      if (user?.role !== "STUDENT" || !token || !Number.isFinite(seconds)) return;
+      const tracker = watchSessionRef.current;
+      if (!tracker || tracker.videoId !== video.id) return;
+      const now = Date.now();
+      const positionMs = Math.floor(seconds * 1000);
+      if (document.visibilityState !== "visible") {
+        tracker.lastPositionMs = positionMs;
+        tracker.lastHeartbeatAt = now;
+        return;
+      }
+      if (tracker.lastPositionMs === null || tracker.lastHeartbeatAt === null) {
+        tracker.lastPositionMs = positionMs;
+        tracker.lastHeartbeatAt = now;
+        return;
+      }
+      if (now - tracker.lastHeartbeatAt < (force ? 2_000 : 10_000)) return;
+      tracker.lastPositionMs = positionMs;
+      tracker.lastHeartbeatAt = now;
+      watchHeartbeatQueueRef.current = watchHeartbeatQueueRef.current
+        .then(() => recordVideoWatchHeartbeat(token, video.id, {
+          clientEventId: crypto.randomUUID(),
+          sessionId: tracker.sessionId,
+          positionMs,
+          occurredAt: new Date(now).toISOString(),
+        }))
+        .catch((error: unknown) => console.error("Unable to record YouTube watch heartbeat:", error));
+    };
+
+    const timer = window.setInterval(() => {
+      if (!playerReady || !apiState || disposed || !isYouTubePlayerReady(player)) return;
+      const state = player.getPlayerState();
+      if (state === apiState.ENDED) {
+        if (!endedReported) {
+          endedReported = true;
+          sendHeartbeat(player.getCurrentTime(), true);
+          setVideoPhase("ENDED");
+        }
+        return;
+      }
+      if (state !== apiState.PLAYING) return;
+      endedReported = false;
+      const seconds = player.getCurrentTime();
+      sendHeartbeat(seconds);
+      const store = useInteractiveVideoStore.getState();
+      const activities = video.activities ?? [];
+      const rearm = activities.filter((item) =>
+        store.completedEventIds.has(item.id) &&
+        (item.timestampMs ?? item.timestamp * 1000) / 1000 - seconds > 0.5,
+      ).map((item) => item.id);
+      if (rearm.length) rearmEvents(rearm);
+      const checkpoint = store.activeEvent ? null : [...activities]
+        .sort((a, b) => (a.timestampMs ?? a.timestamp * 1000) - (b.timestampMs ?? b.timestamp * 1000))
+        .find((item) => seconds >= (item.timestampMs ?? item.timestamp * 1000) / 1000 && !store.completedEventIds.has(item.id));
+      if (checkpoint) {
+        const checkpointTime = (checkpoint.timestampMs ?? checkpoint.timestamp * 1000) / 1000;
+        player.seekTo(checkpointTime, true);
+        player.pauseVideo();
+        activateEvent(checkpoint);
+      } else if (!store.activeEvent) {
+        if (store.phase !== "PLAYING") setVideoPhase("PLAYING");
+      }
+    }, 250);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+      if (youtubePlayerRef.current === player) youtubePlayerRef.current = null;
+      if (isYouTubePlayerReady(player)) player.destroy();
+    };
+  }, [lesson?.videos, selectedVideoId, token, user?.role, activateEvent, rearmEvents, setVideoPhase]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background pt-24 text-center text-muted-foreground">
         Đang tải bài học...
       </div>
+    );
+  }
+
+  if (isLessonLocked) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 pt-20 text-center">
+        <div className="max-w-md rounded-2xl border border-border bg-card p-8">
+          <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+          <h1 className="text-xl font-bold">{isVietnamese ? "Bài học đang bị khóa" : "Lesson locked"}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isVietnamese ? "Hoàn thành các bài học trước trong khóa học để mở bài này." : "Complete the earlier lessons in this course to unlock this one."}
+          </p>
+          <Button className="mt-5" onClick={() => router.push(`/courses/${id}`)}>
+            {isVietnamese ? "Quay lại khóa học" : "Back to course"}
+          </Button>
+        </div>
+      </main>
     );
   }
 
@@ -327,7 +449,7 @@ export default function LessonDetailPage({
     event: React.SyntheticEvent<HTMLVideoElement>,
   ) => {
     const media = event.currentTarget;
-    if (!media.paused) recordPlaybackHeartbeat(media);
+    if (!media.paused) recordPlaybackHeartbeat(media.currentTime);
     if (!currentVideo || activeCheckpoint) return;
 
     // Scrubbing back before a finished checkpoint makes it appear again.
@@ -365,16 +487,13 @@ export default function LessonDetailPage({
     event.currentTarget.pause();
   };
 
-  const recordPlaybackHeartbeat = (
-    media: HTMLVideoElement,
-    force = false,
-  ) => {
-    if (!token || !currentVideo) return;
+  const recordPlaybackHeartbeat = (positionSeconds: number, force = false) => {
+    if (user?.role !== "STUDENT" || !token || !currentVideo) return;
     const tracker = watchSessionRef.current;
     if (!tracker || tracker.videoId !== currentVideo.id) return;
 
     const now = Date.now();
-    const positionMs = Math.floor(media.currentTime * 1000);
+    const positionMs = Math.floor(positionSeconds * 1000);
     if (document.visibilityState !== "visible") {
       tracker.lastPositionMs = positionMs;
       tracker.lastHeartbeatAt = now;
@@ -405,29 +524,34 @@ export default function LessonDetailPage({
       });
   };
 
-  const resetPlaybackHeartbeat = (media: HTMLVideoElement) => {
+  const resetPlaybackHeartbeat = (positionSeconds: number) => {
     const tracker = watchSessionRef.current;
     if (!tracker || tracker.videoId !== currentVideo?.id) return;
-    tracker.lastPositionMs = Math.floor(media.currentTime * 1000);
+    tracker.lastPositionMs = Math.floor(positionSeconds * 1000);
     tracker.lastHeartbeatAt = Date.now();
   };
 
   const handleRewindVideo = (activity: InteractiveActivity) => {
-    const media = videoRef.current;
     const eventSeconds =
       (activity.timestampMs ?? activity.timestamp * 1000) / 1000;
     const configured = activity.content.rewindSeconds;
     const rewindSeconds =
       typeof configured === "number" ? configured : DEFAULT_REWIND_SECONDS;
     cancelActiveEvent();
-    if (!media) return;
-    media.currentTime = Math.max(0, eventSeconds - rewindSeconds);
-    void media.play();
+    const rewindTo = Math.max(0, eventSeconds - rewindSeconds);
+    if (videoRef.current) {
+      videoRef.current.currentTime = rewindTo;
+      void videoRef.current.play();
+    } else if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.seekTo(rewindTo, true);
+      youtubePlayerRef.current.playVideo();
+    }
   };
 
   const handleContinueVideo = () => {
     completeActiveEvent();
-    void videoRef.current?.play();
+    if (videoRef.current) void videoRef.current.play();
+    else youtubePlayerRef.current?.playVideo();
   };
 
   const handleCompleteLesson = async () => {
@@ -441,6 +565,13 @@ export default function LessonDetailPage({
     try {
       await saveProgress(token, lesson.id, "COMPLETED");
       setIsLessonCompleted(true);
+      setLessons((current) => current.map((item, index, all) => ({
+        ...item,
+        isCompleted: item.id === lesson.id || item.isCompleted,
+        isLocked: index > 0 && !all.slice(0, index).every((previous) =>
+          previous.id === lesson.id || previous.isCompleted,
+        ),
+      })));
       toast.success(
         "Đã ghi nhận hoàn thành bài học! Tiến độ của bạn đã được lưu.",
       );
@@ -507,53 +638,7 @@ export default function LessonDetailPage({
     }
   };
 
-  const handleSendAi = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!aiInput.trim() || isSendingAi) return;
-    if (!token) {
-      toast.error("Đăng nhập để trò chuyện với trợ lý AI.");
-      router.push("/login");
-      return;
-    }
 
-    const userMsg = aiInput.trim();
-    const history = aiChat
-      .slice(aiChat[0]?.role === "assistant" ? 1 : 0)
-      .slice(-10)
-      .map((message) => ({ role: message.role, content: message.text }));
-    setAiChat((prev) => [...prev, { role: "user", text: userMsg }]);
-    setAiInput("");
-    setIsSendingAi(true);
-    try {
-      const reply = await sendChatMessage(token, userMsg, history, {
-        grade: course.level,
-        subject: course.subjectLabel || course.subject,
-        lessonTitle: isVietnamese
-          ? lesson.title
-          : lesson.titleEn || lesson.title,
-        lessonDescription: isVietnamese
-          ? lesson.description
-          : lesson.descEn || lesson.description,
-        lessonId: lesson.id,
-        locale: isVietnamese ? "vi" : "en",
-      });
-      setAiChat((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text: reply,
-        },
-      ]);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Không thể kết nối trợ lý AI. Vui lòng thử lại.",
-      );
-    } finally {
-      setIsSendingAi(false);
-    }
-  };
 
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-background">
@@ -728,8 +813,8 @@ export default function LessonDetailPage({
                         }}
                       >
                         {isVietnamese
-                          ? video.title
-                          : video.titleEn || video.title}
+                          ? `${video.title}${video.durationSeconds ? ` · ${Math.round(video.durationSeconds / 60)} phút` : ""}`
+                          : `${video.titleEn || video.title}${video.durationSeconds ? ` · ${Math.round(video.durationSeconds / 60)} min` : ""}`}
                       </Button>
                     ))}
                   </div>
@@ -737,18 +822,15 @@ export default function LessonDetailPage({
 
                 <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/70 bg-slate-950 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.5)] md:rounded-3xl">
                   {currentVideo && currentYouTubeEmbed ? (
-                    <iframe
+                    <div
                       key={currentVideo.id}
-                      src={currentYouTubeEmbed}
-                      title={
+                      ref={youtubeHostRef}
+                      aria-label={
                         isVietnamese
                           ? currentVideo.title
                           : currentVideo.titleEn || currentVideo.title
                       }
                       className="h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
                     />
                   ) : currentVideo ? (
                     <video
@@ -767,12 +849,12 @@ export default function LessonDetailPage({
                             lastHeartbeatAt: null,
                           };
                         }
-                        resetPlaybackHeartbeat(event.currentTarget);
+                        resetPlaybackHeartbeat(event.currentTarget.currentTime);
                         if (!activeCheckpoint) setVideoPhase("PLAYING");
                       }}
                       onPause={() => {
                         if (videoRef.current) {
-                          recordPlaybackHeartbeat(videoRef.current, true);
+                          recordPlaybackHeartbeat(videoRef.current.currentTime, true);
                         }
                         if (
                           !useInteractiveVideoStore.getState().activeEvent
@@ -781,10 +863,10 @@ export default function LessonDetailPage({
                         }
                       }}
                       onSeeking={(event) =>
-                        resetPlaybackHeartbeat(event.currentTarget)
+                        resetPlaybackHeartbeat(event.currentTarget.currentTime)
                       }
                       onEnded={(event) => {
-                        recordPlaybackHeartbeat(event.currentTarget, true);
+                        recordPlaybackHeartbeat(event.currentTarget.currentTime, true);
                         setVideoPhase("ENDED");
                       }}
                       aria-label={
@@ -858,10 +940,22 @@ export default function LessonDetailPage({
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
                 <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
                   <div className="prose prose-blue dark:prose-invert max-w-none">
-                    <p className="whitespace-pre-line text-muted-foreground">
-                      {lesson.description ||
-                        "Bài học chưa có nội dung lý thuyết."}
-                    </p>
+                    {(isVietnamese
+                      ? lesson.description
+                      : lesson.descEn || lesson.description
+                    )?.trim() ? (
+                      <div className="whitespace-pre-wrap leading-7 text-muted-foreground">
+                        {isVietnamese
+                          ? lesson.description
+                          : lesson.descEn || lesson.description}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        {isVietnamese
+                          ? "Giáo viên chưa thêm nội dung lý thuyết cho bài học này."
+                          : "The teacher has not added theory content for this lesson yet."}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -945,8 +1039,24 @@ export default function LessonDetailPage({
             {/* Tab: Quiz */}
             {activeTab === "quiz" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {lessonQuizzes.length > 1 && (
+                  <div className="mb-5 flex flex-wrap gap-2" aria-label={isVietnamese ? "Chọn bài tập" : "Choose an assignment"}>
+                    {lessonQuizzes.map((quiz, index) => (
+                      <Button
+                        key={quiz.id}
+                        type="button"
+                        variant={lessonQuiz?.id === quiz.id ? "default" : "outline"}
+                        onClick={() => setLessonQuiz(quiz)}
+                      >
+                        {isVietnamese
+                          ? `Bài tập ${index + 1}: ${quiz.title}`
+                          : `Assignment ${index + 1}: ${quiz.titleEn || quiz.title}`}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 {lessonQuiz ? (
-                  <Quiz quiz={lessonQuiz} />
+                  <Quiz key={lessonQuiz.id} quiz={lessonQuiz} />
                 ) : (
                   <p className="py-12 text-center text-muted-foreground">
                     Bài học này chưa có bài kiểm tra.
@@ -1110,69 +1220,18 @@ export default function LessonDetailPage({
           </div>
         </main>
 
-        {/* Floating AI Assistant Drawer */}
+        {/* AI Assistant Panel */}
         {isAiOpen && (
-          <aside className="w-80 border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <Bot className="w-5 h-5 text-blue-500" />
-                Trợ lý AI Bài Học
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsAiOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
-              {aiChat.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                >
-                  <div
-                    className={`p-3 rounded-xl max-w-[85%] ${msg.role === "user" ? "bg-blue-600 text-white" : "bg-muted text-foreground"}`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <TutorAnswer content={msg.text} compact />
-                    ) : (
-                      msg.text
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <form
-              onSubmit={handleSendAi}
-              className="p-3 border-t border-border flex gap-2"
-            >
-              <input
-                type="text"
-                placeholder="Hỏi AI về bài học..."
-                value={aiInput}
-                maxLength={2000}
-                disabled={isSendingAi}
-                onChange={(e) => setAiInput(e.target.value)}
-                className="flex-1 text-xs bg-muted/50 border border-border rounded-xl px-3 py-2 focus:outline-none"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={isSendingAi || !aiInput.trim()}
-                className="bg-blue-600 text-white rounded-xl h-8 w-8"
-              >
-                {isSendingAi ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-              </Button>
-            </form>
-          </aside>
+          <LessonAIPanel
+            token={token}
+            lessonId={lesson.id}
+            lessonTitle={isVietnamese ? lesson.title : lesson.titleEn || lesson.title}
+            lessonDescription={isVietnamese ? lesson.description : lesson.descEn || lesson.description}
+            courseLevel={course.level}
+            courseSubject={course.subjectLabel || course.subject}
+            isVietnamese={isVietnamese}
+            onClose={() => setIsAiOpen(false)}
+          />
         )}
       </div>
     </div>

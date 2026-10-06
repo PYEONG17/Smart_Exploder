@@ -28,6 +28,17 @@ function formatCourse<
   };
 }
 
+function durationMinutes(value: string | null | undefined): number {
+  if (!value) return 0;
+  const match = value.match(/(\d+(?:\.\d+)?)\s*(h|hour|giờ|phút|min|minutes?|m)?/i);
+  if (!match) return 0;
+  const amount = Number(match[1]);
+  const unit = (match[2] ?? "phút").toLowerCase();
+  return unit === "h" || unit === "hour" || unit === "giờ"
+    ? amount * 60
+    : unit === "m" ? amount : amount;
+}
+
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const courses = await prisma.course.findMany({
@@ -37,9 +48,20 @@ export const getAllCourses = async (req: Request, res: Response) => {
         },
       },
     });
+    const lessons = await prisma.lesson.findMany({
+      where: { courseId: { in: courses.map((course) => course.id) } },
+      select: { courseId: true, duration: true },
+    });
+    const courseDurations = new Map<string, number>();
+    for (const lesson of lessons) {
+      courseDurations.set(lesson.courseId, (courseDurations.get(lesson.courseId) ?? 0) + durationMinutes(lesson.duration));
+    }
 
     // Map data to match frontend expectations
-    const formattedCourses = courses.map(formatCourse);
+    const formattedCourses = courses.map((course) => ({
+      ...formatCourse(course),
+      duration: courseDurations.get(course.id) ? `${Math.round(courseDurations.get(course.id)!)} phút` : undefined,
+    }));
 
     res.json({ success: true, data: formattedCourses });
   } catch (error) {
@@ -55,10 +77,83 @@ export const getMyCourses = async (req: Request, res: Response) => {
       include: { _count: { select: { lessons: true } } },
       orderBy: { updatedAt: "desc" },
     });
-    res.json(success(courses.map(formatCourse)));
+    const courseIds = courses.map((course) => course.id);
+    const courseLessons = courseIds.length
+      ? await prisma.lesson.findMany({
+          where: { courseId: { in: courseIds } },
+          select: { id: true, courseId: true, duration: true },
+        })
+      : [];
+    const lessonIds = courseLessons.map((lesson) => lesson.id);
+    const videos = lessonIds.length
+      ? await prisma.video.findMany({
+          where: { lessonId: { in: lessonIds } },
+          select: { id: true, lessonId: true },
+        })
+      : [];
+    const videoCourseIds = new Map(
+      videos.map((video) => [
+        video.id,
+        courseLessons.find((lesson) => lesson.id === video.lessonId)!.courseId,
+      ]),
+    );
+    const [viewEvents, progressRows] = await Promise.all([
+      videos.length
+        ? prisma.videoWatchEvent.findMany({
+            where: { watchedMs: { gt: 0 }, videoId: { in: videos.map((video) => video.id) } },
+            select: { userId: true, videoId: true },
+          })
+        : Promise.resolve([]),
+      lessonIds.length
+        ? prisma.progress.findMany({
+            where: { lessonId: { in: lessonIds } },
+            select: { userId: true, status: true, lessonId: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const durationByCourse = new Map<string, number>();
+    for (const lesson of courseLessons) {
+      durationByCourse.set(lesson.courseId, (durationByCourse.get(lesson.courseId) ?? 0) + durationMinutes(lesson.duration));
+    }
+    const viewers = new Map<string, Set<string>>();
+    for (const event of viewEvents) {
+      const courseId = videoCourseIds.get(event.videoId);
+      if (!courseId) continue;
+      const courseViewers = viewers.get(courseId) ?? new Set<string>();
+      courseViewers.add(event.userId);
+      viewers.set(courseId, courseViewers);
+    }
+    const response = courses.map((course) => {
+      const courseViewers = [...(viewers.get(course.id) ?? [])];
+      const completionRate = courseViewers.length && course._count.lessons
+        ? Math.round(courseViewers.reduce((total, userId) => {
+            const completed = progressRows.filter((row) =>
+              row.userId === userId &&
+              courseLessons.some((lesson) => lesson.id === row.lessonId && lesson.courseId === course.id) &&
+              row.status === "COMPLETED",
+            ).length;
+            return total + Math.min(completed, course._count.lessons) / course._count.lessons;
+          }, 0) / courseViewers.length * 100)
+        : 0;
+      const totalMinutes = durationByCourse.get(course.id) ?? 0;
+      return {
+        ...formatCourse(course),
+        activeLearners: courseViewers.length,
+        completionRate,
+        duration: totalMinutes ? `${Math.round(totalMinutes)} phút` : undefined,
+      };
+    });
+    res.json(success(response));
   } catch (error) {
     if (error instanceof AppError) throw error;
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Failed to load teacher courses:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      ...(process.env.NODE_ENV !== "production" && error instanceof Error
+        ? { detail: error.message }
+        : {}),
+    });
   }
 };
 
@@ -210,6 +305,7 @@ export const getCourseById = async (req: Request, res: Response) => {
                 title: true,
                 titleEn: true,
                 url: true,
+                durationSeconds: true,
                 lessonId: true,
               },
             },
@@ -240,9 +336,35 @@ export const getCourseById = async (req: Request, res: Response) => {
     }
 
     const { _count, ...courseData } = course;
+    const canManageCourse = req.user?.role === "ADMIN" ||
+      (req.user?.role === "TEACHER" && course.createdById === req.user.id);
+    const visibleCourseData = canManageCourse
+      ? courseData
+      : {
+          ...courseData,
+          lessons: course.lessons.map((lesson, index) => {
+            return {
+              id: lesson.id,
+              title: lesson.title,
+              titleEn: lesson.titleEn,
+              description: index === 0 ? lesson.description : null,
+              descEn: index === 0 ? lesson.descEn : null,
+              order: lesson.order,
+              duration: lesson.duration,
+              courseId: lesson.courseId,
+              isLocked: index > 0,
+              isCompleted: false,
+            };
+          }),
+        };
+    const totalMinutes = course.lessons.reduce(
+      (total, lesson) => total + durationMinutes(lesson.duration),
+      0,
+    );
     const formattedCourse = {
-      ...courseData,
+      ...visibleCourseData,
       lessonCount: _count.lessons,
+      duration: totalMinutes ? `${Math.round(totalMinutes)} phút` : undefined,
       subjectLabel: course.subject === "math" ? "Toán học" : "Khoa học",
     };
 

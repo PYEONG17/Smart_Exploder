@@ -32,8 +32,8 @@ function toDisplayLesson(lesson: ApiLesson): CourseDetailLesson {
     description: lesson.description || "",
     descriptionEn: lesson.descEn || "",
     duration: lesson.duration || "",
-    isLocked: false,
-    isCompleted: false,
+    isLocked: lesson.isLocked ?? false,
+    isCompleted: lesson.isCompleted ?? false,
   };
 }
 

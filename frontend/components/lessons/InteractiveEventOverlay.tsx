@@ -73,9 +73,6 @@ export function InteractiveEventOverlay({
   const eventPhase = useInteractiveVideoStore((state) => state.phase);
   const eventStartedAt = useInteractiveVideoStore((state) => state.eventStartedAt);
   const setPhase = useInteractiveVideoStore((state) => state.setPhase);
-  const wrongAttempts = useInteractiveVideoStore(
-    (state) => state.wrongAttempts[activity.id] ?? 0,
-  );
   const recordWrongAttempt = useInteractiveVideoStore(
     (state) => state.recordWrongAttempt,
   );
@@ -284,10 +281,6 @@ export function InteractiveEventOverlay({
   };
 
   const answeredWrong = result?.isCorrect === false;
-  const skipAfter = content.skipAfterAttempts;
-  const canSkip = typeof skipAfter === "number" && wrongAttempts >= skipAfter;
-  const attemptsUntilSkip =
-    typeof skipAfter === "number" ? Math.max(0, skipAfter - wrongAttempts) : null;
   const canRewind = onRewind !== undefined && content.rewindSeconds !== 0;
 
   const handleRetry = () => {
@@ -646,14 +639,6 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
-        {answeredWrong && attemptsUntilSkip !== null && attemptsUntilSkip > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {isVietnamese
-              ? `Làm sai thêm ${attemptsUntilSkip} lần nữa bạn có thể bỏ qua câu này.`
-              : `You can skip this question after ${attemptsUntilSkip} more wrong attempt(s).`}
-          </p>
-        )}
-
         {aiError && activity.type !== "AI_EXPLANATION" && (
           <p role="alert" className="mt-3 text-sm text-destructive">
             {aiError}
@@ -663,11 +648,6 @@ export function InteractiveEventOverlay({
         <div className="mt-5 flex justify-end gap-2">
           {result && answeredWrong ? (
             <>
-              {canSkip && (
-                <Button variant="ghost" onClick={handleContinue}>
-                  {isVietnamese ? "Bỏ qua, tiếp tục" : "Skip and continue"}
-                </Button>
-              )}
               {canRewind && (
                 <Button variant="outline" onClick={() => onRewind?.(activity)}>
                   {isVietnamese ? "Xem lại đoạn video" : "Rewatch video"}

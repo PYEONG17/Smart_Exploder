@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import type { Course, Lesson } from "@/types";
+import { fetchMyProgress } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type CourseDetailCourse = Course & {
   descriptionEn?: string;
@@ -41,8 +43,32 @@ interface CourseDetailClientProps {
 
 export default function CourseDetailClient({
   course,
-  lessons,
+  lessons: initialLessons,
 }: CourseDetailClientProps) {
+  const { token, user } = useAuth();
+  const [lessonStates, setLessonStates] = useState(initialLessons);
+  const lessons = lessonStates;
+  useEffect(() => {
+    setLessonStates(initialLessons);
+    if (!token || user?.role !== "STUDENT") return;
+    let active = true;
+    fetchMyProgress(token).then((progress) => {
+      if (!active) return;
+      const completedIds = new Set(progress
+        .filter((item) => item.status === "COMPLETED" && item.lesson.courseId === course.id)
+        .map((item) => item.lessonId));
+      let previousIncomplete = false;
+      setLessonStates(initialLessons.map((lesson) => {
+        const isCompleted = completedIds.has(lesson.id);
+        const state = { ...lesson, isCompleted, isLocked: previousIncomplete };
+        if (!isCompleted) previousIncomplete = true;
+        return state;
+      }));
+    }).catch((error: unknown) => {
+      console.error("Unable to load course learning progress:", error);
+    });
+    return () => { active = false; };
+  }, [course.id, initialLessons, token, user?.role]);
   const [activeTab, setActiveTab] = useState<"lessons" | "info" | "reviews">(
     "lessons",
   );

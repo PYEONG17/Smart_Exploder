@@ -18,12 +18,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TutorAnswer } from "@/components/ai/TutorAnswer";
 import { toast } from "sonner";
-import { sendChatMessage } from "@/lib/api";
+import { sendLessonTutorMessage } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type { AIChatMessage } from "@/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const quickPrompts = [
   {
@@ -104,7 +105,7 @@ export default function AIPage() {
         content: message.content,
       }));
 
-      const aiReply = await sendChatMessage(token, text, formattedHistory, {
+      const aiReply = await sendLessonTutorMessage(token, text, formattedHistory, {
         grade: gradeLevel || undefined,
         subject: "Mathematics and Science",
         locale: "vi",
@@ -224,7 +225,7 @@ export default function AIPage() {
                 </div>
                 <div className="eyebrow mb-4">AI learning companion</div>
                 <h2 className="mb-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">
-                  Trợ lý học tập STEM AI
+                  Trợ lý giải đáp bài giảng (Gemini)
                 </h2>
                 <p className="mb-8 max-w-md text-sm leading-7 text-muted-foreground">
                   Hỏi bất kỳ điều gì về môn Toán, Khoa học, từ vựng STEM hoặc
@@ -293,7 +294,11 @@ export default function AIPage() {
 
                     <div className="max-w-none leading-relaxed">
                       {msg.role === "assistant" ? (
-                        <TutorAnswer content={msg.content} />
+                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted prose-pre:text-muted-foreground">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
                       ) : (
                         <p className="whitespace-pre-wrap">{msg.content}</p>
                       )}

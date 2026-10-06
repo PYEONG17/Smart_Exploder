@@ -106,3 +106,34 @@ export async function generateGroundedText(
     throw toAppError(error, "Không thể tìm tài liệu lúc này. Vui lòng thử lại sau.");
   }
 }
+
+export type GeminiChatMessage = {
+  role: "user" | "model";
+  parts: { text: string }[];
+};
+
+export async function chatWithGeminiText(
+  systemInstruction: string,
+  history: GeminiChatMessage[],
+  options: { maxOutputTokens?: number; temperature?: number; model?: string } = {},
+): Promise<string> {
+  const ai = getClient();
+  try {
+    const result = await ai.models.generateContent({
+      model: options.model || getModel(),
+      contents: history,
+      config: {
+        systemInstruction,
+        temperature: options.temperature ?? 0.6,
+        maxOutputTokens: options.maxOutputTokens ?? 2048,
+      },
+    });
+    const reply = result.text?.trim();
+    if (!reply) {
+      throw new AppError("AI trả về phản hồi trống. Vui lòng thử lại.", 502);
+    }
+    return reply;
+  } catch (error) {
+    throw toAppError(error, "Trợ lý AI đang gặp sự cố. Vui lòng thử lại sau.");
+  }
+}

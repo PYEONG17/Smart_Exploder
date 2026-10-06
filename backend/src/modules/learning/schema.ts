@@ -317,20 +317,10 @@ export const createLessonVideoSchema = z
     titleEn: z.string().trim().max(150).optional(),
     sourceLanguage: z.enum(["vi", "en"]).optional(),
     url: z.string().trim().url().max(2000),
+    durationSeconds: z.number().int().positive().max(24 * 60 * 60).optional(),
     activities: z.array(videoActivitySchema).max(20).optional(),
   })
   .superRefine((input, context) => {
-    if (input.activities?.length) {
-      const host = new URL(input.url).hostname.replace(/^www\./, "");
-      if (["youtube.com", "m.youtube.com", "youtu.be"].includes(host)) {
-        context.addIssue({
-          code: "custom",
-          path: ["url"],
-          message: "Interactive checkpoints require a direct video file URL",
-        });
-      }
-    }
-
     const timestamps = input.activities?.map((activity) =>
       activity.timestampMs ?? (activity.timestamp ?? 0) * 1000,
     );

@@ -1,10 +1,12 @@
 ﻿import type { Request, Response } from "express";
 import prisma from "../../config/db.js";
+import { z } from "zod";
 import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
 import { removeCourseMediaByUrls } from "../../utils/course-media.js";
-import { toBilingualList } from "../ai/translate.js";
+import { toBilingualList, toBilingualText } from "../ai/translate.js";
 import { videoActivitySchema, type VideoActivityInput } from "../learning/schema.js";
+import { refreshLessonDuration } from "../../utils/lesson-duration.js";
 
 type OwnedLesson = { course: { createdById: string | null } };
 
@@ -18,14 +20,45 @@ function assertCanManage(req: Request, lesson: OwnedLesson | null) {
 
 const lessonOwner = { select: { course: { select: { createdById: true } } } };
 
+const updateVideoMetadataSchema = z.object({
+  title: z.string().trim().min(2).max(150).optional(),
+  durationSeconds: z.number().int().positive().max(24 * 60 * 60).optional(),
+  sourceLanguage: z.enum(["vi", "en"]).optional(),
+}).refine((value) => value.title !== undefined || value.durationSeconds !== undefined);
+
+export async function updateVideoMetadata(req: Request, res: Response) {
+  const video = await prisma.video.findUnique({
+    where: { id: String(req.params.id) },
+    select: { id: true, lessonId: true, lesson: lessonOwner },
+  });
+  assertCanManage(req, video?.lesson ?? null);
+  const input = updateVideoMetadataSchema.parse(req.body);
+  const data: { title?: string; titleEn?: string; durationSeconds?: number } = {};
+  if (input.title) {
+    const title = input.sourceLanguage
+      ? await toBilingualText(input.title, input.sourceLanguage)
+      : { vi: input.title, en: undefined };
+    data.title = title.vi;
+    if (title.en) data.titleEn = title.en;
+  }
+  if (input.durationSeconds !== undefined) data.durationSeconds = input.durationSeconds;
+  const updated = await prisma.video.update({
+    where: { id: video!.id },
+    data,
+  });
+  await refreshLessonDuration(video!.lessonId);
+  res.json(success(updated, "Video title updated"));
+}
+
 export async function deleteVideo(req: Request, res: Response) {
   const id = String(req.params.id);
   const video = await prisma.video.findUnique({
     where: { id },
-    select: { url: true, lesson: lessonOwner },
+    select: { url: true, lessonId: true, lesson: lessonOwner },
   });
   assertCanManage(req, video?.lesson ?? null);
   await prisma.video.delete({ where: { id } });
+  if (video) await refreshLessonDuration(video.lessonId);
   await removeCourseMediaByUrls([video?.url]);
   res.json(success({ id }, "Video deleted"));
 }
@@ -54,16 +87,6 @@ export async function deleteMaterial(req: Request, res: Response) {
 }
 
 const MAX_ACTIVITIES_PER_VIDEO = 20;
-const YOUTUBE_HOSTS = ["youtube.com", "m.youtube.com", "youtu.be"];
-
-function isYouTubeUrl(url: string) {
-  try {
-    return YOUTUBE_HOSTS.includes(new URL(url).hostname.replace(/^www\./, ""));
-  } catch {
-    return false;
-  }
-}
-
 function timestampMsOf(input: VideoActivityInput) {
   return input.timestampMs ?? (input.timestamp ?? 0) * 1000;
 }
@@ -159,12 +182,6 @@ async function assertTimestampAvailable(
 
 export async function createVideoActivity(req: Request, res: Response) {
   const video = await loadManagedVideo(req);
-  if (isYouTubeUrl(video.url)) {
-    throw new AppError(
-      "Interactive checkpoints require an uploaded or direct video file",
-      400,
-    );
-  }
   const input = videoActivitySchema.parse(req.body);
   const timestampMs = timestampMsOf(input);
   const count = await prisma.interactiveActivity.count({

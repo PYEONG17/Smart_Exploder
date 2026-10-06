@@ -29,8 +29,8 @@ export async function getMyProgress(req: Request, res: Response) {
   res.json(success(data));
 }
 
-export async function listAvailableQuizzes(_req: Request, res: Response) {
-  const data = await learningService.listAvailableQuizzes();
+export async function listAvailableQuizzes(req: Request, res: Response) {
+  const data = await learningService.listAvailableQuizzes(authenticatedUserId(req));
   res.json(success(data));
 }
 
@@ -59,6 +59,7 @@ export async function createLessonVideo(req: Request, res: Response) {
 export async function submitVideoActivityAnswer(req: Request, res: Response) {
   const input = submitVideoActivitySchema.parse(req.body);
   const data = await learningService.submitVideoActivityAnswer(
+    authenticatedUserId(req),
     String(req.params.videoId),
     String(req.params.activityId),
     input,
@@ -116,6 +117,7 @@ export async function getMyQuizAttempts(req: Request, res: Response) {
 export async function checkQuizAnswer(req: Request, res: Response) {
   const body = checkQuizAnswerSchema.parse(req.body);
   const data = await learningService.checkQuizAnswer(
+    authenticatedUserId(req),
     String(req.params.quizId),
     String(req.params.questionId),
     body.answerId,

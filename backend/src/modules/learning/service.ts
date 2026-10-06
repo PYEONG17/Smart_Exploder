@@ -2,6 +2,7 @@ import { Prisma, ProgressStatus } from "@prisma/client";
 import prisma from "../../config/db.js";
 import { AppError } from "../../utils/app-error.js";
 import { toBilingualText } from "../ai/translate.js";
+import { refreshLessonDuration } from "../../utils/lesson-duration.js";
 import type {
   CreateLessonQuizInput,
   CreateLessonVideoInput,
@@ -59,6 +60,30 @@ async function getManagedLesson(
   return lesson;
 }
 
+async function assertLessonUnlocked(userId: string, lessonId: string) {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: { id: true, order: true, courseId: true },
+  });
+  if (!lesson) throw new AppError("Lesson not found", 404);
+  const previous = await prisma.lesson.findMany({
+    where: { courseId: lesson.courseId, order: { lt: lesson.order } },
+    select: { id: true },
+  });
+  if (!previous.length) return;
+  const completed = await prisma.progress.findMany({
+    where: {
+      userId,
+      lessonId: { in: previous.map((item) => item.id) },
+      status: "COMPLETED",
+    },
+    select: { lessonId: true },
+  });
+  if (completed.length !== previous.length) {
+    throw new AppError("Finish the previous lesson to unlock this lesson", 403);
+  }
+}
+
 export const learningService = {
   async createLessonQuiz(
     lessonId: string,
@@ -108,13 +133,14 @@ export const learningService = {
       where: { lessonId },
       _max: { order: true },
     });
-    return prisma.video.create({
+    const video = await prisma.video.create({
       data: {
         lessonId,
         order: (lastVideo._max.order ?? 0) + 1,
         title: title.vi,
         titleEn: title.en,
         url: input.url,
+        durationSeconds: input.durationSeconds,
         activities: {
           create: (input.activities ?? []).map((activity) => {
             const timestampMs =
@@ -130,17 +156,22 @@ export const learningService = {
       },
       include: { activities: true },
     });
+    await refreshLessonDuration(lessonId);
+    return video;
   },
 
   async submitVideoActivityAnswer(
+    userId: string,
     videoId: string,
     activityId: string,
     input: SubmitVideoActivityInput,
   ) {
     const activity = await prisma.interactiveActivity.findFirst({
       where: { id: activityId, videoId },
+      select: { id: true, content: true, video: { select: { lessonId: true } } },
     });
     if (!activity) throw new AppError("Video checkpoint not found", 404);
+    await assertLessonUnlocked(userId, activity.video.lessonId);
 
     let content: {
       correctIndex: number;
@@ -202,11 +233,12 @@ export const learningService = {
       where: { id: activityId, videoId },
       include: {
         video: {
-          select: { lesson: { select: { course: { select: { createdById: true } } } } },
+          select: { lessonId: true, lesson: { select: { course: { select: { createdById: true } } } } },
         },
       },
     });
     if (!activity) throw new AppError("Video event not found", 404);
+    if (!isPreview) await assertLessonUnlocked(userId, activity.video.lessonId);
     if (
       isPreview &&
       role !== "ADMIN" &&
@@ -581,8 +613,9 @@ export const learningService = {
     });
   },
 
-  listAvailableQuizzes() {
-    return prisma.quiz.findMany({
+  async listAvailableQuizzes(userId: string) {
+    const [quizzes, lessons, completedRows] = await Promise.all([
+      prisma.quiz.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         lesson: {
@@ -606,7 +639,15 @@ export const learningService = {
           },
         },
       },
-    });
+      }),
+      prisma.lesson.findMany({ select: { id: true, courseId: true, order: true } }),
+      prisma.progress.findMany({ where: { userId, status: "COMPLETED" }, select: { lessonId: true } }),
+    ]);
+    const completed = new Set(completedRows.map((item) => item.lessonId));
+    const unlocked = new Set(lessons.filter((lesson) =>
+      lessons.every((previous) => previous.courseId !== lesson.courseId || previous.order >= lesson.order || completed.has(previous.id)),
+    ).map((lesson) => lesson.id));
+    return quizzes.filter((quiz) => unlocked.has(quiz.lesson.id));
   },
 
   getProgress(userId: string) {
@@ -632,6 +673,7 @@ export const learningService = {
     lessonId: string,
     input: SaveProgressInput,
   ) {
+    await assertLessonUnlocked(userId, lessonId);
     const lessonExists = await prisma.lesson.findUnique({
       where: { id: lessonId },
       select: { id: true },
@@ -684,6 +726,7 @@ export const learningService = {
     if (!quiz) {
       throw new AppError("Quiz not found", 404);
     }
+    await assertLessonUnlocked(userId, quiz.lessonId);
     if (quiz.questions.length === 0) {
       throw new AppError("This quiz has no questions", 400);
     }
@@ -748,12 +791,13 @@ export const learningService = {
     return { ...attempt, review };
   },
 
-  async checkQuizAnswer(quizId: string, questionId: string, answerId: string) {
+  async checkQuizAnswer(userId: string, quizId: string, questionId: string, answerId: string) {
     const question = await prisma.question.findFirst({
       where: { id: questionId, quizId },
-      include: { answers: { select: { id: true, isCorrect: true } } },
+      include: { answers: { select: { id: true, isCorrect: true } }, quiz: { select: { lessonId: true } } },
     });
     if (!question) throw new AppError("Question not found", 404);
+    await assertLessonUnlocked(userId, question.quiz.lessonId);
     const chosen = question.answers.find((item) => item.id === answerId);
     if (!chosen) {
       throw new AppError("An answer does not belong to its question", 400);

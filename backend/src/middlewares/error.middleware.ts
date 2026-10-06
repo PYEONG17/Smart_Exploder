@@ -32,6 +32,13 @@ export function errorHandler(
     return res.status(400).json(failure("Validation failed", errors));
   }
 
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    console.error("Database connection failed:", err);
+    return res
+      .status(503)
+      .json(failure("Database is unavailable. Start PostgreSQL and try again."));
+  }
+
   if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
     return res.status(409).json(failure("A record with this value already exists"));
   }

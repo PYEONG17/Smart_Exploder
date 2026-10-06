@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "../../config/db.js";
 import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
-import { translateLearningText } from "../ai/translate.js";
+import { toBilingualText } from "../ai/translate.js";
 
 const questionSchema = z.object({
   text: z.string().trim().min(3).max(3000),
@@ -59,7 +59,8 @@ export async function askLessonQuestion(req: Request, res: Response) {
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
 
-  const translation = await translateLearningText(input.text, input.language);
+  const bilingual = await toBilingualText(input.text, input.language);
+  const translation = input.language === "vi" ? bilingual.en : bilingual.vi;
   const question = await prisma.lessonQuestion.create({
     data: {
       lessonId,
@@ -111,7 +112,8 @@ export async function answerLessonQuestion(req: Request, res: Response) {
     throw new AppError("You can only answer questions in your own courses", 403);
   }
 
-  const translation = await translateLearningText(input.text, input.language);
+  const bilingual = await toBilingualText(input.text, input.language);
+  const translation = input.language === "vi" ? bilingual.en : bilingual.vi;
   const answer = await prisma.lessonQuestion.update({
     where: { id: questionId },
     data: {

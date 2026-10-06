@@ -121,6 +121,7 @@ export interface Video {
   title: string;
   titleEn?: string;
   url: string;
+  durationSeconds?: number | null;
   duration?: string;
   lessonId: string;
   activities?: InteractiveActivity[];
@@ -159,6 +160,8 @@ export interface Course {
   lessonCount?: number;
   duration?: string;
   enrolled?: number;
+  activeLearners?: number;
+  completionRate?: number;
   rating?: number;
   color?: string;
   lessons?: Lesson[];

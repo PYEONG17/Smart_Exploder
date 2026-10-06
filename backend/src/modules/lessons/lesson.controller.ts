@@ -173,6 +173,8 @@ async function getManagedLessonForRequest(req: Request) {
     where: { id: String(req.params.id) },
     select: {
       id: true,
+      courseId: true,
+      order: true,
       course: { select: { createdById: true } },
       videos: { select: { url: true } },
       materials: { select: { url: true } },
@@ -244,6 +246,14 @@ export const reorderLessonVideos = async (req: Request, res: Response) => {
 export const deleteLesson = async (req: Request, res: Response) => {
   const lesson = await getManagedLessonForRequest(req);
   await prisma.lesson.delete({ where: { id: lesson.id } });
+  const remainingLessons = await prisma.lesson.findMany({
+    where: { courseId: lesson.courseId },
+    orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+    select: { id: true },
+  });
+  await prisma.$transaction(remainingLessons.map((item, index) =>
+    prisma.lesson.update({ where: { id: item.id }, data: { order: index + 1 } }),
+  ));
   await removeCourseMediaByUrls([
     ...lesson.videos.map((video) => video.url),
     ...lesson.materials.map((material) => material.url),
@@ -253,10 +263,43 @@ export const deleteLesson = async (req: Request, res: Response) => {
 
 export const getLessonById = async (req: Request, res: Response) => {
   try {
+    if (!req.user) throw new AppError("Authentication required", 401);
+    const currentUser = req.user;
     const id = String(req.params.id);
+    const position = await prisma.lesson.findUnique({
+      where: { id },
+      select: { id: true, courseId: true, order: true },
+    });
+    if (!position) {
+      return res.status(404).json({ success: false, message: "Lesson not found" });
+    }
+    const previousLessons = await prisma.lesson.findMany({
+      where: { courseId: position.courseId, order: { lt: position.order } },
+      select: { id: true },
+    });
+    const completedPrevious = currentUser.role === "STUDENT" && previousLessons.length
+      ? await prisma.progress.count({
+          where: {
+            userId: currentUser.id,
+            lessonId: { in: previousLessons.map((item) => item.id) },
+            status: "COMPLETED",
+          },
+        })
+      : previousLessons.length;
+    if (currentUser.role === "STUDENT" && completedPrevious < previousLessons.length) {
+      return res.status(403).json({
+        success: false,
+        code: "LESSON_LOCKED",
+        message: "Hoàn thành các bài học trước để mở khóa bài này.",
+      });
+    }
     const lesson = await prisma.lesson.findUnique({
       where: { id },
       include: {
+        progress: {
+          where: { userId: currentUser.id },
+          select: { status: true },
+        },
         materials: true,
         videos: {
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
@@ -279,6 +322,12 @@ export const getLessonById = async (req: Request, res: Response) => {
           include: {
             lessons: {
               orderBy: { order: "asc" },
+              include: {
+                progress: {
+                  where: { userId: currentUser.id },
+                  select: { status: true },
+                },
+              },
             },
           },
         },
@@ -295,6 +344,22 @@ export const getLessonById = async (req: Request, res: Response) => {
       success: true,
       data: {
         ...lesson,
+        isCompleted: lesson.progress.some((entry) => entry.status === "COMPLETED"),
+        progress: undefined,
+        course: {
+          ...lesson.course,
+          lessons: lesson.course.lessons.map((item, index, all) => {
+            const { progress, ...lessonData } = item;
+            return {
+              ...lessonData,
+              isCompleted: progress.some((entry) => entry.status === "COMPLETED"),
+              isLocked: currentUser.role === "STUDENT" &&
+                all.slice(0, index).some((previous) =>
+                  !previous.progress.some((entry) => entry.status === "COMPLETED"),
+                ),
+            };
+          }),
+        },
         videos: lesson.videos.map((video) => ({
           ...video,
           activities: video.activities.map((activity) => ({

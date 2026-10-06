@@ -102,6 +102,9 @@ export default function CreateCoursePage() {
             lectureTitle ||
             (contentLanguage === "vi" ? `Bài ${order}` : `Lesson ${order}`),
           description: lectureDescription || undefined,
+          duration: videos.length > 0 && videos.every((video) => video.durationSeconds != null)
+            ? `${Math.max(1, Math.round(videos.reduce((sum, video) => sum + (video.durationSeconds ?? 0), 0) / 60))} phút`
+            : undefined,
           order,
           sourceLanguage: contentLanguage,
         });
@@ -116,13 +119,22 @@ export default function CreateCoursePage() {
                   })
                 : null;
             await createLessonVideo(authToken, lesson.data.id, {
-              title: lectureTitle
-                ? videos.length > 1
-                  ? `${lectureTitle} (${index + 1})`
-                  : lectureTitle
-                : undefined,
+              title: video.title.trim() || `${label} - Video phần ${index + 1}`,
               sourceLanguage: contentLanguage,
               url: uploaded?.url ?? video.url.trim(),
+              durationSeconds: video.durationSeconds ?? undefined,
+              activities: video.questions.map((question) => ({
+                timestampMs: Math.round(Number(question.timestamp) * 1000),
+                type: "QUESTION",
+                sourceLanguage: contentLanguage,
+                content: {
+                  question: question.question.trim(),
+                  options: question.options.map((option) => option.trim()),
+                  correctIndex: question.correctIndex,
+                  explanation: question.explanation.trim() || undefined,
+                  rewindSeconds: 20,
+                },
+              })),
             });
           } catch (videoError) {
             failures.push(
@@ -151,6 +163,29 @@ export default function CreateCoursePage() {
         const url = video.url.trim();
         if (video.mode === "url" && url && !URL.canParse(url)) {
           toast.error("Có link video không hợp lệ.");
+          return;
+        }
+        if (video.questions.length > 20) {
+          toast.error("Mỗi video chỉ hỗ trợ tối đa 20 câu hỏi tương tác.");
+          return;
+        }
+        if (video.questions.length && !(video.mode === "file" ? video.file : url)) {
+          toast.error("Hãy chọn video trước khi thêm câu hỏi tương tác.");
+          return;
+        }
+        const questionTimes = video.questions.map((question) => Number(question.timestamp));
+        if (video.questions.some((question, index) =>
+          question.timestamp.trim() === "" ||
+          !Number.isFinite(questionTimes[index]) ||
+          questionTimes[index] < 0 ||
+          question.question.trim().length < 2 ||
+          question.options.some((option) => !option.trim()),
+        )) {
+          toast.error("Mỗi câu hỏi cần có thời điểm hợp lệ, nội dung và đủ 4 lựa chọn.");
+          return;
+        }
+        if (new Set(questionTimes.map((time) => Math.round(time * 1000))).size !== questionTimes.length) {
+          toast.error("Các câu hỏi trong cùng video cần có thời điểm khác nhau.");
           return;
         }
         if (

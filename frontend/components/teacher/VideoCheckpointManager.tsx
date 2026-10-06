@@ -11,8 +11,6 @@ import {
   updateVideoActivity,
   type VideoActivityRecord,
 } from "@/lib/api";
-import { getYouTubeEmbedUrl } from "@/lib/video-url";
-import { VideoTimePicker } from "./VideoTimePicker";
 import {
   AuthoringLanguageToggle,
   type AuthoringLanguage,
@@ -26,7 +24,6 @@ type QuestionForm = {
   correctIndex: number;
   explanation: string;
   rewindSeconds: string;
-  skipAfterAttempts: string;
 };
 
 type JsonForm = {
@@ -66,7 +63,6 @@ function emptyForm(timestamp: string): QuestionForm {
     correctIndex: 0,
     explanation: "",
     rewindSeconds: DEFAULT_REWIND_SECONDS,
-    skipAfterAttempts: "",
   };
 }
 
@@ -92,10 +88,6 @@ function formFromRecord(
       typeof content.rewindSeconds === "number"
         ? String(content.rewindSeconds)
         : DEFAULT_REWIND_SECONDS,
-    skipAfterAttempts:
-      typeof content.skipAfterAttempts === "number"
-        ? String(content.skipAfterAttempts)
-        : "",
   };
 }
 
@@ -117,11 +109,11 @@ function describe(record: VideoActivityRecord) {
 export function VideoCheckpointManager({
   token,
   videoId,
-  videoUrl,
+  selectedTime,
 }: {
   token: string;
   videoId: string;
-  videoUrl: string;
+  selectedTime: string;
 }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<VideoActivityRecord[] | null>(null);
@@ -131,7 +123,6 @@ export function VideoCheckpointManager({
   const [form, setForm] = useState<QuestionForm | null>(null);
   const [jsonForm, setJsonForm] = useState<JsonForm | null>(null);
 
-  const isYouTube = Boolean(getYouTubeEmbedUrl(videoUrl));
 
   const load = async () => {
     setIsLoading(true);
@@ -159,18 +150,9 @@ export function VideoCheckpointManager({
       ),
     );
 
-  const otherMarkers = (editingId: string | null) =>
-    (items ?? [])
-      .filter((item) => item.id !== editingId)
-      .map((item) => item.timestampMs / 1000);
-
   const startCreate = () => {
-    const last = (items ?? []).reduce(
-      (max, item) => Math.max(max, item.timestampMs),
-      0,
-    );
     setJsonForm(null);
-    setForm(emptyForm(String(items?.length ? Math.floor(last / 1000) + 60 : 60)));
+    setForm(emptyForm(selectedTime || "0"));
   };
 
   const startEdit = (record: VideoActivityRecord) => {
@@ -216,12 +198,6 @@ export function VideoCheckpointManager({
     if (!Number.isInteger(rewind) || rewind < 0 || rewind > 3600) {
       return toast.error("Số giây tua lại phải từ 0 đến 3600.");
     }
-    const skipText = form.skipAfterAttempts.trim();
-    const skip = skipText === "" ? undefined : Number(skipText);
-    if (skip !== undefined && (!Number.isInteger(skip) || skip < 1 || skip > 10)) {
-      return toast.error("Số lần sai để được bỏ qua phải từ 1 đến 10 (hoặc để trống).");
-    }
-
     setIsSaving(true);
     try {
       const payload = {
@@ -234,7 +210,6 @@ export function VideoCheckpointManager({
           correctIndex: form.correctIndex,
           explanation: form.explanation.trim() || undefined,
           rewindSeconds: rewind,
-          skipAfterAttempts: skip,
         },
       };
       const saved = form.id
@@ -310,11 +285,6 @@ export function VideoCheckpointManager({
 
       {open && (
         <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
-          {isYouTube && (
-            <p className="text-xs text-amber-600">
-              Video YouTube không hỗ trợ checkpoint theo thời gian. Hãy tải video lên hoặc dùng link tệp video trực tiếp.
-            </p>
-          )}
           {isLoading ? (
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang tải...
@@ -349,9 +319,6 @@ export function VideoCheckpointManager({
                             ? "tắt"
                             : `${record.content.rewindSeconds}s`
                           : "20s"}
-                        {typeof record.content.skipAfterAttempts === "number"
-                          ? ` · bỏ qua sau ${record.content.skipAfterAttempts} lần sai`
-                          : ""}
                       </span>
                     )}
                     <Button
@@ -378,7 +345,7 @@ export function VideoCheckpointManager({
                 ))}
               </ul>
 
-              {!isYouTube && !form && !jsonForm && (
+              {!form && !jsonForm && (
                 <Button
                   type="button"
                   size="sm"
@@ -413,7 +380,7 @@ export function VideoCheckpointManager({
                 onChange={changeLanguage}
                 disabled={isSaving}
               />
-              <div className="grid gap-2 sm:grid-cols-[160px_1fr]">
+              <div className="grid min-w-0 gap-2 sm:grid-cols-[160px_minmax(0,1fr)]">
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <label className="block">
                     Hiện câu hỏi ở giây thứ
@@ -428,12 +395,6 @@ export function VideoCheckpointManager({
                       className={`${inputClass} mt-1`}
                     />
                   </label>
-                  <VideoTimePicker
-                    src={videoUrl}
-                    value={form.timestamp}
-                    onChange={(timestamp) => patchForm({ timestamp })}
-                    markers={otherMarkers(form.id)}
-                  />
                 </div>
                 <label className="text-xs text-muted-foreground">
                   Câu hỏi
@@ -446,6 +407,9 @@ export function VideoCheckpointManager({
                   />
                 </label>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Mốc checkpoint lấy từ thanh thời gian của video phía trên: {formatTime(Math.round(Number(selectedTime || 0) * 1000))}.
+              </p>
               <div className="space-y-1.5">
                 <p className="text-xs text-muted-foreground">
                   Các lựa chọn (chọn nút tròn ở đáp án đúng)
@@ -537,21 +501,6 @@ export function VideoCheckpointManager({
                     0 = ẩn nút xem lại video.
                   </span>
                 </label>
-                <label className="text-xs text-muted-foreground">
-                  Cho bỏ qua sau số lần sai
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={form.skipAfterAttempts}
-                    placeholder="Để trống = phải đúng mới đi tiếp"
-                    onChange={(event) =>
-                      patchForm({ skipAfterAttempts: event.target.value })
-                    }
-                    className={`${inputClass} mt-1`}
-                  />
-                </label>
               </div>
               <p className="text-[10px] text-muted-foreground">
                 Bản dịch sang ngôn ngữ còn lại được tạo lại tự động mỗi lần lưu.
@@ -601,14 +550,6 @@ export function VideoCheckpointManager({
                     className={`${inputClass} mt-1`}
                   />
                 </label>
-                <VideoTimePicker
-                  src={videoUrl}
-                  value={jsonForm.timestamp}
-                  onChange={(timestamp) =>
-                    setJsonForm({ ...jsonForm, timestamp })
-                  }
-                  markers={otherMarkers(jsonForm.id)}
-                />
               </div>
               <label className="block text-xs text-muted-foreground">
                 Nội dung JSON

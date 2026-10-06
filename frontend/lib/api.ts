@@ -2,6 +2,7 @@ import type {
   Course,
   ClassItem,
   Lesson,
+  Video,
   Material,
   CreateCourseDTO,
   CreateLessonDTO,
@@ -46,10 +47,13 @@ export async function fetchLessonQuestions(
   lessonId: string,
 ): Promise<LessonQuestion[]> {
   return readLessonQuestionResponse(
-    await fetch(`${API_URL}/lessons/${encodeURIComponent(lessonId)}/questions`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    }),
+    await fetch(
+      `${API_URL}/lessons/${encodeURIComponent(lessonId)}/questions`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    ),
   );
 }
 
@@ -117,8 +121,14 @@ export async function fetchCourses(): Promise<Course[]> {
   return json.data;
 }
 
-export async function fetchCourseById(id: string): Promise<Course | null> {
-  const res = await fetch(`${API_URL}/courses/${id}`, { cache: "no-store" });
+export async function fetchCourseById(
+  id: string,
+  token?: string | null,
+): Promise<Course | null> {
+  const res = await fetch(`${API_URL}/courses/${id}`, {
+    cache: "no-store",
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  });
   const json = await res.json();
   if (res.status === 404) return null;
   if (!res.ok || !json.success) {
@@ -138,11 +148,18 @@ export async function fetchClasses(): Promise<ClassItem[]> {
 
 export async function fetchLessonById(
   id: string,
+  token: string,
 ): Promise<LessonWithCourse | null> {
-  const res = await fetch(`${API_URL}/lessons/${id}`, { cache: "no-store" });
+  const res = await fetch(`${API_URL}/lessons/${id}`, {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   const json = await res.json();
   if (res.status === 404) return null;
   if (!res.ok || !json.success) {
+    if (res.status === 403 && json.code === "LESSON_LOCKED") {
+      throw new Error(`LESSON_LOCKED:${json.message}`);
+    }
     throw new Error(json.message || "Failed to fetch lesson");
   }
   return json.data;
@@ -412,10 +429,12 @@ export type CreateLessonVideoInput = {
   titleEn?: string;
   sourceLanguage?: "vi" | "en";
   url: string;
+  durationSeconds?: number;
   activities?: {
     timestamp?: number;
     timestampMs?: number;
     type: ActivityType;
+    sourceLanguage?: "vi" | "en";
     content: unknown;
   }[];
 };
@@ -484,6 +503,29 @@ export function createLessonVideo(
   data: CreateLessonVideoInput,
 ) {
   return postLessonContent(token, lessonId, "videos", data);
+}
+
+export async function updateLessonVideoMetadata(
+  token: string,
+  videoId: string,
+  data: {
+    title?: string;
+    durationSeconds?: number;
+    sourceLanguage?: "vi" | "en";
+  },
+): Promise<Video> {
+  const res = await fetch(`${API_URL}/videos/${encodeURIComponent(videoId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success)
+    throw new Error(json.message || "Could not update video title");
+  return json.data;
 }
 
 export async function submitVideoActivityAnswer(
@@ -578,15 +620,14 @@ export async function fetchInteractiveVideoAnalytics(
   token: string,
   videoId: string,
 ): Promise<InteractiveVideoAnalytics[]> {
-  const res = await fetch(
-    `${API_URL}/videos/${videoId}/activities/analytics`,
-    {
-      headers: { Authorization: "Bearer " + token },
-    },
-  );
+  const res = await fetch(`${API_URL}/videos/${videoId}/activities/analytics`, {
+    headers: { Authorization: "Bearer " + token },
+  });
   const json = await res.json();
   if (!res.ok || !json.success) {
-    throw new Error(json.message || "Failed to load interactive video analytics");
+    throw new Error(
+      json.message || "Failed to load interactive video analytics",
+    );
   }
   return json.data;
 }
@@ -733,7 +774,12 @@ export async function fetchMyCourses(token: string): Promise<Course[]> {
   });
   const json = await res.json();
   if (!res.ok || !json.success) {
-    throw new Error(json.message || "Failed to fetch teacher courses");
+    const detail = typeof json.detail === "string" ? json.detail : undefined;
+    throw new Error(
+      [json.message || "Failed to fetch teacher courses", detail]
+        .filter(Boolean)
+        .join(": "),
+    );
   }
   return json.data;
 }
@@ -934,6 +980,51 @@ export async function sendChatMessage(
   }
 
   const res = await fetch(`${API_URL}/ai/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      prompt,
+      history: completeHistory.slice(-10),
+      context,
+    }),
+  });
+
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to get AI response");
+  }
+
+  return json.data.reply;
+}
+
+export async function sendLessonTutorMessage(
+  token: string,
+  prompt: string,
+  history: { role: "user" | "assistant"; content: string }[] = [],
+  context?: {
+    grade?: string;
+    subject?: string;
+    lessonTitle?: string;
+    lessonDescription?: string;
+    lessonId?: string;
+    locale?: "vi" | "en";
+  },
+): Promise<string> {
+  const completeHistory: typeof history = [];
+  let pendingQuestion: (typeof history)[number] | null = null;
+  for (const message of history) {
+    if (message.role === "user") {
+      pendingQuestion = message;
+    } else if (pendingQuestion) {
+      completeHistory.push(pendingQuestion, message);
+      pendingQuestion = null;
+    }
+  }
+
+  const res = await fetch(`${API_URL}/ai/lesson-tutor`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

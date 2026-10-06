@@ -9,6 +9,8 @@ import {
   ExternalLink,
   Sparkles,
   Layers,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +66,20 @@ export default function TeacherDashboardPage() {
       ),
       icon: Layers,
       color: "text-emerald-500 bg-emerald-500/10",
+    },
+    {
+      label: locale === "vi" ? "Lượt học sinh đã xem video" : "Video learners",
+      value: courses.reduce((total, course) => total + (course.activeLearners ?? 0), 0),
+      icon: Users,
+      color: "text-violet-500 bg-violet-500/10",
+    },
+    {
+      label: locale === "vi" ? "Hoàn thành trung bình" : "Average completion",
+      value: courses.length
+        ? `${Math.round(courses.reduce((total, course) => total + (course.completionRate ?? 0), 0) / courses.length)}%`
+        : "0%",
+      icon: TrendingUp,
+      color: "text-amber-500 bg-amber-500/10",
     },
   ];
 
@@ -132,7 +148,7 @@ export default function TeacherDashboardPage() {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {teacherStats.map((stat, idx) => {
             const Icon = stat.icon;
             return (
@@ -241,6 +257,13 @@ export default function TeacherDashboardPage() {
                         <span>
                           {course.lessonCount ?? 0}{" "}
                           {locale === "vi" ? "bài học" : "lessons"}
+                        </span>
+                        {course.duration && <span>{course.duration}</span>}
+                        <span>
+                          {course.activeLearners ?? 0} {locale === "vi" ? "học sinh đã xem" : "learners"}
+                        </span>
+                        <span>
+                          {course.completionRate ?? 0}% {locale === "vi" ? "hoàn thành TB" : "avg. complete"}
                         </span>
                       </div>
                     </div>

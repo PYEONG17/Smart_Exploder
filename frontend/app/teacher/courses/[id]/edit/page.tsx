@@ -32,6 +32,7 @@ import {
   reorderLessonVideos,
   updateCourse,
   updateLesson,
+  updateLessonVideoMetadata,
   createLessonQuiz,
   createLessonMaterial,
   answerLessonQuestion,
@@ -85,7 +86,6 @@ type VideoCheckpointDraft = {
   optionsEn: string[];
   correctIndex: number;
   rewindSeconds: string;
-  skipAfterAttempts: string;
 };
 
 type AdditionalVideoActivityType = Exclude<
@@ -183,7 +183,6 @@ function createVideoCheckpointDraft(timestamp = "60"): VideoCheckpointDraft {
     optionsEn: ["", "", "", ""],
     correctIndex: 0,
     rewindSeconds: "20",
-    skipAfterAttempts: "",
   };
 }
 
@@ -243,7 +242,7 @@ export default function CourseEditStudioPage({
 
   useEffect(() => {
     let isActive = true;
-    fetchCourseById(id)
+    fetchCourseById(id, token)
       .then((courseData) => {
         if (!courseData) throw new Error("Không tìm thấy khóa học.");
         if (!isActive) return;
@@ -327,6 +326,12 @@ export default function CourseEditStudioPage({
   const [videoTitle, setVideoTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState<number | null>(null);
+  const [videoDraftSelectedTime, setVideoDraftSelectedTime] = useState("0");
+  const [savedVideoSelectedTimes, setSavedVideoSelectedTimes] = useState<Record<string, string>>({});
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [editingVideoTitle, setEditingVideoTitle] = useState("");
+  const [isSavingVideoTitle, setIsSavingVideoTitle] = useState(false);
   const [videoSourceMode, setVideoSourceMode] = useState<"url" | "file">(
     "url",
   );
@@ -466,7 +471,7 @@ export default function CourseEditStudioPage({
     }
     try {
       await deleteLesson(token, lesson.id);
-      setLessons((prev) => prev.filter((item) => item.id !== lesson.id));
+      setLessons((prev) => prev.filter((item) => item.id !== lesson.id).map((item, index) => ({ ...item, order: index + 1 })));
       setMaterials((prev) => prev.filter((item) => item.lessonId !== lesson.id));
       toast.success("Đã xóa bài học.");
     } catch (deleteError) {
@@ -491,6 +496,20 @@ export default function CourseEditStudioPage({
       await deleteLessonContent(token, kind, contentId);
       if (kind === "materials") {
         setMaterials((prev) => prev.filter((item) => item.id !== contentId));
+      } else if (kind === "videos") {
+        setLessons((prev) => prev.map((lesson) => {
+          const videos = (lesson.videos ?? []).filter((item) => item.id !== contentId);
+          const allDurationsKnown = videos.length > 0 && videos.every((video) => video.durationSeconds != null);
+          return {
+            ...lesson,
+            videos,
+            duration: videos.length === 0
+              ? undefined
+              : allDurationsKnown
+                ? `${Math.max(1, Math.round(videos.reduce((sum, video) => sum + (video.durationSeconds ?? 0), 0) / 60))} phút`
+                : lesson.duration,
+          };
+        }));
       } else {
         setLessons((prev) =>
           prev.map((lesson) => ({
@@ -687,8 +706,6 @@ export default function CourseEditStudioPage({
     if (videoSourceMode === "url" && !URL.canParse(videoUrl.trim())) {
       return toast.error("Link video không hợp lệ.");
     }
-    const isYouTubeVideo =
-      videoSourceMode === "url" && Boolean(getYouTubeEmbedUrl(videoUrl.trim()));
     const checkpoints = videoCheckpoints.map((checkpoint) => ({
       timestamp: Number(checkpoint.timestamp),
       question: checkpoint.question.trim(),
@@ -697,10 +714,6 @@ export default function CourseEditStudioPage({
       optionsEn: checkpoint.optionsEn.map((option) => option.trim()),
       correctIndex: checkpoint.correctIndex,
       rewindSeconds: Number(checkpoint.rewindSeconds),
-      skipAfterAttempts:
-        checkpoint.skipAfterAttempts.trim() === ""
-          ? undefined
-          : Number(checkpoint.skipAfterAttempts),
     }));
     if (
       checkpoints.some(
@@ -720,15 +733,11 @@ export default function CourseEditStudioPage({
         (checkpoint) =>
           !Number.isInteger(checkpoint.rewindSeconds) ||
           checkpoint.rewindSeconds < 0 ||
-          checkpoint.rewindSeconds > 3600 ||
-          (checkpoint.skipAfterAttempts !== undefined &&
-            (!Number.isInteger(checkpoint.skipAfterAttempts) ||
-              checkpoint.skipAfterAttempts < 1 ||
-              checkpoint.skipAfterAttempts > 10)),
+          checkpoint.rewindSeconds > 3600,
       )
     ) {
       return toast.error(
-        "Số giây tua lại phải từ 0–3600 và số lần sai để bỏ qua từ 1–10 (hoặc để trống).",
+        "Số giây tua lại phải từ 0–3600.",
       );
     }
     const additionalActivities: NonNullable<
@@ -767,16 +776,6 @@ export default function CourseEditStudioPage({
       return toast.error("Mỗi ghi chú hoặc hoạt động cần có thời điểm riêng.");
     }
     if (
-      isYouTubeVideo &&
-      (videoCheckpoints.length > 0 ||
-        additionalVideoActivities.length > 0 ||
-        videoNotes.length > 0)
-    ) {
-      return toast.error(
-        "Video YouTube phát được như bài giảng, nhưng ghi chú đánh dấu và checkpoint theo thời gian hiện chỉ hỗ trợ khi tải video lên hoặc dùng URL tệp video trực tiếp.",
-      );
-    }
-    if (
       videoNotes.some(
         (note) =>
           !Number.isFinite(Number(note.timestamp)) ||
@@ -810,7 +809,6 @@ export default function CourseEditStudioPage({
             : undefined,
           correctIndex: checkpoint.correctIndex,
           rewindSeconds: checkpoint.rewindSeconds,
-          skipAfterAttempts: checkpoint.skipAfterAttempts,
         },
       }));
       const noteActivities: NonNullable<
@@ -821,8 +819,9 @@ export default function CourseEditStudioPage({
         content: { text: note.text.trim() },
       }));
       const data: CreateLessonVideoInput = {
-        title: videoTitle.trim() || undefined,
+        title: videoTitle.trim() || `${lessons.find((item) => item.id === lessonId)?.title ?? "Bài học"} - Video phần ${(lessons.find((item) => item.id === lessonId)?.videos?.length ?? 0) + 1}`,
         sourceLanguage: contentLanguage,
+        durationSeconds: videoDurationSeconds ?? undefined,
         url:
           uploadedVideo?.url ??
           (videoSourceMode === "url" ? videoUrl.trim() : ""),
@@ -846,6 +845,9 @@ export default function CourseEditStudioPage({
                   ...(lesson.videos ?? []),
                   savedVideo as NonNullable<Lesson["videos"]>[number],
                 ],
+                duration: [...(lesson.videos ?? []), savedVideo as NonNullable<Lesson["videos"]>[number]].every((video) => video.durationSeconds != null)
+                  ? `${Math.max(1, Math.round([...(lesson.videos ?? []), savedVideo as NonNullable<Lesson["videos"]>[number]].reduce((sum, video) => sum + (video.durationSeconds ?? 0), 0) / 60))} phút`
+                  : lesson.duration,
               }
             : lesson,
         ),
@@ -853,6 +855,7 @@ export default function CourseEditStudioPage({
       setVideoTitle("");
       setVideoUrl("");
       setVideoFile(null);
+      setVideoDurationSeconds(null);
       setVideoSourceMode("url");
       setVideoCheckpoints([]);
       setVideoNotes([]);
@@ -991,6 +994,53 @@ export default function CourseEditStudioPage({
       );
     } finally {
       setAnsweringQuestionId(null);
+    }
+  };
+
+  const handleSaveVideoTitle = async (lessonId: string, videoId: string) => {
+    if (!token || editingVideoTitle.trim().length < 2) {
+      toast.error("Tên video cần có ít nhất 2 ký tự.");
+      return;
+    }
+    setIsSavingVideoTitle(true);
+    try {
+      const updated = await updateLessonVideoMetadata(token, videoId, {
+        title: editingVideoTitle.trim(),
+        sourceLanguage: contentLanguage,
+      });
+      setLessons((current) => current.map((lesson) => lesson.id !== lessonId
+        ? lesson
+        : { ...lesson, videos: (lesson.videos ?? []).map((video) => video.id === videoId ? { ...video, ...updated } : video) },
+      ));
+      setEditingVideoId(null);
+      toast.success("Đã cập nhật tên video.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể cập nhật tên video.");
+    } finally {
+      setIsSavingVideoTitle(false);
+    }
+  };
+
+  const handleVideoDurationDetected = async (lessonId: string, videoId: string, durationSeconds: number) => {
+    if (!token) return;
+    const existing = lessons.find((lesson) => lesson.id === lessonId)?.videos?.find((video) => video.id === videoId);
+    if (existing?.durationSeconds === durationSeconds) return;
+    try {
+      const updated = await updateLessonVideoMetadata(token, videoId, { durationSeconds });
+      setLessons((current) => current.map((lesson) => {
+        if (lesson.id !== lessonId) return lesson;
+        const videos = (lesson.videos ?? []).map((video) => video.id === videoId ? { ...video, ...updated } : video);
+        const allDurationsKnown = videos.length > 0 && videos.every((video) => video.durationSeconds != null);
+        return {
+          ...lesson,
+          videos,
+          duration: allDurationsKnown
+            ? `${Math.max(1, Math.round(videos.reduce((sum, video) => sum + (video.durationSeconds ?? 0), 0) / 60))} phút`
+            : lesson.duration,
+        };
+      }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể lưu thời lượng video.");
     }
   };
 
@@ -1338,14 +1388,17 @@ export default function CourseEditStudioPage({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
-                    {contentLanguage === "vi" ? "Mô tả bài học (không bắt buộc)" : "Lesson description (optional)"}
+                    {contentLanguage === "vi" ? "Nội dung lý thuyết / bài giảng (không bắt buộc)" : "Theory / lesson content (optional)"}
                   </label>
                   <textarea
-                    rows={3}
+                    rows={8}
+                    maxLength={5000}
                     value={newLessonDescription}
                     onChange={(e) => setNewLessonDescription(e.target.value)}
+                    placeholder={contentLanguage === "vi" ? "Nhập nội dung lý thuyết, các ý chính và ví dụ cho bài học..." : "Enter the lesson theory, key points, and examples..."}
                     className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none resize-none"
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">{contentLanguage === "vi" ? "Học sinh xem nội dung này trong tab Lý thuyết. Có thể xuống dòng để chia ý." : "Students see this in the Theory tab. Use line breaks to organize sections."}</p>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
@@ -1564,33 +1617,13 @@ export default function CourseEditStudioPage({
                               type="url"
                               required
                               value={videoUrl}
-                              onChange={(event) => setVideoUrl(event.target.value)}
+                              onChange={(event) => { setVideoUrl(event.target.value); setVideoDurationSeconds(null); setVideoDraftSelectedTime("0"); }}
                               placeholder="Dán link YouTube, ví dụ: https://youtu.be/VIDEO_ID"
                               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                             />
-                            {getYouTubeEmbedUrl(videoUrl.trim()) ? (
-                              <div className="aspect-video max-w-xl overflow-hidden rounded-lg bg-black">
-                                <iframe
-                                  src={getYouTubeEmbedUrl(videoUrl.trim()) ?? ""}
-                                  title="Xem trước video YouTube"
-                                  className="h-full w-full"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                  referrerPolicy="strict-origin-when-cross-origin"
-                                  allowFullScreen
-                                />
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">
-                                Hỗ trợ link YouTube watch, youtu.be, Shorts hoặc live; cũng có thể dùng URL MP4/WebM trực tiếp.
-                              </p>
-                            )}
-                            {(videoCheckpoints.length > 0 ||
-                              additionalVideoActivities.length > 0) &&
-                              getYouTubeEmbedUrl(videoUrl.trim()) && (
-                                <p className="text-xs text-amber-700">
-                                  Muốn đặt checkpoint tương tác theo thời gian? Hãy tải tệp video lên hoặc dùng URL tệp video trực tiếp.
-                                </p>
-                              )}
+                            <p className="text-xs text-muted-foreground">
+                              Chọn thời điểm trên video ở khung xem bên dưới để thêm checkpoint tại đúng mốc đó.
+                            </p>
                           </div>
                         ) : (
                           <div className="space-y-1">
@@ -1602,9 +1635,11 @@ export default function CourseEditStudioPage({
                               required
                               accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
                               disabled={isSavingContent}
-                              onChange={(event) =>
-                                setVideoFile(event.currentTarget.files?.[0] ?? null)
-                              }
+                              onChange={(event) => {
+                                setVideoFile(event.currentTarget.files?.[0] ?? null);
+                                setVideoDurationSeconds(null);
+                                setVideoDraftSelectedTime("0");
+                              }}
                               className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-blue-500/10 file:px-3 file:py-2 file:font-semibold file:text-blue-700 hover:file:bg-blue-500/20"
                             />
                             {videoFile && (
@@ -1615,6 +1650,16 @@ export default function CourseEditStudioPage({
                             )}
                           </div>
                         )}
+
+                        <VideoTimePicker
+                          src={videoSourceMode === "url" ? trimmedVideoUrl : newVideoPreviewUrl}
+                          file={newVideoPreviewFile}
+                          value={videoDraftSelectedTime}
+                          onChange={setVideoDraftSelectedTime}
+                          onDurationChange={setVideoDurationSeconds}
+                          markers={newVideoMarkers}
+                          openByDefault
+                        />
 
                         <div className="space-y-3 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3">
                           <div className="flex items-center justify-between gap-3">
@@ -1641,12 +1686,7 @@ export default function CourseEditStudioPage({
                                 setVideoNotes((current) => [
                                   ...current,
                                   {
-                                    timestamp: current.length
-                                      ? String(
-                                          Number(current[current.length - 1].timestamp) +
-                                            60,
-                                        )
-                                      : "30",
+                                    timestamp: videoDraftSelectedTime,
                                     text: "",
                                   },
                                 ])
@@ -1682,7 +1722,7 @@ export default function CourseEditStudioPage({
                                   }
                                   className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                                 />
-                              </label><VideoTimePicker src={newVideoPreviewUrl} file={newVideoPreviewFile} value={note.timestamp} integer onChange={(timestamp) => setVideoNotes((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, timestamp } : item))} markers={newVideoMarkers} /></div>
+                                  </label></div>
                               <label className="text-xs text-muted-foreground">
                                 Nội dung ghi chú
                                 <textarea
@@ -1737,19 +1777,9 @@ export default function CourseEditStudioPage({
                                 20
                               }
                               onClick={() => {
-                                const nextTimestamp = videoCheckpoints.length
-                                  ? String(
-                                      Math.max(
-                                        ...videoCheckpoints.map(
-                                          (checkpoint) =>
-                                            Number(checkpoint.timestamp) || 0,
-                                        ),
-                                      ) + 60,
-                                    )
-                                  : "60";
                                 setVideoCheckpoints((current) => [
                                   ...current,
-                                  createVideoCheckpointDraft(nextTimestamp),
+                                  createVideoCheckpointDraft(videoDraftSelectedTime),
                                 ]);
                               }}
                             >
@@ -1807,7 +1837,7 @@ export default function CourseEditStudioPage({
                                       }
                                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                                     />
-                                  </label><VideoTimePicker src={newVideoPreviewUrl} file={newVideoPreviewFile} value={checkpoint.timestamp} integer onChange={(timestamp) => setVideoCheckpoints((current) => current.map((item, index) => index === checkpointIndex ? { ...item, timestamp } : item))} markers={newVideoMarkers} /></div>
+                                  </label></div>
                                   <input
                                     value={checkpoint.question}
                                     onChange={(event) =>
@@ -1955,31 +1985,6 @@ export default function CourseEditStudioPage({
                                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
                                     />
                                   </label>
-                                  <label className="text-xs text-muted-foreground">
-                                    Cho bỏ qua sau số lần sai
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      max="10"
-                                      step="1"
-                                      value={checkpoint.skipAfterAttempts}
-                                      placeholder="Trống = phải đúng mới đi tiếp"
-                                      onChange={(event) =>
-                                        setVideoCheckpoints((current) =>
-                                          current.map((item, index) =>
-                                            index === checkpointIndex
-                                              ? {
-                                                  ...item,
-                                                  skipAfterAttempts:
-                                                    event.target.value,
-                                                }
-                                              : item,
-                                          ),
-                                        )
-                                      }
-                                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-                                    />
-                                  </label>
                                 </div>
                               </fieldset>
                             ),
@@ -2005,23 +2010,10 @@ export default function CourseEditStudioPage({
                                 20
                               }
                               onClick={() => {
-                                const timestamps = [
-                                  ...videoCheckpoints.map(
-                                    (checkpoint) =>
-                                      Number(checkpoint.timestamp) || 0,
-                                  ),
-                                  ...additionalVideoActivities.map(
-                                    (activity) =>
-                                      Number(activity.timestamp) || 0,
-                                  ),
-                                ];
-                                const nextTimestamp = timestamps.length
-                                  ? String(Math.max(...timestamps) + 60)
-                                  : "120";
                                 setAdditionalVideoActivities((current) => [
                                   ...current,
                                   createAdditionalVideoActivityDraft(
-                                    nextTimestamp,
+                                    videoDraftSelectedTime,
                                   ),
                                 ]);
                               }}
@@ -2077,7 +2069,7 @@ export default function CourseEditStudioPage({
                                     }
                                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                                   />
-                                </label><VideoTimePicker src={newVideoPreviewUrl} file={newVideoPreviewFile} value={activity.timestamp} onChange={(timestamp) => setAdditionalVideoActivities((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, timestamp } : item))} markers={newVideoMarkers} /></div>
+                                </label></div>
                                 <label className="space-y-1 text-xs">
                                   <span>Loại hoạt động</span>
                                   <select
@@ -2383,10 +2375,35 @@ export default function CourseEditStudioPage({
                             {videoIndex + 1}.
                           </span>
                           <PlayCircle className="h-4 w-4 shrink-0 text-blue-500" />
-                          <span className="truncate font-semibold text-foreground">
-                            {video.title}{" "}
-                            {video.titleEn ? `· ${video.titleEn}` : ""}
-                          </span>
+                          {editingVideoId === video.id ? (
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                              <input
+                                value={editingVideoTitle}
+                                onChange={(event) => setEditingVideoTitle(event.target.value)}
+                                aria-label="Tên video"
+                                className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 font-semibold"
+                              />
+                              <Button type="button" size="sm" disabled={isSavingVideoTitle} onClick={() => void handleSaveVideoTitle(lesson.id, video.id)}>
+                                {isSavingVideoTitle ? "Đang lưu" : "Lưu"}
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" disabled={isSavingVideoTitle} onClick={() => setEditingVideoId(null)}>Hủy</Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="truncate font-semibold text-foreground">
+                                {video.title}{video.titleEn ? ` · ${video.titleEn}` : ""}
+                                {video.durationSeconds != null ? ` · ${Math.round(video.durationSeconds / 60)} phút` : ""}
+                              </span>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="shrink-0"
+                                aria-label="Sửa tên video"
+                                onClick={() => { setEditingVideoId(video.id); setEditingVideoTitle(video.title); }}
+                              ><Pencil className="h-3.5 w-3.5" /></Button>
+                            </>
+                          )}
                           <a
                             href={video.url}
                             target="_blank"
@@ -2423,11 +2440,22 @@ export default function CourseEditStudioPage({
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
+                        <VideoTimePicker
+                          src={video.url}
+                          value={savedVideoSelectedTimes[video.id] ?? "0"}
+                          onChange={(timestamp) =>
+                            setSavedVideoSelectedTimes((current) => ({
+                              ...current,
+                              [video.id]: timestamp,
+                            }))
+                          }
+                          onDurationChange={(seconds) => void handleVideoDurationDetected(lesson.id, video.id, seconds)}
+                        />
                         {token && (
                           <VideoCheckpointManager
                             token={token}
                             videoId={video.id}
-                            videoUrl={video.url}
+                            selectedTime={savedVideoSelectedTimes[video.id] ?? "0"}
                           />
                         )}
                         {openAnalyticsVideoId === video.id && (

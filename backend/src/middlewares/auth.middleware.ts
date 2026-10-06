@@ -24,6 +24,23 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header) return next();
+  if (!header.startsWith("Bearer ")) throw new AppError("Invalid authorization header", 401);
+  const token = header.slice("Bearer ".length).trim();
+  if (!token) throw new AppError("Authentication required", 401);
+  const payload = verifyAccessToken(token);
+  req.user = {
+    id: payload.sub,
+    email: payload.email,
+    role: payload.role,
+    tenantId: payload.tenantId,
+    membershipId: payload.membershipId,
+  };
+  next();
+}
+
 export function requireRole(
   ...allowedRoles: NonNullable<Request["user"]>["role"][]
 ) {

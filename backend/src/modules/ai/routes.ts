@@ -10,6 +10,7 @@ import {
   generateCourseOutline,
   generateLessonDraft,
 } from "./studio.controller.js";
+import { lessonTutorChat } from "./lesson-tutor.controller.js";
 
 const router = Router();
 const windowMs = 60_000;
@@ -54,6 +55,10 @@ const limitChatRequests = createUserRateLimiter(
   10,
   "Bạn đã gửi nhiều câu hỏi liên tiếp. Vui lòng thử lại sau một phút.",
 );
+const limitLessonTutorRequests = createUserRateLimiter(
+  15,
+  "Bạn đã hỏi quá nhiều câu liên tiếp. Vui lòng thử lại sau một phút.",
+);
 const limitAssessmentRequests = createUserRateLimiter(
   3,
   "Bạn đã tạo nhiều đề liên tiếp. Vui lòng thử lại sau một phút.",
@@ -66,6 +71,7 @@ const limitStudioRequests = createUserRateLimiter(
 const teacherAi = [requireAuth, requireRole("TEACHER", "ADMIN"), limitStudioRequests];
 
 router.post("/chat", requireAuth, limitChatRequests, chatWithGemini);
+router.post("/lesson-tutor", requireAuth, limitLessonTutorRequests, lessonTutorChat);
 router.post("/studio/outline", ...teacherAi, generateCourseOutline);
 router.post("/studio/lessons/:lessonId/draft", ...teacherAi, generateLessonDraft);
 router.post("/studio/lessons/:lessonId/resources", ...teacherAi, findLessonResources);

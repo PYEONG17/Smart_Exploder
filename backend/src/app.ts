@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import prisma from "./config/db.js";
 
 import courseRoutes from "./modules/courses/course.routes.js";
 import classRoutes from "./modules/classes/class.routes.js";
@@ -34,14 +35,28 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.resolve("uploads")));
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "SmartExplorer API is running",
-    data: {
-      timestamp: new Date().toISOString(),
-    },
-  });
+app.get("/api/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      success: true,
+      message: "SmartExplorer API and database are running",
+      data: {
+        timestamp: new Date().toISOString(),
+        database: "connected",
+      },
+    });
+  } catch (error) {
+    console.error("Health check database connection failed:", error);
+    res.status(503).json({
+      success: false,
+      message: "API is running, but the database is unavailable",
+      data: {
+        timestamp: new Date().toISOString(),
+        database: "disconnected",
+      },
+    });
+  }
 });
 
 // ── API Routes ────────────────────────────────────────────────────────────────

@@ -11,6 +11,9 @@ const periodDays: Record<AnalyticsPeriod, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
+  "100d": 100,
+  "200d": 200,
+  "500d": 500,
 };
 const MAX_HEARTBEAT_GAP_MS = 30_000;
 const MAX_PLAYBACK_RATE = 2.5;
