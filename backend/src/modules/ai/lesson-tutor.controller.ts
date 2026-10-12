@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { chatWithGeminiText, type GeminiChatMessage } from "./gemini.js";
+import { chatWithGroq, type GroqChatMessage } from "./groq.js";
 import { buildLessonKnowledge } from "./studio.controller.js";
 
 // ── Request validation ───────────────────────────────────────────────────────
@@ -82,8 +82,8 @@ function buildSystemPrompt(
     "",
     "## Response Format",
     isVietnamese
-      ? "Respond primarily in Vietnamese with key terms also shown in English when helpful."
-      : "Respond primarily in English with key terms also shown in Vietnamese when helpful.",
+      ? "Respond primarily in Vietnamese. Use short, clear sentences and show important STEM words in simple English. Add a short, easy English sentence for each key idea so the student can learn both languages."
+      : "Respond in simple, clear English that suits the student's grade. Use short sentences, common words, and briefly explain new STEM words. Add Vietnamese support for important words or steps when it helps the student understand.",
     "",
     "Structure every answer with these sections (use markdown headings):",
     "### 📝 Giải thích / Explanation",
@@ -131,22 +131,22 @@ export const lessonTutorChat = async (
 
     const systemPrompt = buildSystemPrompt(lessonContext, lessonKnowledge);
 
-    // Build messages array for Gemini
-    const messages: GeminiChatMessage[] = [];
+    // Keep the provider credential on the server and adapt the tutor messages to Groq.
+    const messages: GroqChatMessage[] = [
+      { role: "system", content: systemPrompt },
+    ];
 
-    // Add conversation history
     for (const msg of history) {
       messages.push({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+        role: msg.role,
+        content: msg.content,
       });
     }
 
-    // Add the current user prompt
-    messages.push({ role: "user", parts: [{ text: prompt }] });
+    messages.push({ role: "user", content: prompt });
 
-    const reply = await chatWithGeminiText(systemPrompt, messages, {
-      maxOutputTokens: 2048,
+    const reply = await chatWithGroq(messages, {
+      maxTokens: 2048,
       temperature: 0.6,
     });
 
@@ -154,7 +154,7 @@ export const lessonTutorChat = async (
       success: true,
       data: {
         reply,
-        provider: "gemini",
+        provider: "groq",
       },
     });
   } catch (error: unknown) {
@@ -173,7 +173,7 @@ export const lessonTutorChat = async (
 
     const isRateLimited = status === 429;
     console.error(
-      "Lesson tutor (Gemini) failed:",
+      "Lesson tutor (Groq) failed:",
       error instanceof Error ? error.message : "Unknown error",
     );
     res.status(isRateLimited ? 429 : status ?? 502).json({

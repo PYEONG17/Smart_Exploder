@@ -22,30 +22,42 @@ import { toast } from "sonner";
 import { sendLessonTutorMessage } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { useLang } from "@/contexts/LanguageContext";
 import type { AIChatMessage } from "@/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const quickPrompts = [
-  {
-    icon: Calculator,
-    label: "Giải bài toán hình học lớp 8",
-    query:
-      "Hãy giải từng bước bài toán tính diện tích tam giác cân khi biết cạnh đáy và chiều cao.",
-  },
-  {
-    icon: Lightbulb,
-    label: "Giải thích Định luật Newton",
-    query:
-      "Giải thích Định luật I Newton về quán tính bằng ví dụ dễ hiểu cho học sinh.",
-  },
-  {
-    icon: BookOpen,
-    label: "Từ vựng STEM Tiếng Anh",
-    query:
-      "Liệt kê 10 từ vựng tiếng Anh chuyên ngành Toán và Khoa học phổ biến lớp 7 kèm nghĩa.",
-  },
-];
+function getQuickPrompts(isVietnamese: boolean) {
+  return [
+    {
+      icon: Calculator,
+      label: isVietnamese
+        ? "Giải bài toán hình học lớp 8"
+        : "Explain a Grade 8 geometry problem",
+      query: isVietnamese
+        ? "Hãy giải từng bước bài toán tính diện tích tam giác cân khi biết cạnh đáy và chiều cao."
+        : "Please show me, step by step, how to find the area of an isosceles triangle when I know its base and height. Use simple English.",
+    },
+    {
+      icon: Lightbulb,
+      label: isVietnamese
+        ? "Giải thích Định luật Newton"
+        : "Explain Newton's First Law",
+      query: isVietnamese
+        ? "Giải thích Định luật I Newton về quán tính bằng ví dụ dễ hiểu cho học sinh."
+        : "Please explain Newton's First Law with one simple, everyday example. Use easy English.",
+    },
+    {
+      icon: BookOpen,
+      label: isVietnamese
+        ? "Từ vựng STEM Tiếng Anh"
+        : "Learn STEM words in English",
+      query: isVietnamese
+        ? "Liệt kê 10 từ vựng tiếng Anh chuyên ngành Toán và Khoa học phổ biến lớp 7 kèm nghĩa."
+        : "Teach me 10 common Grade 7 math and science words. Give a simple meaning and a short example for each word.",
+    },
+  ];
+}
 
 const gradeOptions = [
   "K1",
@@ -64,6 +76,9 @@ const gradeOptions = [
 export default function AIPage() {
   const { isLoading: isAuthLoading } = useAuthGuard();
   const { token } = useAuth();
+  const { locale } = useLang();
+  const isVietnamese = locale === "vi";
+  const quickPrompts = getQuickPrompts(isVietnamese);
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -84,7 +99,11 @@ export default function AIPage() {
     const text = textToSend || inputValue;
     if (!text.trim() || isTyping) return;
     if (!token) {
-      toast.error("Đăng nhập để sử dụng trợ lý AI.");
+      toast.error(
+        isVietnamese
+          ? "Đăng nhập để sử dụng trợ lý AI."
+          : "Please sign in to use the AI tutor.",
+      );
       return;
     }
 
@@ -99,7 +118,7 @@ export default function AIPage() {
     setIsTyping(true);
 
     try {
-      // Gọi API Gemini
+      // AI requests are sent through the backend so provider keys stay private.
       const formattedHistory = messages.slice(-10).map((message) => ({
         role: message.role,
         content: message.content,
@@ -108,7 +127,7 @@ export default function AIPage() {
       const aiReply = await sendLessonTutorMessage(token, text, formattedHistory, {
         grade: gradeLevel || undefined,
         subject: "Mathematics and Science",
-        locale: "vi",
+        locale,
       });
 
       setMessages((prev) => [
@@ -123,7 +142,9 @@ export default function AIPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Lỗi khi gọi AI. Vui lòng thử lại sau.",
+          : isVietnamese
+            ? "Lỗi khi gọi AI. Vui lòng thử lại sau."
+            : "The AI tutor could not reply. Please try again.",
       );
       console.error(error);
     } finally {
@@ -134,7 +155,7 @@ export default function AIPage() {
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-background pt-24 text-center text-muted-foreground">
-        Đang kiểm tra đăng nhập...
+        {isVietnamese ? "Đang kiểm tra đăng nhập..." : "Checking sign-in..."}
       </div>
     );
   }
@@ -142,7 +163,9 @@ export default function AIPage() {
   const handleCopy = (content: string, id: string) => {
     navigator.clipboard.writeText(content);
     setCopiedId(id);
-    toast.success("Đã sao chép nội dung vào bộ nhớ tạm");
+    toast.success(
+      isVietnamese ? "Đã sao chép nội dung." : "Message copied.",
+    );
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -158,7 +181,7 @@ export default function AIPage() {
             className="w-full justify-start gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-sm shadow-blue-600/15 transition-transform hover:-translate-y-0.5 hover:from-blue-700 hover:to-cyan-600"
           >
             <PlusCircle className="w-4 h-4" />
-            Đoạn chat mới
+            {isVietnamese ? "Đoạn chat mới" : "New chat"}
           </Button>
           <Button
             variant="ghost"
@@ -172,7 +195,7 @@ export default function AIPage() {
 
         <div className="flex-1 overflow-y-auto p-3">
           <div className="mb-3 px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            Lịch sử trò chuyện
+            {isVietnamese ? "Lịch sử trò chuyện" : "Chat history"}
           </div>
           <div className="space-y-1">
             {mockAIChatHistory.map((chat) => (
@@ -190,7 +213,7 @@ export default function AIPage() {
       {isSidebarOpen && (
         <button
           type="button"
-          aria-label="Close chat history"
+          aria-label={isVietnamese ? "Đóng lịch sử trò chuyện" : "Close chat history"}
           className="absolute inset-0 z-10 bg-slate-950/30 backdrop-blur-[2px] lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -204,6 +227,7 @@ export default function AIPage() {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
+            aria-label={isVietnamese ? "Mở lịch sử trò chuyện" : "Open chat history"}
           >
             <Menu className="w-5 h-5" />
           </Button>
@@ -223,13 +247,18 @@ export default function AIPage() {
                 <div className="mb-5 grid h-16 w-16 place-items-center rounded-[1.35rem] border border-blue-500/15 bg-gradient-to-br from-blue-500/15 to-cyan-400/10 text-blue-600 shadow-sm dark:text-blue-300">
                   <Bot className="h-8 w-8" />
                 </div>
-                <div className="eyebrow mb-4">AI learning companion</div>
+                <div className="eyebrow mb-4">
+                  {isVietnamese ? "Bạn đồng hành học tập AI" : "AI learning companion"}
+                </div>
                 <h2 className="mb-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">
-                  Trợ lý giải đáp bài giảng (Gemini)
+                  {isVietnamese
+                    ? "Trợ lý giải đáp bài giảng (Groq)"
+                    : "Your STEM learning tutor (Groq)"}
                 </h2>
                 <p className="mb-8 max-w-md text-sm leading-7 text-muted-foreground">
-                  Hỏi bất kỳ điều gì về môn Toán, Khoa học, từ vựng STEM hoặc
-                  bài tập trên lớp.
+                  {isVietnamese
+                    ? "Hỏi về Toán, Khoa học, từ vựng STEM hoặc bài tập trên lớp. Bạn có thể hỏi bằng tiếng Việt hoặc tiếng Anh."
+                    : "Ask about math, science, STEM words, or schoolwork. You can write in English or Vietnamese."}
                 </p>
 
                 {/* Quick Prompts */}
@@ -282,7 +311,7 @@ export default function AIPage() {
                       <button
                         onClick={() => handleCopy(msg.content, msg.id)}
                         className="absolute top-3 right-3 p-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Sao chép"
+                        title={isVietnamese ? "Sao chép" : "Copy"}
                       >
                         {copiedId === msg.id ? (
                           <Check className="w-3.5 h-3.5 text-emerald-500" />
@@ -345,16 +374,24 @@ export default function AIPage() {
               >
                 {gradeLevel
                   ? `Smart STEM AI · ${gradeLevel}`
-                  : "Smart STEM AI · Auto-adapt K1–Grade 9"}
+                  : isVietnamese
+                    ? "Smart STEM AI · Tự điều chỉnh K1–Lớp 9"
+                    : "Smart STEM AI · Adapts to K1–Grade 9"}
               </label>
               <select
                 id="tutor-grade-level"
                 value={gradeLevel}
                 onChange={(event) => setGradeLevel(event.target.value)}
                 className="max-w-40 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary/50"
-                aria-label="Choose your grade level"
+                aria-label={
+                  isVietnamese ? "Chọn khối lớp" : "Choose your grade level"
+                }
               >
-                <option value="">Auto-adapt · K1–Grade 9</option>
+                <option value="">
+                  {isVietnamese
+                    ? "Tự điều chỉnh · K1–Lớp 9"
+                    : "Auto-adapt · K1–Grade 9"}
+                </option>
                 {gradeOptions.map((grade) => (
                   <option key={grade} value={grade}>
                     {grade}
@@ -371,7 +408,11 @@ export default function AIPage() {
             >
               <textarea
                 className="max-h-36 min-h-[56px] w-full resize-none bg-transparent py-4 pl-4 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none scrollbar-hide"
-                placeholder="Hỏi AI bất kỳ bài toán hoặc khái niệm STEM nào..."
+                placeholder={
+                  isVietnamese
+                    ? "Hỏi AI về bài Toán hoặc khái niệm STEM..."
+                    : "Ask about a math problem or STEM idea..."
+                }
                 rows={1}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -400,8 +441,9 @@ export default function AIPage() {
               </Button>
             </form>
             <div className="text-center mt-2 text-[11px] text-muted-foreground">
-              SmartExplorer AI có thể cung cấp gợi ý giải bài tập. Hãy kiểm tra
-              lại kết quả.
+              {isVietnamese
+                ? "SmartExplorer AI có thể mắc lỗi. Hãy kiểm tra lại câu trả lời."
+                : "SmartExplorer AI can make mistakes. Please check the answer."}
             </div>
           </div>
         </div>

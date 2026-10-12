@@ -1,6 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 import { translations, type Locale, type TranslationKey } from "@/lib/i18n";
 
 interface LangContextValue {
@@ -13,21 +18,40 @@ interface LangContextValue {
 const LangContext = createContext<LangContextValue | null>(null);
 
 const STORAGE_KEY = "smartexplorer_locale";
+const LOCALE_CHANGE_EVENT = "smartexplorer:locale-change";
+
+function subscribeToLocaleChanges(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(LOCALE_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(LOCALE_CHANGE_EVENT, onChange);
+  };
+}
+
+function getLocaleSnapshot(): Locale {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved === "en" || saved === "vi" ? saved : "vi";
+}
+
+function getServerLocale(): Locale {
+  return "vi";
+}
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("vi");
+  const locale = useSyncExternalStore(
+    subscribeToLocaleChanges,
+    getLocaleSnapshot,
+    getServerLocale,
+  );
 
-  // Hydrate from localStorage after mount (avoids SSR mismatch)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
-    if (saved && (saved === "vi" || saved === "en")) {
-      setLocaleState(saved);
-    }
-  }, []);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setLocale = (l: Locale) => {
-    setLocaleState(l);
     localStorage.setItem(STORAGE_KEY, l);
+    window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT));
   };
 
   const toggleLocale = () => setLocale(locale === "vi" ? "en" : "vi");

@@ -16,6 +16,7 @@ import {
   Box,
   Bot,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -135,9 +136,11 @@ export default function LessonDetailPage({
   const [lessonQuiz, setLessonQuiz] = useState<LessonQuiz | null>(null);
   const [lessonQuestions, setLessonQuestions] = useState<LessonQuestion[]>([]);
   const [questionText, setQuestionText] = useState("");
-  const [questionLanguage, setQuestionLanguage] = useState<"vi" | "en">(
-    isVietnamese ? "vi" : "en",
-  );
+  const [questionLanguageOverride, setQuestionLanguageOverride] = useState<
+    "vi" | "en" | null
+  >(null);
+  const questionLanguage =
+    questionLanguageOverride ?? (isVietnamese ? "vi" : "en");
   const [isPostingQuestion, setIsPostingQuestion] = useState(false);
   const [questionLoadError, setQuestionLoadError] = useState<string | null>(
     null,
@@ -370,8 +373,14 @@ export default function LessonDetailPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background pt-24 text-center text-muted-foreground">
-        Đang tải bài học...
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">Đang tải bài học...</p>
+        </div>
       </div>
     );
   }
@@ -379,13 +388,15 @@ export default function LessonDetailPage({
   if (isLessonLocked) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6 pt-20 text-center">
-        <div className="max-w-md rounded-2xl border border-border bg-card p-8">
-          <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+        <div className="max-w-md rounded-3xl border border-border/60 bg-card/80 p-10 shadow-2xl backdrop-blur-xl">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
+            <Lock className="h-8 w-8 text-muted-foreground" />
+          </div>
           <h1 className="text-xl font-bold">{isVietnamese ? "Bài học đang bị khóa" : "Lesson locked"}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             {isVietnamese ? "Hoàn thành các bài học trước trong khóa học để mở bài này." : "Complete the earlier lessons in this course to unlock this one."}
           </p>
-          <Button className="mt-5" onClick={() => router.push(`/courses/${id}`)}>
+          <Button className="mt-6" onClick={() => router.push(`/courses/${id}`)}>
             {isVietnamese ? "Quay lại khóa học" : "Back to course"}
           </Button>
         </div>
@@ -642,128 +653,120 @@ export default function LessonDetailPage({
 
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-background">
-      {/* Top Navbar for Lesson */}
-      <div className="sticky top-16 z-30 flex items-center justify-between border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
+      {/* ── Top Lesson Navbar ── */}
+      <div className="sticky top-16 z-30 flex items-center justify-between border-b border-border/50 bg-background/80 px-4 py-2.5 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="h-8 w-8 lg:hidden"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
-            {isSidebarOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
           <Link
             href={`/courses/${course.id}`}
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Trở về khóa học</span>
           </Link>
-          <Separator orientation="vertical" className="h-6 hidden sm:block" />
-          <h1 className="text-sm font-semibold truncate max-w-45 sm:max-w-md">
+          <Separator orientation="vertical" className="hidden h-5 sm:block" />
+          <h1 className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-sm">
             {lesson.title}
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Tiến trình:</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400">
-              {progressPercent}%
-            </span>
+        <div className="flex items-center gap-2.5">
+          <div className="hidden items-center gap-2 text-sm sm:flex">
+            <span className="text-xs text-muted-foreground">Tiến trình</span>
+            <span className="font-bold text-primary">{progressPercent}%</span>
           </div>
+
           <Button
             size="sm"
             onClick={handleCompleteLesson}
             disabled={isSavingProgress}
-            className={`${isLessonCompleted ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"} text-white font-medium`}
+            className={`h-8 gap-1.5 px-4 text-xs font-bold transition-all ${isLessonCompleted
+              ? "bg-emerald-600/90 text-white hover:bg-emerald-600 shadow-emerald-600/30"
+              : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-blue-600/30 hover:shadow-blue-600/50"
+            } shadow-md`}
           >
-            {isLessonCompleted ? (
-              <CheckCircle2 className="w-4 h-4 mr-1.5" />
-            ) : null}
-            {isSavingProgress
-              ? "Đang lưu..."
-              : isLessonCompleted
-                ? "Đã hoàn thành"
-                : "Hoàn thành bài học"}
+            {isLessonCompleted && <CheckCircle2 className="h-3.5 w-3.5" />}
+            {isSavingProgress ? "Đang lưu..." : isLessonCompleted ? "Đã hoàn thành" : "Hoàn thành bài học"}
           </Button>
 
+          {/* AI Button with neon glow */}
           <Button
             variant="outline"
             size="icon"
             onClick={() => setIsAiOpen(!isAiOpen)}
-            className="rounded-xl border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+            className={`h-8 w-8 rounded-xl border-primary/30 transition-all ${
+              isAiOpen
+                ? "border-primary bg-primary/15 text-primary shadow-[0_0_12px_oklch(0.70_0.22_240_/_0.4)]"
+                : "bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/50"
+            }`}
             title="Trợ lý AI Hỗ trợ"
           >
-            <Bot className="w-4 h-4" />
+            <Bot className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar (Lessons List) */}
+        {/* ── Sidebar ── */}
         <aside
-          className={`absolute inset-y-0 left-0 z-20 flex w-[min(20rem,88vw)] flex-col border-r border-border/70 bg-card/95 shadow-2xl shadow-slate-950/10 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:static lg:w-80 lg:translate-x-0 lg:bg-muted/20 lg:shadow-none ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 left-0 z-20 flex w-[min(20rem,88vw)] flex-col border-r border-border/50 bg-card/90 shadow-2xl shadow-black/20 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:static lg:w-72 lg:translate-x-0 lg:bg-muted/10 lg:shadow-none ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         >
-          <div className="border-b border-border/70 bg-card/80 p-4">
-            <h2 className="font-bold text-foreground line-clamp-2">
-              {course.title}
-            </h2>
-            <div className="mt-4 h-2 rounded-full bg-border overflow-hidden">
+          {/* Sidebar header */}
+          <div className="border-b border-border/50 bg-card/60 p-4">
+            <h2 className="font-bold leading-snug text-foreground line-clamp-2">{course.title}</h2>
+            {/* Progress bar */}
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-border/60">
               <div
-                className="h-full rounded-full bg-linear-to-r from-blue-500 to-cyan-400 transition-all duration-500"
+                className="progress-neon"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {completedCount}/{lessons.length} bài hoàn thành
+            <p className="mt-2 text-xs text-muted-foreground">
+              {completedCount}/{lessons.length} bài hoàn thành · {progressPercent}%
             </p>
           </div>
 
-          <div className="flex-1 space-y-1.5 overflow-y-auto p-3">
+          <div className="flex-1 space-y-1 overflow-y-auto p-2.5">
             {lessons.map((l) => {
               const isCurrent = l.id === lessonId;
-              const isDone =
-                l.isCompleted || (l.id === lessonId && isLessonCompleted);
+              const isDone = l.isCompleted || (l.id === lessonId && isLessonCompleted);
               return (
                 <Link
                   key={l.id}
-                  href={
-                    l.isLocked ? "#" : `/courses/${course.id}/lessons/${l.id}`
-                  }
-                  className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
+                  href={l.isLocked ? "#" : `/courses/${course.id}/lessons/${l.id}`}
+                  className={`flex items-start gap-3 rounded-xl p-3 text-sm transition-all ${
                     isCurrent
-                      ? "border border-primary/25 bg-primary/8 font-medium text-primary"
+                      ? "border border-primary/20 bg-primary/10 font-medium text-primary shadow-sm"
                       : l.isLocked
-                        ? "opacity-50 cursor-not-allowed hover:bg-transparent"
-                        : "hover:bg-muted"
+                        ? "cursor-not-allowed opacity-40 hover:bg-transparent"
+                        : "hover:bg-muted/60"
                   }`}
                   onClick={(e) => {
                     if (l.isLocked) e.preventDefault();
                     if (window.innerWidth < 1024) setIsSidebarOpen(false);
                   }}
                 >
-                  <div className="mt-0.5">
+                  <div className="mt-0.5 shrink-0">
                     {isDone ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     ) : l.isLocked ? (
-                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      <Lock className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      <PlayCircle
-                        className={`w-4 h-4 ${isCurrent ? "text-blue-500" : "text-muted-foreground"}`}
-                      />
+                      <PlayCircle className={`h-4 w-4 ${isCurrent ? "text-primary" : "text-muted-foreground"}`} />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="text-sm leading-snug">{l.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {l.duration}
-                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{l.duration}</div>
                   </div>
                 </Link>
               );
@@ -771,24 +774,24 @@ export default function LessonDetailPage({
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="min-w-0 flex-1 overflow-y-auto bg-background/60 p-4 lg:p-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Tabs Header */}
-            <div className="mb-7 flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/70 bg-card/75 p-1.5 shadow-sm scrollbar-hide">
+        {/* ── Main Content ── */}
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="mx-auto max-w-4xl">
+            {/* Tab bar */}
+            <div className="mb-6 flex items-center gap-1 overflow-x-auto rounded-2xl border border-border/50 bg-card/60 p-1.5 shadow-sm backdrop-blur-xl scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-200 ${
                       activeTab === tab.id
-                        ? "bg-background text-primary shadow-sm ring-1 ring-border/70"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/25"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     {tab.label}
                   </button>
                 );
@@ -804,13 +807,12 @@ export default function LessonDetailPage({
                       <Button
                         key={video.id}
                         size="sm"
-                        variant={
-                          currentVideo?.id === video.id ? "default" : "outline"
-                        }
+                        variant={currentVideo?.id === video.id ? "default" : "outline"}
                         onClick={() => {
                           setSelectedVideoId(video.id);
                           startVideoSession(video.id);
                         }}
+                        className={currentVideo?.id === video.id ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-600/30" : ""}
                       >
                         {isVietnamese
                           ? `${video.title}${video.durationSeconds ? ` · ${Math.round(video.durationSeconds / 60)} phút` : ""}`
@@ -820,16 +822,13 @@ export default function LessonDetailPage({
                   </div>
                 )}
 
-                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/70 bg-slate-950 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.5)] md:rounded-3xl">
+                {/* Video player */}
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/50 bg-black shadow-[0_0_0_1px_oklch(0.70_0.22_240_/_0.1),0_24px_72px_-24px_rgba(0,0,0,0.7)] md:rounded-3xl">
                   {currentVideo && currentYouTubeEmbed ? (
                     <div
                       key={currentVideo.id}
                       ref={youtubeHostRef}
-                      aria-label={
-                        isVietnamese
-                          ? currentVideo.title
-                          : currentVideo.titleEn || currentVideo.title
-                      }
+                      aria-label={isVietnamese ? currentVideo.title : currentVideo.titleEn || currentVideo.title}
                       className="h-full w-full"
                     />
                   ) : currentVideo ? (
@@ -856,37 +855,25 @@ export default function LessonDetailPage({
                         if (videoRef.current) {
                           recordPlaybackHeartbeat(videoRef.current.currentTime, true);
                         }
-                        if (
-                          !useInteractiveVideoStore.getState().activeEvent
-                        ) {
+                        if (!useInteractiveVideoStore.getState().activeEvent) {
                           setVideoPhase("PAUSED_BY_USER");
                         }
                       }}
-                      onSeeking={(event) =>
-                        resetPlaybackHeartbeat(event.currentTarget.currentTime)
-                      }
+                      onSeeking={(event) => resetPlaybackHeartbeat(event.currentTarget.currentTime)}
                       onEnded={(event) => {
                         recordPlaybackHeartbeat(event.currentTarget.currentTime, true);
                         setVideoPhase("ENDED");
                       }}
-                      aria-label={
-                        isVietnamese
-                          ? currentVideo.title
-                          : currentVideo.titleEn || currentVideo.title
-                      }
+                      aria-label={isVietnamese ? currentVideo.title : currentVideo.titleEn || currentVideo.title}
                     >
                       <source src={currentVideo.url} />
-                      {isVietnamese
-                        ? "Trình duyệt không hỗ trợ phát video này."
-                        : "Your browser cannot play this video."}
+                      {isVietnamese ? "Trình duyệt không hỗ trợ phát video này." : "Your browser cannot play this video."}
                     </video>
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white/70">
-                      <PlayCircle className="h-10 w-10" />
-                      <p>
-                        {isVietnamese
-                          ? "Giáo viên chưa thêm video cho bài học này."
-                          : "No lesson video has been added yet."}
+                    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white/60">
+                      <PlayCircle className="h-12 w-12 opacity-40" />
+                      <p className="text-sm">
+                        {isVietnamese ? "Giáo viên chưa thêm video cho bài học này." : "No lesson video has been added yet."}
                       </p>
                     </div>
                   )}
@@ -897,11 +884,7 @@ export default function LessonDetailPage({
                       videoId={currentVideo.id}
                       token={token}
                       isVietnamese={isVietnamese}
-                      lessonTitle={
-                        isVietnamese
-                          ? lesson.title
-                          : lesson.titleEn || lesson.title
-                      }
+                      lessonTitle={isVietnamese ? lesson.title : lesson.titleEn || lesson.title}
                       grade={course.level}
                       subject={course.subjectLabel || course.subject}
                       onContinue={handleContinueVideo}
@@ -910,26 +893,19 @@ export default function LessonDetailPage({
                   )}
                 </div>
 
-                <div className="mt-8">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 bg-blue-500/10 text-blue-600 rounded-full text-xs font-semibold">
-                      {isVietnamese
-                        ? `Bài ${lesson.order}`
-                        : `Lesson ${lesson.order}`}
+                {/* Lesson meta below video */}
+                <div className="mt-7">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+                      {isVietnamese ? `Bài ${lesson.order}` : `Lesson ${lesson.order}`}
                     </span>
-                    <span className="text-xs text-muted-foreground font-medium">
-                      {lesson.duration}
-                    </span>
+                    <span className="text-xs font-medium text-muted-foreground">{lesson.duration}</span>
                   </div>
-                  <h2 className="text-2xl font-bold mb-2 text-foreground">
-                    {isVietnamese
-                      ? lesson.title
-                      : lesson.titleEn || lesson.title}
+                  <h2 className="mb-2 text-2xl font-bold text-foreground">
+                    {isVietnamese ? lesson.title : lesson.titleEn || lesson.title}
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {isVietnamese
-                      ? lesson.description
-                      : lesson.descEn || lesson.description}
+                  <p className="leading-relaxed text-muted-foreground">
+                    {isVietnamese ? lesson.description : lesson.descEn || lesson.description}
                   </p>
                 </div>
               </div>
@@ -991,44 +967,32 @@ export default function LessonDetailPage({
             {/* Tab: Materials */}
             {activeTab === "materials" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="text-xl font-bold mb-6">Tài liệu đính kèm</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h3 className="mb-5 text-xl font-bold">Tài liệu đính kèm</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {(lesson.materials ?? []).length ? (
                     lesson.materials?.map((material) => (
                       <div
                         key={material.id}
-                        className="flex items-center p-4 border border-border rounded-2xl bg-card hover:border-blue-500/50 hover:shadow-md transition-all group"
+                        className="group flex items-center gap-4 rounded-2xl border border-border/50 bg-card/70 p-4 backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/5"
                       >
-                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mr-4 text-blue-600 shrink-0">
-                          <FileText className="w-6 h-6" />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-cyan-500/10 text-primary shadow-inner ring-1 ring-primary/20">
+                          <FileText className="h-6 w-6" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm truncate group-hover:text-blue-600 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate text-sm font-semibold transition-colors group-hover:text-primary">
                             {material.title}
                           </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {material.type}
-                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{material.type}</p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="shrink-0 text-muted-foreground group-hover:text-blue-600"
-                          asChild
-                        >
-                          <a
-                            href={material.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Mở tài liệu ${material.title}`}
-                          >
-                            <Download className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground transition-colors group-hover:text-primary" asChild>
+                          <a href={material.url} target="_blank" rel="noreferrer" aria-label={`Mở tài liệu ${material.title}`}>
+                            <Download className="h-4 w-4" />
                           </a>
                         </Button>
                       </div>
                     ))
                   ) : (
-                    <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+                    <p className="col-span-full rounded-2xl border border-dashed border-border/50 py-10 text-center text-sm text-muted-foreground">
                       Bài học chưa có tài liệu đính kèm.
                     </p>
                   )}
@@ -1096,7 +1060,9 @@ export default function LessonDetailPage({
                       id="lesson-question-language"
                       value={questionLanguage}
                       onChange={(event) =>
-                        setQuestionLanguage(event.target.value as "vi" | "en")
+                        setQuestionLanguageOverride(
+                          event.target.value as "vi" | "en",
+                        )
                       }
                       className="rounded-md border border-border bg-background px-3 py-2 text-sm"
                     >
