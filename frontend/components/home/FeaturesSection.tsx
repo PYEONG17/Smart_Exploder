@@ -4,15 +4,15 @@ import type { TranslationKey } from "@/lib/i18n";
 import { motion } from "motion/react";
 
 /**
- * Features Section – Sci-Fi AI card grid with neon hover effects.
+ * Features Section: Showcases key capabilities of SmartExplorer.
  */
 type FeatureItem = {
   icon: React.ReactNode;
   titleKey: TranslationKey;
   descKey: TranslationKey;
-  accent: string;          // e.g. "blue"
-  gradFrom: string;
-  gradTo: string;
+  color: string;
+  bg: string;
+  border: string;
 };
 
 const FEATURES: FeatureItem[] = [
@@ -24,9 +24,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.bilingual.title",
     descKey: "features.bilingual.desc",
-    accent: "from-blue-500 to-cyan-400",
-    gradFrom: "rgba(59,130,246,0.15)",
-    gradTo: "rgba(34,211,238,0.05)",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
   },
   {
     icon: (
@@ -36,9 +36,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.video.title",
     descKey: "features.video.desc",
-    accent: "from-violet-500 to-purple-400",
-    gradFrom: "rgba(139,92,246,0.15)",
-    gradTo: "rgba(167,139,250,0.05)",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20",
   },
   {
     icon: (
@@ -48,9 +48,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.ai.title",
     descKey: "features.ai.desc",
-    accent: "from-cyan-500 to-blue-400",
-    gradFrom: "rgba(6,182,212,0.15)",
-    gradTo: "rgba(59,130,246,0.05)",
+    color: "text-cyan-500",
+    bg: "bg-cyan-500/10",
+    border: "border-cyan-500/20",
   },
   {
     icon: (
@@ -60,9 +60,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.3d.title",
     descKey: "features.3d.desc",
-    accent: "from-emerald-500 to-teal-400",
-    gradFrom: "rgba(16,185,129,0.15)",
-    gradTo: "rgba(20,184,166,0.05)",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
   },
   {
     icon: (
@@ -72,9 +72,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.quiz.title",
     descKey: "features.quiz.desc",
-    accent: "from-orange-500 to-amber-400",
-    gradFrom: "rgba(249,115,22,0.15)",
-    gradTo: "rgba(251,191,36,0.05)",
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+    border: "border-orange-500/20",
   },
   {
     icon: (
@@ -84,9 +84,9 @@ const FEATURES: FeatureItem[] = [
     ),
     titleKey: "features.progress.title",
     descKey: "features.progress.desc",
-    accent: "from-pink-500 to-rose-400",
-    gradFrom: "rgba(236,72,153,0.15)",
-    gradTo: "rgba(251,113,133,0.05)",
+    color: "text-pink-500",
+    bg: "bg-pink-500/10",
+    border: "border-pink-500/20",
   },
 ];
 
@@ -94,68 +94,59 @@ export default function FeaturesSection() {
   const { t } = useLang();
 
   return (
-    <section className="relative py-20 md:py-28">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/4 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-blue-600/6 blur-[120px]" />
-        <div className="absolute right-1/4 bottom-0 h-[300px] w-[500px] rounded-full bg-violet-600/5 blur-[100px]" />
-      </div>
-
+    <section className="py-20 md:py-28 bg-background">
       <div className="mx-auto max-w-7xl px-6">
         {/* Section header */}
-        <motion.div
-          className="mx-auto mb-16 max-w-2xl text-center"
-          initial={{ opacity: 0, y: 24 }}
+        <motion.div 
+          className="mx-auto max-w-2xl text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.7 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2 text-sm font-semibold text-blue-400 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 mb-6 backdrop-blur-md">
             {t("features.badge")}
           </div>
-          <h2 className="mb-5 text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
+          <h2 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl mb-6">
             {t("features.title1")}{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-violet-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 bg-clip-text text-transparent drop-shadow-sm">
               {t("features.title2")}
             </span>
           </h2>
-          <p className="text-lg font-medium leading-relaxed text-muted-foreground md:text-xl">
+          <p className="text-muted-foreground text-lg md:text-xl leading-relaxed font-medium">
             {t("features.subtitle")}
           </p>
         </motion.div>
 
         {/* Features grid */}
-        <motion.div
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        <motion.div 
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          variants={{ visible: { transition: { staggerChildren: 0.09 } }, hidden: {} }}
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } },
+            hidden: {}
+          }}
         >
           {FEATURES.map((feature, index) => (
             <motion.div
               key={index}
               variants={{
-                hidden: { opacity: 0, y: 24 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" } },
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
               }}
-              className="group relative overflow-hidden rounded-3xl border border-border/50 bg-card/60 p-7 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/10"
+              className={`group relative overflow-hidden rounded-3xl border border-border/50 bg-background/50 p-8 shadow-sm backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2`}
             >
-              {/* Dynamic glow on hover */}
-              <div
-                className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                style={{ background: `radial-gradient(ellipse at 0% 0%, ${feature.gradFrom}, transparent 60%)` }}
-              />
-              {/* Corner accent */}
-              <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${feature.accent} opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-15`} />
-
-              {/* Icon */}
-              <div className={`relative mb-5 inline-flex rounded-2xl bg-gradient-to-br ${feature.accent} p-4 text-white shadow-lg`}>
+              {/* Hover glow effect */}
+              <div className={`absolute -inset-px rounded-3xl bg-gradient-to-br from-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className={`absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full ${feature.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              
+              <div className={`relative mb-6 inline-flex rounded-2xl ${feature.bg} ${feature.color} p-4 shadow-inner ring-1 ring-white/10`}>
                 {feature.icon}
               </div>
-
-              <h3 className="relative mb-3 text-lg font-bold text-foreground">{t(feature.titleKey)}</h3>
-              <p className="relative text-sm leading-relaxed text-muted-foreground">{t(feature.descKey)}</p>
+              <h3 className="relative mb-3 text-xl font-bold text-foreground">{t(feature.titleKey)}</h3>
+              <p className="relative text-base text-muted-foreground leading-relaxed font-medium">{t(feature.descKey)}</p>
             </motion.div>
           ))}
         </motion.div>

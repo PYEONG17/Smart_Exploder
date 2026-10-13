@@ -106,22 +106,22 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                 placeholder={t("courses.page.search_ph")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-border bg-muted/40 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-full rounded-xl border border-border/80 bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all shadow-xs"
               />
             </div>
 
             {/* Subject & Level Filter Pills */}
             <div className="flex flex-wrap items-center gap-3">
               {/* Subject filter */}
-              <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-1">
+              <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-muted/30 p-1">
                 {subjects.map((s) => (
                   <button
                     key={s.value}
                     onClick={() => setSelectedSubject(s.value)}
                     aria-pressed={selectedSubject === s.value}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                       selectedSubject === s.value
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-primary text-primary-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >
@@ -131,15 +131,15 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
               </div>
 
               {/* Level filter */}
-              <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-1">
+              <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-muted/30 p-1">
                 {levels.map((l) => (
                   <button
                     key={l.value}
                     onClick={() => setSelectedLevelOverride(l.value)}
                     aria-pressed={selectedLevel === l.value}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                       selectedLevel === l.value
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-primary text-primary-foreground shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >
@@ -262,19 +262,19 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             course.subject === "math"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                              : "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20"
                           }`}
                         >
                           {course.subjectLabel || (course.subject === 'math' ? 'Toán học' : 'Khoa học')}
                         </span>
-                        <span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        <span className="rounded-full border border-border/80 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                           Lớp {course.level}
                         </span>
                       </div>
 
                       <div>
-                        <h3 className="font-bold text-foreground text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
                           {course.title}
                         </h3>
                         <p className="text-xs text-muted-foreground font-medium mt-0.5">

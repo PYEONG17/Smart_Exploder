@@ -74,10 +74,12 @@ export function getYouTubeVideoId(value: string): string | null {
 }
 
 export function loadYouTubeIframeApi(): Promise<YouTubeApi> {
-  if (typeof window === "undefined") return Promise.reject(new Error("YouTube player is only available in the browser"));
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("YouTube player is only available in the browser"));
+  }
   if (window.YT?.Player) return Promise.resolve(window.YT);
   if (!apiPromise) {
-    apiPromise = new Promise((resolve, reject) => {
+    apiPromise = new Promise<YouTubeApi>((resolve, reject) => {
       const previousReady = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
         previousReady?.();

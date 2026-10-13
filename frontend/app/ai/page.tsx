@@ -178,7 +178,7 @@ export default function AIPage() {
         <div className="flex items-center justify-between border-b border-border/70 p-4">
           <Button
             onClick={() => setMessages([])}
-            className="w-full justify-start gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-sm shadow-blue-600/15 transition-transform hover:-translate-y-0.5 hover:from-blue-700 hover:to-cyan-600"
+            className="w-full justify-start gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
             {isVietnamese ? "Đoạn chat mới" : "New chat"}
@@ -194,16 +194,16 @@ export default function AIPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
-          <div className="mb-3 px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mb-3 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             {isVietnamese ? "Lịch sử trò chuyện" : "Chat history"}
           </div>
           <div className="space-y-1">
             {mockAIChatHistory.map((chat) => (
               <button
                 key={chat.id}
-                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted/70"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
               >
-                <MessageSquare className="w-4 h-4 text-muted-foreground group-hover:text-blue-500 shrink-0" />
+                <MessageSquare className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
                 <div className="flex-1 truncate font-medium">{chat.title}</div>
               </button>
             ))}
@@ -244,18 +244,18 @@ export default function AIPage() {
           <div className="mx-auto max-w-3xl space-y-6">
             {messages.length === 0 ? (
               <div className="flex min-h-[min(62vh,36rem)] flex-col items-center justify-center px-4 py-8 text-center">
-                <div className="mb-5 grid h-16 w-16 place-items-center rounded-[1.35rem] border border-blue-500/15 bg-gradient-to-br from-blue-500/15 to-cyan-400/10 text-blue-600 shadow-sm dark:text-blue-300">
-                  <Bot className="h-8 w-8" />
+                <div className="mb-5 grid h-14 w-14 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-xs">
+                  <Bot className="h-7 w-7" />
                 </div>
                 <div className="eyebrow mb-4">
                   {isVietnamese ? "Bạn đồng hành học tập AI" : "AI learning companion"}
                 </div>
-                <h2 className="mb-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">
+                <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
                   {isVietnamese
-                    ? "Trợ lý giải đáp bài giảng (Groq)"
-                    : "Your STEM learning tutor (Groq)"}
+                    ? "Trợ lý giải đáp bài giảng STEM"
+                    : "Your STEM learning tutor"}
                 </h2>
-                <p className="mb-8 max-w-md text-sm leading-7 text-muted-foreground">
+                <p className="mb-8 max-w-md text-sm leading-relaxed text-muted-foreground">
                   {isVietnamese
                     ? "Hỏi về Toán, Khoa học, từ vựng STEM hoặc bài tập trên lớp. Bạn có thể hỏi bằng tiếng Việt hoặc tiếng Anh."
                     : "Ask about math, science, STEM words, or schoolwork. You can write in English or Vietnamese."}
@@ -269,9 +269,9 @@ export default function AIPage() {
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(prompt.query)}
-                        className="premium-card premium-card-hover group p-4 text-left"
+                        className="rounded-2xl border border-border/80 bg-card p-4 text-left transition-all hover:border-primary/30 hover:bg-muted/40 hover:shadow-xs group"
                       >
-                        <Icon className="w-5 h-5 text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
+                        <Icon className="w-5 h-5 text-primary mb-2 group-hover:scale-105 transition-transform" />
                         <div className="font-semibold text-xs text-foreground">
                           {prompt.label}
                         </div>
@@ -284,27 +284,27 @@ export default function AIPage() {
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+                  className={`flex gap-3.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   <div
-                    className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-bold ${
+                    className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center font-bold text-xs ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white shadow-md"
-                        : "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-muted border border-border/80 text-foreground"
                     }`}
                   >
                     {msg.role === "user" ? (
                       <User className="w-4 h-4" />
                     ) : (
-                      <Bot className="w-4 h-4" />
+                      <Bot className="w-4 h-4 text-primary" />
                     )}
                   </div>
 
                   <div
-                    className={`group relative max-w-[88%] rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 md:max-w-[78%] ${
+                    className={`group relative max-w-[88%] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 md:max-w-[78%] leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-tr-sm"
-                        : "border border-border/70 bg-card/90 text-foreground shadow-sm"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm shadow-xs"
+                        : "border border-border/80 bg-card text-foreground shadow-xs"
                     }`}
                   >
                     {msg.role === "assistant" && (
@@ -339,21 +339,21 @@ export default function AIPage() {
 
             {/* Hiệu ứng đang gõ chữ của AI */}
             {isTyping && (
-              <div className="flex gap-4">
-                <div className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-bold bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md">
-                  <Bot className="w-4 h-4" />
+              <div className="flex gap-3.5">
+                <div className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center font-bold text-xs bg-muted border border-border/80 text-foreground">
+                  <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <div className="relative max-w-[85%] md:max-w-[78%] rounded-2xl px-5 py-4 bg-card border border-border shadow-sm rounded-tl-sm flex items-center gap-1.5">
+                <div className="relative max-w-[85%] md:max-w-[78%] rounded-2xl px-5 py-3.5 bg-card border border-border/80 shadow-xs flex items-center gap-1.5">
                   <span
-                    className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                    className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
                     style={{ animationDelay: "0ms" }}
                   ></span>
                   <span
-                    className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                    className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
                     style={{ animationDelay: "150ms" }}
                   ></span>
                   <span
-                    className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce"
+                    className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
                     style={{ animationDelay: "300ms" }}
                   ></span>
                 </div>
@@ -382,7 +382,7 @@ export default function AIPage() {
                 id="tutor-grade-level"
                 value={gradeLevel}
                 onChange={(event) => setGradeLevel(event.target.value)}
-                className="max-w-40 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary/50"
+                className="max-w-44 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary/50"
                 aria-label={
                   isVietnamese ? "Chọn khối lớp" : "Choose your grade level"
                 }
@@ -404,7 +404,7 @@ export default function AIPage() {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="relative flex items-center overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[0_18px_50px_-30px_rgba(15,23,42,0.45)] transition-shadow focus-within:border-primary/40 focus-within:ring-4 focus-within:ring-primary/10"
+              className="relative flex items-center overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm transition-shadow focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20"
             >
               <textarea
                 className="max-h-36 min-h-[56px] w-full resize-none bg-transparent py-4 pl-4 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none scrollbar-hide"
@@ -428,7 +428,7 @@ export default function AIPage() {
                 size="icon"
                 className={`absolute right-2 bottom-2 rounded-xl transition-all ${
                   inputValue.trim() && !isTyping
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted text-muted-foreground"
                 }`}
                 disabled={!inputValue.trim() || isTyping}

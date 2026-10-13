@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  HelpCircle,
+  LoaderCircle,
+  RotateCcw,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TutorAnswer } from "@/components/ai/TutorAnswer";
 import { sendChatMessage, submitInteractiveEventResponse } from "@/lib/api";
@@ -16,16 +23,17 @@ type EventResult = {
   explanationEn: string | null;
 };
 
-const TILE_STYLES = [
-  { bg: "bg-red-500 border-red-700", shape: "▲" },
-  { bg: "bg-blue-500 border-blue-700", shape: "◆" },
-  { bg: "bg-amber-500 border-amber-700", shape: "●" },
-  { bg: "bg-emerald-500 border-emerald-700", shape: "■" },
-];
+const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 function elapsedSince(startedAt: number | null | undefined) {
   const now = Date.now();
   return Math.max(0, now - (startedAt ?? now));
+}
+
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 type LabelledItem = { id: string; label: string; labelEn?: string };
@@ -312,9 +320,13 @@ export function InteractiveEventOverlay({
     !aiExplanation &&
     !visibleAiError;
 
+  const timestampSec = Math.floor(
+    (activity.timestampMs ?? activity.timestamp * 1000) / 1000,
+  );
+
   return (
     <div
-      className="absolute inset-0 z-20 flex items-center justify-center overflow-y-auto bg-black/85 p-3 backdrop-blur-sm sm:p-6"
+      className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-background/80 p-3 backdrop-blur-md sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby={`interactive-event-${activity.id}`}
@@ -322,30 +334,81 @@ export function InteractiveEventOverlay({
         if (event.key === "Escape") event.preventDefault();
       }}
     >
-      <section className="my-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-2xl sm:p-6">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
-          {activity.type.replaceAll("_", " ")} ·{" "}
-          {Math.floor((activity.timestampMs ?? activity.timestamp * 1000) / 1000)}s
-        </p>
+      <section className="my-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-border/80 bg-card p-5 sm:p-7 shadow-2xl transition-all">
+        {/* Header Bar */}
+        <div className="mb-4 flex items-center justify-between gap-2 border-b border-border/60 pb-3.5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span className="uppercase tracking-wide">
+              {activity.type.replaceAll("_", " ")}
+            </span>
+            <span className="text-muted-foreground/60">·</span>
+            <span className="font-mono">{formatTime(timestampSec)}</span>
+          </div>
+
+          {result && (
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                result.isCorrect
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : result.isCorrect === false
+                    ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {result.isCorrect ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>{isVietnamese ? "Chính xác" : "Correct"}</span>
+                </>
+              ) : result.isCorrect === false ? (
+                <>
+                  <XCircle className="h-3.5 w-3.5" />
+                  <span>{isVietnamese ? "Chưa đúng" : "Incorrect"}</span>
+                </>
+              ) : (
+                <span>{isVietnamese ? "Đã ghi nhận" : "Recorded"}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Prompt */}
         <h2
           id={`interactive-event-${activity.id}`}
-          className="mb-4 text-lg font-semibold text-foreground"
+          className="mb-5 text-lg sm:text-xl font-semibold leading-relaxed tracking-tight text-foreground"
         >
           {prompt}
         </h2>
 
+        {/* Multiple Choice (QUESTION / QUIZ) */}
         {activity.type === "QUESTION" || activity.type === "QUIZ" ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {options.map((option, index) => {
-              const style = TILE_STYLES[index % TILE_STYLES.length];
+              const letter = OPTION_LETTERS[index] || String(index + 1);
               const isChosen = selectedIndex === index;
+              const isCorrectAnswer = result?.isCorrect && isChosen;
+              const isWrongAnswer = result?.isCorrect === false && isChosen;
               const dimmed = (!!result || busy) && !isChosen;
-              const mark =
-                result && isChosen && result.isCorrect !== null
-                  ? result.isCorrect
-                    ? "✓"
-                    : "✗"
-                  : null;
+
+              let cardStyle =
+                "border-border/80 bg-background/50 hover:border-primary/50 hover:bg-muted/40 text-foreground";
+              let badgeStyle = "bg-muted text-muted-foreground";
+
+              if (isCorrectAnswer) {
+                cardStyle =
+                  "border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100 ring-2 ring-emerald-500/20";
+                badgeStyle = "bg-emerald-500 text-white";
+              } else if (isWrongAnswer) {
+                cardStyle =
+                  "border-rose-500 bg-rose-500/10 text-rose-950 dark:text-rose-100 ring-2 ring-rose-500/20";
+                badgeStyle = "bg-rose-500 text-white";
+              } else if (isChosen) {
+                cardStyle =
+                  "border-primary bg-primary/10 text-foreground ring-2 ring-primary/20";
+                badgeStyle = "bg-primary text-primary-foreground";
+              }
+
               return (
                 <button
                   key={`${activity.id}-${index}`}
@@ -359,33 +422,35 @@ export function InteractiveEventOverlay({
                       selectedIndex: index,
                     });
                   }}
-                  className={`relative flex min-h-16 items-center gap-3 rounded-xl border-b-4 px-4 py-3 text-left text-sm font-semibold text-white shadow-md transition active:translate-y-0.5 active:border-b-2 ${style.bg} ${
-                    dimmed ? "opacity-40" : "hover:brightness-110"
-                  } ${isChosen ? "ring-4 ring-white/70" : ""}`}
+                  className={`group relative flex min-h-[64px] items-center gap-3.5 rounded-xl border p-3.5 text-left text-sm font-medium transition-all ${cardStyle} ${
+                    dimmed ? "opacity-40" : ""
+                  }`}
                 >
-                  <span className="text-xl leading-none" aria-hidden="true">
-                    {style.shape}
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors ${badgeStyle}`}
+                  >
+                    {letter}
                   </span>
-                  <span className="flex-1">
+                  <span className="flex-1 leading-snug">
                     {isVietnamese ? option : content.optionsEn?.[index] || option}
                   </span>
-                  {mark && (
-                    <span
-                      className={`flex size-7 items-center justify-center rounded-full bg-white text-base font-bold ${
-                        result?.isCorrect ? "text-emerald-600" : "text-red-600"
-                      }`}
-                    >
-                      {mark}
-                    </span>
+
+                  {isCorrectAnswer && (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  )}
+                  {isWrongAnswer && (
+                    <XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0" />
                   )}
                   {busy && isChosen && (
-                    <LoaderCircle className="size-5 animate-spin" />
+                    <LoaderCircle className="h-5 w-5 animate-spin text-primary shrink-0" />
                   )}
                 </button>
               );
             })}
           </div>
         ) : null}
+
+        {/* DRAG DROP */}
         {activity.type === "DRAG_DROP" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -400,9 +465,9 @@ export function InteractiveEventOverlay({
                 onDragStart={(event) =>
                   event.dataTransfer.setData("text/plain", item.id)
                 }
-                className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_1fr]"
+                className="grid gap-2 rounded-xl border border-border/80 bg-background/50 p-3 sm:grid-cols-[1fr_1fr]"
               >
-                <span className="cursor-grab self-center text-sm">
+                <span className="cursor-grab self-center text-sm font-medium">
                   {displayLabel(item)}
                 </span>
                 <select
@@ -410,7 +475,7 @@ export function InteractiveEventOverlay({
                   value={assignments[item.id] ?? ""}
                   disabled={!!result || busy}
                   onChange={(event) => updateAssignment(item.id, event.target.value)}
-                  className="h-10 rounded-md border border-border bg-background px-2 text-sm"
+                  className="h-10 rounded-lg border border-border/80 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">
                     {isVietnamese ? "Chọn vùng" : "Choose a zone"}
@@ -424,7 +489,7 @@ export function InteractiveEventOverlay({
               </div>
             ))}
             {zones.length > 0 && (
-              <div className="flex flex-wrap gap-2" aria-label="Drop zones">
+              <div className="flex flex-wrap gap-2 pt-1" aria-label="Drop zones">
                 {zones.map((zone) => (
                   <div
                     key={zone.id}
@@ -436,7 +501,7 @@ export function InteractiveEventOverlay({
                         updateAssignment(itemId, zone.id);
                       }
                     }}
-                    className="rounded-lg border border-dashed border-blue-500/60 bg-blue-500/5 px-3 py-2 text-xs"
+                    className="rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3.5 py-2 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
                   >
                     {displayLabel(zone)}
                   </div>
@@ -446,19 +511,20 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* MATCHING */}
         {activity.type === "MATCHING" && (
           <div className="space-y-3">
             {leftItems.map((item) => (
               <label
                 key={item.id}
-                className="grid gap-2 text-sm sm:grid-cols-[1fr_1fr]"
+                className="grid gap-2 text-sm sm:grid-cols-[1fr_1fr] rounded-xl border border-border/80 bg-background/50 p-3"
               >
-                <span className="self-center">{displayLabel(item)}</span>
+                <span className="self-center font-medium">{displayLabel(item)}</span>
                 <select
                   value={pairs[item.id] ?? ""}
                   disabled={!!result || busy}
                   onChange={(event) => updatePair(item.id, event.target.value)}
-                  className="h-10 rounded-md border border-border bg-background px-2"
+                  className="h-10 rounded-lg border border-border/80 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">
                     {isVietnamese ? "Chọn cặp phù hợp" : "Choose a match"}
@@ -474,6 +540,7 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* FILL BLANK */}
         {activity.type === "FILL_BLANK" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
@@ -491,8 +558,8 @@ export function InteractiveEventOverlay({
                 return null;
               }
               return (
-                <label key={blank.id} className="grid gap-1 text-sm">
-                  <span>
+                <label key={blank.id} className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-muted-foreground">
                     {isVietnamese ? "Chỗ trống" : "Blank"} {index + 1}
                   </span>
                   <input
@@ -505,7 +572,7 @@ export function InteractiveEventOverlay({
                         [blank.id]: event.target.value,
                       }))
                     }
-                    className="h-10 rounded-md border border-border bg-background px-3"
+                    className="h-10 rounded-xl border border-border/80 bg-background px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </label>
               );
@@ -513,12 +580,13 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* POLL */}
         {activity.type === "POLL" && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {labelledItems(content.options).map((option) => (
               <label
                 key={option.id}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 text-sm"
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/80 bg-background/50 p-3.5 text-sm font-medium transition hover:bg-muted/40"
               >
                 <input
                   type={content.allowMultiple ? "checkbox" : "radio"}
@@ -526,19 +594,21 @@ export function InteractiveEventOverlay({
                   checked={selectedPollOptions.includes(option.id)}
                   disabled={!!result || busy}
                   onChange={() => togglePollOption(option.id)}
+                  className="h-4 w-4 rounded text-primary focus:ring-primary/20"
                 />
-                {displayLabel(option)}
+                <span>{displayLabel(option)}</span>
               </label>
             ))}
           </div>
         )}
 
+        {/* REFLECTION */}
         {activity.type === "REFLECTION" && (
           <div className="space-y-2">
             {(isVietnamese
               ? content.dataNotice
               : content.dataNoticeEn || content.dataNotice) && (
-              <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+              <p className="rounded-xl border border-border/60 bg-muted/50 p-3 text-xs text-muted-foreground">
                 {isVietnamese
                   ? content.dataNotice
                   : content.dataNoticeEn || content.dataNotice}
@@ -551,7 +621,7 @@ export function InteractiveEventOverlay({
               rows={5}
               onChange={(event) => setReflection(event.target.value)}
               aria-label={isVietnamese ? "Câu trả lời suy ngẫm" : "Reflection"}
-              className="w-full rounded-lg border border-border bg-background p-3 text-sm"
+              className="w-full rounded-xl border border-border/80 bg-background p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             <p className="text-right text-xs text-muted-foreground">
               {reflection.length}/{content.maxLength ?? 1000}
@@ -559,21 +629,22 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* VOCABULARY */}
         {activity.type === "VOCABULARY" && (
-          <div className="space-y-3 rounded-lg bg-muted/50 p-4">
+          <div className="space-y-3 rounded-xl border border-border/70 bg-muted/40 p-4">
             {content.termEn && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-medium text-primary">
                 {isVietnamese ? content.termEn : content.term}
                 {content.pronunciation ? ` · ${content.pronunciation}` : ""}
               </p>
             )}
-            <p className="text-sm">
+            <p className="text-sm text-foreground">
               {isVietnamese
                 ? content.definition || ""
                 : content.definitionEn || content.definition || ""}
             </p>
             {(content.example || content.exampleEn) && (
-              <p className="border-l-2 border-blue-500 pl-3 text-sm italic text-muted-foreground">
+              <p className="border-l-2 border-primary/60 pl-3 text-sm italic text-muted-foreground">
                 {isVietnamese
                   ? content.example
                   : content.exampleEn || content.example}
@@ -582,11 +653,12 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* AI EXPLANATION */}
         {activity.type === "AI_EXPLANATION" && (
-          <div className="min-h-24 rounded-lg bg-muted/50 p-4 text-sm leading-6">
+          <div className="min-h-24 rounded-xl border border-border/70 bg-muted/30 p-4 text-sm leading-6">
             {aiLoading ? (
               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <LoaderCircle className="size-4 animate-spin" />
+                <LoaderCircle className="size-4 animate-spin text-primary" />
                 {isVietnamese ? "AI đang giải thích..." : "AI is explaining..."}
               </span>
             ) : visibleAiError ? (
@@ -599,38 +671,50 @@ export function InteractiveEventOverlay({
           </div>
         )}
 
+        {/* EXPLANATION */}
         {activity.type === "EXPLANATION" && (
-          <p className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm leading-6">
+          <p className="whitespace-pre-wrap rounded-xl border border-border/70 bg-muted/30 p-4 text-sm leading-6 text-foreground">
             {prompt}
           </p>
         )}
 
+        {/* Result & Feedback Box */}
         {result && (
           <div
-            className={`mt-4 rounded-lg p-3 text-sm font-medium ${
+            className={`mt-5 rounded-xl border p-4 text-sm transition-all ${
               result.isCorrect === true
-                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-950 dark:text-emerald-100"
                 : result.isCorrect === false
-                  ? "bg-red-500/15 text-red-700 dark:text-red-300"
-                  : "bg-muted/50"
+                  ? "border-rose-500/30 bg-rose-500/10 text-rose-950 dark:text-rose-100"
+                  : "border-border/70 bg-muted/40 text-foreground"
             }`}
             role="status"
           >
-            {result.isCorrect === null
-              ? isVietnamese
-                ? "Đã ghi nhận hoạt động."
-                : "Response recorded."
-              : result.isCorrect
-                ? isVietnamese
-                  ? "🎉 Chính xác!"
-                  : "🎉 Correct!"
-                : isVietnamese
-                  ? "Chưa đúng. Bạn có thể làm lại câu hỏi hoặc xem lại đoạn video."
-                  : "Not quite. Try the question again or rewatch the video."}
+            <div className="flex items-center gap-2 font-semibold">
+              {result.isCorrect === true ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{isVietnamese ? "Chính xác!" : "Correct!"}</span>
+                </>
+              ) : result.isCorrect === false ? (
+                <>
+                  <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>
+                    {isVietnamese
+                      ? "Chưa chính xác. Bạn có thể thử lại hoặc xem lại video."
+                      : "Not quite right. Try again or rewatch the video."}
+                  </span>
+                </>
+              ) : (
+                <span>
+                  {isVietnamese ? "Đã ghi nhận hoạt động." : "Response recorded."}
+                </span>
+              )}
+            </div>
             {(isVietnamese
               ? result.explanation
               : result.explanationEn || result.explanation) && (
-              <p className="mt-2 text-muted-foreground">
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {isVietnamese
                   ? result.explanation
                   : result.explanationEn || result.explanation}
@@ -640,32 +724,41 @@ export function InteractiveEventOverlay({
         )}
 
         {aiError && activity.type !== "AI_EXPLANATION" && (
-          <p role="alert" className="mt-3 text-sm text-destructive">
+          <p role="alert" className="mt-3 text-xs sm:text-sm font-medium text-destructive">
             {aiError}
           </p>
         )}
 
-        <div className="mt-5 flex justify-end gap-2">
+        {/* Actions Bottom Bar */}
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-2.5 border-t border-border/60 pt-4">
           {result && answeredWrong ? (
             <>
               {canRewind && (
-                <Button variant="outline" onClick={() => onRewind?.(activity)}>
+                <Button
+                  variant="outline"
+                  onClick={() => onRewind?.(activity)}
+                  className="rounded-xl gap-1.5 font-medium"
+                >
+                  <RotateCcw className="h-4 w-4" />
                   {isVietnamese ? "Xem lại đoạn video" : "Rewatch video"}
                 </Button>
               )}
-              <Button onClick={handleRetry}>
+              <Button onClick={handleRetry} className="rounded-xl font-medium">
                 {isVietnamese ? "Làm lại" : "Try again"}
               </Button>
             </>
           ) : result ? (
-            <Button onClick={handleContinue}>
-              {isVietnamese ? "Tiếp tục video" : "Continue video"}
+            <Button
+              onClick={handleContinue}
+              className="rounded-xl px-5 font-semibold"
+            >
+              {isVietnamese ? "Tiếp tục bài học" : "Continue video"}
             </Button>
           ) : activity.type === "QUESTION" || activity.type === "QUIZ" ? null : (
             <Button
               onClick={() => void handleSubmit()}
               disabled={busy || aiLoading}
-              className="gap-2"
+              className="rounded-xl gap-2 font-semibold px-5"
             >
               {busy && <LoaderCircle className="size-4 animate-spin" />}
               {informational && <Sparkles className="size-4" />}

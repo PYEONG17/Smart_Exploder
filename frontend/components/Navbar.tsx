@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
   { labelKey: "nav.courses", href: "/courses" },
   { labelKey: "nav.classes", href: "/classes" },
   { labelKey: "nav.assignments", href: "/assignments", roles: ["STUDENT"] },
+  { labelKey: "nav.quiz", href: "/quiz" },
   { labelKey: "nav.dashboard", href: "/dashboard", roles: ["STUDENT"] },
   { labelKey: "nav.ai", href: "/ai" },
   { labelKey: "nav.3d", href: "/three-d" },

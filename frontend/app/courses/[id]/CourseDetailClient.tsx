@@ -203,7 +203,7 @@ export default function CourseDetailClient({
           <div className="flex-1">
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-blue-600 transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -214,7 +214,7 @@ export default function CourseDetailClient({
           {nextLesson ? (
             <Link
               href={`/courses/${course.id}/lessons/${nextLesson.id}`}
-              className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+              className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
             >
               <PlayCircle className="h-4 w-4" />
               {completedCount > 0 ? "Tiếp tục" : "Bắt đầu"}
@@ -336,7 +336,7 @@ export default function CourseDetailClient({
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/courses/${course.id}/lessons/${lesson.id}`}
-                            className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+                            className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
                           >
                             <PlayCircle className="h-3.5 w-3.5" />
                             {lesson.isCompleted ? "Xem lại" : "Học ngay"}
