@@ -42,6 +42,9 @@ model User {
   videoWatchEvents VideoWatchEvent[]
   lessonQuestions LessonQuestion[] @relation("LessonQuestionAuthor")
   lessonAnswers LessonQuestion[] @relation("LessonQuestionAnswerer")
+  studyFlashcards StudyFlashcard[]
+  practiceQuestions PracticeQuestion[]
+  practiceAnswerAttempts PracticeAnswerAttempt[]
 
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -456,4 +459,49 @@ model QuizAttempt {
 
   @@index([userId, createdAt])
   @@index([quizId, userId])
+}
+
+model StudyFlashcard {
+  id         String   @id @default(uuid())
+  front      String   @db.Text
+  back       String   @db.Text
+  tag        String   @db.VarChar(100)
+  difficulty String   @default("MEDIUM") @db.VarChar(10)
+  mastered   Boolean  @default(false)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model PracticeQuestion {
+  id                 String   @id @default(uuid())
+  question           String   @db.Text
+  options            String[]
+  correctAnswerIndex Int
+  explanation        String   @db.Text
+  topic              String   @db.VarChar(100)
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts           PracticeAnswerAttempt[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+model PracticeAnswerAttempt {
+  id                 String           @id @default(uuid())
+  selectedAnswerIndex Int
+  isCorrect          Boolean
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId         String
+  question           PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt          DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([questionId, createdAt])
 }

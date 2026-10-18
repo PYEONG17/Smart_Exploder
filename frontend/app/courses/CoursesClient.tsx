@@ -5,14 +5,14 @@ import type { ChangeEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Search, LayoutGrid, List, Sparkles, BookOpen, Clock, Star } from "lucide-react";
+import { Search, LayoutGrid, List, Sparkles, BookOpen, Clock, Star, Box, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import type { SubjectType as Subject, Course } from "@/types";
 import { useLang } from "@/contexts/LanguageContext";
 type Level = "6" | "7" | "8" | "9";
 
 export default function CoursesClient({ initialCourses }: { initialCourses: Course[] }) {
-  const { t } = useLang();
+  const { t, locale } = useLang();
 
   const subjects: { value: Subject | "all"; label: string }[] = [
     { value: "all", label: t("courses.page.all_sub") },
@@ -73,29 +73,45 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
 
   return (
     <>
-      {/* Hero banner */}
-      <section className="relative isolate overflow-hidden border-b border-border/70 bg-gradient-to-br from-sky-50 via-background to-indigo-50/70 py-14 dark:from-slate-950 dark:via-[#111b32] dark:to-indigo-950/60 md:py-20">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -left-20 -top-20 h-[300px] w-[300px] rounded-full bg-blue-400/15 blur-[100px]" />
-          <div className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full bg-cyan-400/15 blur-[100px]" />
-          <div className="absolute inset-0 opacity-[0.22] [background-image:radial-gradient(var(--border)_1px,transparent_1px)] [background-size:22px_22px]" />
+      {/* Hero banner (NoraClass Style) */}
+      <section className="relative isolate overflow-hidden border-b border-neutral-200/80 dark:border-slate-800 bg-gradient-to-b from-blue-50/70 via-white to-neutral-50/40 dark:from-slate-950 dark:via-[#0c1222] dark:to-slate-950 pt-28 pb-14 md:pt-36 md:pb-16 transition-colors">
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute -left-20 -top-20 h-[320px] w-[320px] rounded-full bg-blue-400/12 dark:bg-blue-600/15 blur-[100px]" />
+          <div className="absolute -bottom-20 -right-20 h-[300px] w-[300px] rounded-full bg-cyan-400/10 dark:bg-cyan-500/10 blur-[100px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] opacity-35" />
         </div>
-        <div className="relative z-10 mx-auto max-w-7xl px-6 text-center">
-          <div className="eyebrow mb-4">
-            <Sparkles className="h-4 w-4" />
-            {initialCourses.length} {t("courses.page.badge_count")}
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-blue-50/90 dark:border-blue-800/60 dark:bg-blue-950/50 px-4 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 mb-4 backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+            <span>{initialCourses.length} {locale === "vi" ? "học liệu tương tác chuẩn GDPT 2018" : "interactive K-9 STEM resources"}</span>
           </div>
-          <h1 className="mb-4 text-4xl font-black tracking-tight text-foreground md:text-5xl lg:text-6xl">
-            {t("courses.page.title")}
+          <h1 className="mb-4 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
+            {locale === "vi" ? (
+              <>
+                Kho học liệu tương tác{" "}
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                  Toán & Khoa học
+                </span>
+              </>
+            ) : (
+              <>
+                Interactive{" "}
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                  STEM Courseware
+                </span>
+              </>
+            )}
           </h1>
-          <p className="mx-auto max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-            {t("courses.page.subtitle")}
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-neutral-600 dark:text-slate-300 sm:text-base md:text-lg font-normal">
+            {locale === "vi"
+              ? "Khám phá các bài giảng tích hợp mô hình 3D xoay 360°, video ngắt đố thông minh và trợ lý gia sư Nora AI song ngữ Anh – Việt dành cho học sinh K-9."
+              : "Explore interactive 3D simulations, checkpoint videos, and 24/7 Nora AI bilingual tutoring for K-9 learners."}
           </p>
         </div>
       </section>
 
-      {/* Filters Bar */}
-      <section className="sticky top-16 z-30 border-b border-border/70 bg-background/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur-2xl">
+      {/* Filters Bar (NoraClass Style) */}
+      <section className="sticky top-16 z-30 border-b border-neutral-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 shadow-xs backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
             {/* Search Input */}
@@ -228,10 +244,10 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                 >
                   <Link
                     href={`/courses/${course.id}`}
-                    className="group premium-card premium-card-hover flex h-full flex-col overflow-hidden"
+                    className="group flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-neutral-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-400/40 hover:-translate-y-1"
                   >
                     <div
-                      className={`relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br ${course.color || "from-blue-500 to-blue-700"}`}
+                      className={`relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br ${course.color || "from-blue-600 to-indigo-600"}`}
                     >
                       {course.thumbnail ? (
                         <Image
@@ -246,48 +262,56 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                         <>
                           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_50%,white,transparent)]" />
                           <div className="relative z-10 text-center p-6">
-                            <div className="mb-2 text-3xl font-black text-white/90">
+                            <div className="mb-2 text-3xl font-bold text-white/95">
                               {course.subjectLabelEn || (course.subject === 'math' ? 'Mathematics' : 'Science')}
                             </div>
-                            <div className="text-sm text-white/80 font-medium">
+                            <div className="text-xs text-white/90 font-medium bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full inline-block">
                               Khối Lớp {course.level}
                             </div>
                           </div>
                         </>
                       )}
+
+                      {/* 3D badge on top */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/90 dark:bg-slate-950/90 px-2.5 py-1 text-[11px] font-bold text-neutral-800 dark:text-white shadow-xs backdrop-blur-md">
+                          <Box className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>Học liệu 3D</span>
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex flex-1 flex-col gap-3 p-5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between">
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             course.subject === "math"
-                              ? "bg-primary/10 text-primary border border-primary/20"
-                              : "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20"
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60"
+                              : "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-200/60"
                           }`}
                         >
                           {course.subjectLabel || (course.subject === 'math' ? 'Toán học' : 'Khoa học')}
                         </span>
-                        <span className="rounded-full border border-border/80 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        <span className="rounded-full border border-neutral-200 dark:border-slate-800 px-2.5 py-0.5 text-xs font-medium text-neutral-600 dark:text-slate-400">
                           Lớp {course.level}
                         </span>
                       </div>
 
                       <div>
-                        <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
+                        <h3 className="font-bold text-neutral-900 dark:text-white text-base sm:text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                           {course.title}
                         </h3>
-                        <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                        <p className="text-xs text-neutral-500 dark:text-slate-400 font-medium mt-0.5 line-clamp-1">
                           {course.titleEn}
                         </p>
                       </div>
 
-                      <p className="text-sm text-muted-foreground leading-relaxed flex-1 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-neutral-600 dark:text-slate-400 leading-relaxed flex-1 line-clamp-2">
                         {course.description}
                       </p>
 
-                      <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground font-medium">
-                        <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-between border-t border-neutral-100 dark:border-slate-800 pt-3 text-xs text-neutral-500 dark:text-slate-400 font-medium">
+                        <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
                             <BookOpen className="h-3.5 w-3.5 text-blue-500" />
                             {course.lessonCount || 0} bài
@@ -298,9 +322,17 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                          <span className="font-bold text-foreground">{course.rating || 4.8}</span>
+                          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                          <span className="font-bold text-neutral-800 dark:text-white">{course.rating || 4.8}</span>
                         </div>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] text-neutral-500">Chuẩn GDPT 2018</span>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                          <span>Vào học</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
                       </div>
                     </div>
                   </Link>

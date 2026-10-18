@@ -4,8 +4,25 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/themeToggle";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useScroll, useMotionValueEvent } from "motion/react";
-import { Menu, X, Globe } from "lucide-react";
+import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "motion/react";
+import {
+  Menu,
+  X,
+  Globe,
+  ChevronDown,
+  Box,
+  PenTool,
+  BookOpen,
+  Bot,
+  FlaskConical,
+  School,
+  Sparkles,
+  ArrowRight,
+  Layers,
+  GraduationCap,
+  LayoutDashboard,
+  Trophy,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -22,31 +39,13 @@ import { useAuth, type AuthUser } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 import type { TranslationKey } from "@/lib/i18n";
 
-type NavItem = {
-  labelKey: TranslationKey;
-  href: string;
-  roles?: AuthUser["role"][];
-};
-const navItems: NavItem[] = [
-  { labelKey: "nav.home", href: "/" },
-  { labelKey: "nav.courses", href: "/courses" },
-  { labelKey: "nav.classes", href: "/classes" },
-  { labelKey: "nav.assignments", href: "/assignments", roles: ["STUDENT"] },
-  { labelKey: "nav.quiz", href: "/quiz" },
-  { labelKey: "nav.dashboard", href: "/dashboard", roles: ["STUDENT"] },
-  { labelKey: "nav.ai", href: "/ai" },
-  { labelKey: "nav.3d", href: "/three-d" },
-  {
-    labelKey: "nav.teacher",
-    href: "/teacher",
-    roles: ["TEACHER", "ADMIN"],
-  },
-];
-
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const [productsOpen, setProductsOpen] = React.useState(false);
+  const [mobileProductsOpen, setMobileProductsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const { locale, toggleLocale, t } = useLang();
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -65,127 +64,343 @@ export default function Navbar() {
     setIsScrolled(latest > 20);
   });
 
-  const visibleNavItems = navItems.filter(
-    (item) => !item.roles || (!!user && item.roles.includes(user.role)),
-  );
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProductsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const productsList = [
+    {
+      icon: Box,
+      titleVi: "Kho học liệu số 3D/XR",
+      titleEn: "3D/XR Learning Repository",
+      descVi: "Kho học liệu số 3D/XR chuẩn GDPT 2018, thí nghiệm ảo & Sandbox",
+      descEn: "Explore K-9 spatial 3D interactive models & Virtual Labs",
+      href: "/explore",
+      badgeVi: "Bóc tách 360°",
+      badgeEn: "360° Dissect",
+      accent: "text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60",
+    },
+    {
+      icon: PenTool,
+      titleVi: "Bảng trắng tương tác",
+      titleEn: "Interactive Whiteboard",
+      descVi: "Ghi chú, vẽ hình học và giải bài tập trên bảng số",
+      descEn: "Digital canvas for live notes and geometry",
+      href: "/whiteboard",
+      badgeVi: "Canvas số",
+      badgeEn: "Digital Canvas",
+      accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/60",
+    },
+    {
+      icon: BookOpen,
+      titleVi: "Sách tương tác (Flipbook)",
+      titleEn: "Interactive Books",
+      descVi: "Giáo trình lật trang sinh động kèm âm thanh & bài tập",
+      descEn: "Digital flipbooks with audio & self-paced quizzes",
+      href: "/books",
+      badgeVi: "Lật trang số",
+      badgeEn: "Interactive Book",
+      accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60",
+    },
+    {
+      icon: Bot,
+      titleVi: "Trợ lý Nora AI",
+      titleEn: "Nora AI STEM Tutor",
+      descVi: "Gia sư AI 24/7 giải thích từng bước Toán & Khoa học",
+      descEn: "24/7 bilingual STEM tutor and step-by-step solver",
+      href: "/ai",
+      badgeVi: "AI 24/7",
+      badgeEn: "AI 24/7",
+      accent: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950/60 dark:text-cyan-400 border-cyan-200/60 dark:border-cyan-800/60",
+    },
+    {
+      icon: FlaskConical,
+      titleVi: "Thí nghiệm mô phỏng",
+      titleEn: "Virtual Simulation Lab",
+      descVi: "Thí nghiệm ảo Vật lý, Hóa học, Sinh học an toàn và trực quan",
+      descEn: "Safe virtual physics, chemistry & biology simulations",
+      href: "/three-d",
+      badgeVi: "Phòng Lab ảo",
+      badgeEn: "Virtual Lab",
+      accent: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400 border-purple-200/60 dark:border-purple-800/60",
+    },
+    {
+      icon: School,
+      titleVi: "Dành cho trường học & LMS",
+      titleEn: "For Schools & LMS",
+      descVi: "Tích hợp sẵn sàng với Canvas, Google Classroom, Moodle",
+      descEn: "LTI 1.3 integration with Canvas, Moodle, Classroom",
+      href: "/classes",
+      badgeVi: "LMS Ready",
+      badgeEn: "LMS Ready",
+      accent: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60",
+    },
+  ];
 
   return (
-    <motion.nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-background/70 backdrop-blur-xl border-b border-white/10 shadow-sm py-2" : "bg-transparent py-4"}`}
+    <motion.header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-b border-neutral-200/80 dark:border-slate-800/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] py-2.5"
+          : "bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-neutral-200/60 dark:border-slate-800/60 py-3.5"
+      }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
-        >
-          <motion.div whileHover={{ rotate: 10 }} whileTap={{ scale: 0.9 }}>
-            <Image
-              src="/logo.png"
-              width={36}
-              height={36}
-              alt="SmartExplorer Logo"
-              className="rounded-xl shadow-lg"
-            />
-          </motion.div>
-          <span className="text-xl font-extrabold tracking-tight text-foreground">
-            Smart
-            <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-              Explorer
-            </span>
-          </span>
-        </Link>
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
+        {/* Brand Logo (NoraClass Style) */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+          >
+            <motion.div whileHover={{ rotate: 8, scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Image
+                src="/logo.png"
+                width={36}
+                height={36}
+                alt="SmartExplorer Logo"
+                className="rounded-xl shadow-xs border border-neutral-200 dark:border-slate-800"
+              />
+            </motion.div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                Smart<span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">Explorer</span>
+              </span>
+              <span className="hidden sm:inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800/60 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                K-9 STEM
+              </span>
+            </div>
+          </Link>
 
-        {/* Desktop navigation links */}
-        <div className="hidden xl:flex items-center gap-1">
-          {visibleNavItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="relative px-4 py-2 text-sm font-semibold transition-all duration-300 group"
+          {/* Desktop Nav Items (NoraClass Authentic Header Style) */}
+          <nav className="hidden xl:flex items-center gap-1">
+            {/* "Sản phẩm" Megamenu Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setProductsOpen((prev) => !prev)}
+                onMouseEnter={() => setProductsOpen(true)}
+                className={`inline-flex items-center gap-1.5 text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap cursor-pointer ${
+                  productsOpen
+                    ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white"
+                    : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+                }`}
               >
-                <span
-                  className={`relative z-10 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground group-hover:text-foreground"}`}
-                >
-                  {t(item.labelKey)}
-                </span>
-                {isActive && (
+                <span>{locale === "vi" ? "Sản phẩm" : "Products"}</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    productsOpen ? "rotate-180 text-blue-600" : "text-neutral-400"
+                  }`}
+                />
+              </button>
+
+              {/* Products Popover / Megamenu */}
+              <AnimatePresence>
+                {productsOpen && (
                   <motion.div
-                    layoutId="navbar-indicator"
-                    className="absolute inset-0 rounded-full bg-blue-500/10 dark:bg-blue-400/10"
-                    transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                  />
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    onMouseLeave={() => setProductsOpen(false)}
+                    className="absolute top-full left-0 mt-2 w-[600px] rounded-3xl border border-neutral-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.12)] backdrop-blur-2xl z-50"
+                  >
+                    <div className="mb-2 px-3 pt-1 flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 dark:text-slate-500">
+                        {locale === "vi" ? "Hệ sinh thái học tập tương tác" : "Interactive Learning Suite"}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                        <Sparkles className="w-3 h-3" />
+                        {locale === "vi" ? "Chuẩn GDPT 2018" : "K-9 Standard"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {productsList.map((prod, idx) => {
+                        const Icon = prod.icon;
+                        const title = locale === "vi" ? prod.titleVi : prod.titleEn;
+                        const desc = locale === "vi" ? prod.descVi : prod.descEn;
+                        const badge = locale === "vi" ? prod.badgeVi : prod.badgeEn;
+
+                        return (
+                          <Link
+                            key={idx}
+                            href={prod.href}
+                            onClick={() => setProductsOpen(false)}
+                            className="group flex items-start gap-3 rounded-2xl p-3 transition-all hover:bg-neutral-50 dark:hover:bg-slate-800/80 border border-transparent hover:border-neutral-200/70 dark:hover:border-slate-700/60"
+                          >
+                            <div
+                              className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center border transition-transform duration-200 group-hover:scale-105 ${prod.accent}`}
+                            >
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <h4 className="text-xs font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                  {title}
+                                </h4>
+                              </div>
+                              <p className="mt-1 text-[11px] text-neutral-500 dark:text-slate-400 leading-snug line-clamp-2">
+                                {desc}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 border-t border-neutral-100 dark:border-slate-800 pt-3 px-3 flex items-center justify-between text-xs">
+                      <span className="text-neutral-500 dark:text-slate-400">
+                        {locale === "vi" ? "Trải nghiệm đầy đủ công cụ trực quan" : "Experience full interactive canvas"}
+                      </span>
+                      <Link
+                        href="/explore"
+                        onClick={() => setProductsOpen(false)}
+                        className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <span>{locale === "vi" ? "Mở Kho Học Liệu Số 3D/XR" : "Open 3D/XR Library"}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
                 )}
+              </AnimatePresence>
+            </div>
+
+            {/* Kho học liệu số 3D/XR (YooBook style) */}
+            <Link
+              href="/explore"
+              className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap flex items-center gap-1.5 ${
+                pathname.startsWith("/explore")
+                  ? "bg-blue-600 text-white font-bold shadow-xs"
+                  : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+              }`}
+            >
+              <span>{locale === "vi" ? "Kho học liệu 3D/XR" : "3D/XR Library"}</span>
+              <span
+                className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                  pathname.startsWith("/explore")
+                    ? "bg-white/20 text-white"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                }`}
+              >
+                XR
+              </span>
+            </Link>
+
+            {/* Main Links */}
+            <Link
+              href="/courses"
+              className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
+                pathname.startsWith("/courses")
+                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                  : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+              }`}
+            >
+              {locale === "vi" ? "Kho học liệu" : "Courses Library"}
+            </Link>
+
+            <Link
+              href="/quiz"
+              className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
+                pathname.startsWith("/quiz")
+                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                  : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+              }`}
+            >
+              {locale === "vi" ? "Đấu trường Quiz" : "Quiz Arena"}
+            </Link>
+
+            <Link
+              href="/classes"
+              className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
+                pathname.startsWith("/classes")
+                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                  : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+              }`}
+            >
+              {locale === "vi" ? "Lớp học" : "Classes"}
+            </Link>
+
+            {/* Role-specific Links */}
+            {user?.role === "STUDENT" && (
+              <Link
+                href="/dashboard"
+                className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
+                  pathname.startsWith("/dashboard")
+                    ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                    : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+                }`}
+              >
+                Dashboard
               </Link>
-            );
-          })}
+            )}
+
+            {(user?.role === "TEACHER" || user?.role === "ADMIN") && (
+              <Link
+                href="/teacher"
+                className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
+                  pathname.startsWith("/teacher")
+                    ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                    : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
+                }`}
+              >
+                {locale === "vi" ? "Dành cho Thầy Cô" : "Teacher Studio"}
+              </Link>
+            )}
+          </nav>
         </div>
 
         {/* Right side: Lang + Auth + Theme + Mobile */}
-        <div className="flex items-center gap-2">
-          {/* Language Switcher */}
+        <div className="flex items-center gap-2 sm:gap-3 text-neutral-700 dark:text-slate-200">
+          {/* Language Switcher (NoraClass pill) */}
           <motion.button
             onClick={toggleLocale}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="hidden lg:flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-all cursor-pointer select-none"
-            title={
-              locale === "vi" ? "Switch to English" : "Chuyển sang Tiếng Việt"
-            }
-            aria-label={
-              locale === "vi"
-                ? "Switch language to English"
-                : "Đổi ngôn ngữ sang Tiếng Việt"
-            }
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full border border-neutral-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 hover:bg-neutral-100 dark:hover:bg-slate-800 text-neutral-700 dark:text-slate-300 transition-all cursor-pointer select-none"
+            title={locale === "vi" ? "Switch to English" : "Chuyển sang Tiếng Việt"}
+            aria-label={locale === "vi" ? "Switch language to English" : "Đổi ngôn ngữ sang Tiếng Việt"}
           >
-            <Globe className="w-3.5 h-3.5" />
-            <span
-              className={
-                locale === "vi" ? "text-blue-500" : "text-muted-foreground"
-              }
-            >
+            <Globe className="w-3.5 h-3.5 text-neutral-500" />
+            <span className={locale === "vi" ? "text-blue-600 font-bold dark:text-blue-400" : "text-neutral-400"}>
               VI
             </span>
-            <span className="opacity-40">/</span>
-            <span
-              className={
-                locale === "en" ? "text-blue-500" : "text-muted-foreground"
-              }
-            >
+            <span className="text-neutral-300 dark:text-slate-600">/</span>
+            <span className={locale === "en" ? "text-blue-600 font-bold dark:text-blue-400" : "text-neutral-400"}>
               EN
             </span>
           </motion.button>
 
-          {/* Auth section – skeleton placeholder while loading */}
+          {/* Auth section */}
           {isLoading ? (
-            <div className="w-24 h-8 rounded-xl bg-muted/50 animate-pulse hidden sm:block" />
+            <div className="w-24 h-9 rounded-xl bg-neutral-200/60 dark:bg-slate-800/60 animate-pulse hidden sm:block" />
           ) : isAuthenticated ? (
-            /* ── Logged in: show UserMenu ── */
             <UserMenu />
           ) : (
-            /* ── Guest: show Login + Register buttons ── */
-            <>
+            <div className="hidden sm:flex items-center gap-2">
               <Link
                 href="/login"
-                className="hidden sm:inline-flex rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-medium text-neutral-700 dark:text-slate-200 border border-neutral-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {t("nav.login")}
               </Link>
               <Link
                 href="/register"
-                className="hidden sm:inline-flex rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:shadow-blue-500/25 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {t("nav.register")}
+                {locale === "vi" ? "Đăng ký miễn phí" : "Get Started Free"}
               </Link>
-            </>
+            </div>
           )}
 
           <ThemeToggle />
@@ -197,17 +412,17 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="xl:hidden"
+                  className="xl:hidden rounded-xl"
                   aria-label="Open menu"
                 />
               }
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-neutral-700 dark:text-slate-300" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0">
-              <SheetTitle className="sr-only">Menu điều hướng</SheetTitle>
+            <SheetContent side="right" className="w-80 p-0 overflow-y-auto">
+              <SheetTitle className="sr-only">Menu điều hướng SmartExplorer</SheetTitle>
               {/* Mobile menu header */}
-              <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-slate-800">
                 <Link
                   href="/"
                   className="flex items-center gap-2"
@@ -220,12 +435,12 @@ export default function Navbar() {
                     alt="SmartExplorer"
                     className="rounded-lg"
                   />
-                  <span className="text-lg font-bold text-foreground">
-                    Smart<span className="text-blue-500">Explorer</span>
+                  <span className="text-lg font-bold text-neutral-900 dark:text-white">
+                    Smart<span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Explorer</span>
                   </span>
                 </Link>
                 <SheetClose>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="rounded-lg">
                     <X className="h-4 w-4" />
                   </Button>
                 </SheetClose>
@@ -233,98 +448,210 @@ export default function Navbar() {
 
               {/* Mobile nav links */}
               <div className="flex flex-col gap-1 px-3 py-4">
-                {visibleNavItems.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/" && pathname.startsWith(item.href));
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-                        isActive
-                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                {/* Mobile Products Collapsible */}
+                <div>
+                  <button
+                    onClick={() => setMobileProductsOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-neutral-800 dark:text-slate-200 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Box className="w-4 h-4 text-blue-600" />
+                      <span>{locale === "vi" ? "Sản phẩm & Công cụ" : "Products & Tools"}</span>
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${
+                        mobileProductsOpen ? "rotate-180 text-blue-600" : "text-neutral-400"
                       }`}
-                    >
-                      {t(item.labelKey)}
-                    </Link>
-                  );
-                })}
+                    />
+                  </button>
+
+                  {mobileProductsOpen && (
+                    <div className="mt-1 ml-4 pl-3 border-l-2 border-blue-500/20 space-y-1">
+                      {productsList.map((prod, idx) => {
+                        const Icon = prod.icon;
+                        const title = locale === "vi" ? prod.titleVi : prod.titleEn;
+                        return (
+                          <Link
+                            key={idx}
+                            href={prod.href}
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium text-neutral-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-neutral-50 dark:hover:bg-slate-800/50"
+                          >
+                            <Icon className="w-4 h-4 shrink-0 text-blue-600" />
+                            <span>{title}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <Link
+                  href="/explore"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
+                    pathname.startsWith("/explore")
+                      ? "bg-blue-600 text-white font-bold"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Box className="w-4 h-4 text-blue-500" />
+                    <span>{locale === "vi" ? "Kho học liệu số 3D/XR" : "3D/XR Library"}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-300">
+                    XR
+                  </span>
+                </Link>
+
+                <Link
+                  href="/books"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
+                    pathname.startsWith("/books")
+                      ? "bg-emerald-600 text-white font-bold"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-emerald-500" />
+                    <span>{locale === "vi" ? "Sách tương tác (Flipbook)" : "Interactive Books"}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">
+                    3D Flip
+                  </span>
+                </Link>
+
+                <Link
+                  href="/whiteboard"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
+                    pathname.startsWith("/whiteboard")
+                      ? "bg-indigo-600 text-white font-bold"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <PenTool className="w-4 h-4 text-indigo-500" />
+                    <span>{locale === "vi" ? "Bảng trắng tương tác" : "Whiteboard"}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300">
+                    Canvas
+                  </span>
+                </Link>
+
+                <Link
+                  href="/courses"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    pathname.startsWith("/courses")
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-500" />
+                  <span>{locale === "vi" ? "Kho học liệu tương tác" : "Courses Library"}</span>
+                </Link>
+
+                <Link
+                  href="/quiz"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    pathname.startsWith("/quiz")
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <span>{locale === "vi" ? "Đấu trường Quiz" : "Quiz Arena"}</span>
+                </Link>
+
+                <Link
+                  href="/classes"
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    pathname.startsWith("/classes")
+                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <School className="w-4 h-4 text-emerald-500" />
+                  <span>{locale === "vi" ? "Lớp học" : "Classes"}</span>
+                </Link>
+
+                {user?.role === "STUDENT" && (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                    <span>Dashboard</span>
+                  </Link>
+                )}
+
+                {(user?.role === "TEACHER" || user?.role === "ADMIN") && (
+                  <Link
+                    href="/teacher"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <GraduationCap className="w-4 h-4 text-rose-500" />
+                    <span>{locale === "vi" ? "Dành cho Thầy Cô" : "Teacher Studio"}</span>
+                  </Link>
+                )}
               </div>
 
               <Separator />
 
               {/* Mobile: Language toggle */}
-              <div className="px-3 py-3">
+              <div className="px-4 py-3">
                 <button
                   onClick={toggleLocale}
-                  aria-label={
-                    locale === "vi"
-                      ? "Switch language to English"
-                      : "Đổi ngôn ngữ sang Tiếng Việt"
-                  }
-                  className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold border border-border bg-muted/40 hover:bg-muted transition-all"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold border border-neutral-200 dark:border-slate-800 bg-neutral-50 dark:bg-slate-900 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-all"
                 >
-                  <Globe className="w-4 h-4" />
-                  {locale === "vi"
-                    ? "Switch to English 🇬🇧"
-                    : "Chuyển Tiếng Việt 🇻🇳"}
+                  <Globe className="w-4 h-4 text-neutral-500" />
+                  <span>
+                    {locale === "vi" ? "Chuyển sang English 🇬🇧" : "Chuyển sang Tiếng Việt 🇻🇳"}
+                  </span>
                 </button>
               </div>
 
               <Separator />
 
-              {/* Mobile auth section */}
-              <div className="flex flex-col gap-2 px-3 py-4">
+              {/* Mobile auth */}
+              <div className="flex flex-col gap-2 px-4 py-4">
                 {isAuthenticated ? (
-                  /* ── Logged-in mobile: profile + logout ── */
                   <>
                     <Link
                       href="/profile"
                       onClick={() => setOpen(false)}
-                      className="rounded-lg px-4 py-2.5 text-sm font-medium text-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                      className="rounded-xl px-4 py-2.5 text-sm font-medium text-center text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
                     >
                       {locale === "vi" ? "Hồ sơ cá nhân" : "My Profile"}
                     </Link>
-                    <Link
-                      href={
-                        user?.role === "STUDENT" ? "/dashboard" : "/teacher"
-                      }
-                      onClick={() => setOpen(false)}
-                      className="rounded-lg px-4 py-2.5 text-sm font-semibold text-center bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
-                    >
-                      {user?.role === "STUDENT"
-                        ? "Dashboard"
-                        : locale === "vi"
-                          ? "Giáo viên Studio"
-                          : "Teacher Studio"}
-                    </Link>
                     <button
                       onClick={handleLogout}
-                      className="rounded-lg px-4 py-2.5 text-sm font-medium text-center text-rose-500 hover:bg-rose-500/10 transition-all duration-200"
+                      className="rounded-xl px-4 py-2.5 text-sm font-medium text-center text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                     >
                       {locale === "vi" ? "Đăng xuất" : "Sign out"}
                     </button>
                   </>
                 ) : (
-                  /* ── Guest mobile: login + register ── */
                   <>
                     <Link
                       href="/login"
                       onClick={() => setOpen(false)}
-                      className="rounded-lg px-4 py-2.5 text-sm font-medium text-center text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                      className="rounded-xl px-4 py-2.5 text-sm font-medium text-center text-neutral-700 dark:text-slate-200 border border-neutral-200 dark:border-slate-800 hover:bg-neutral-100 dark:hover:bg-slate-800"
                     >
                       {t("nav.login")}
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setOpen(false)}
-                      className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white text-center shadow-sm hover:bg-blue-700 transition-all duration-200"
+                      className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white text-center shadow-md hover:bg-blue-700"
                     >
-                      {t("nav.register")}
+                      {locale === "vi" ? "Đăng ký miễn phí" : "Get Started Free"}
                     </Link>
                   </>
                 )}
@@ -333,6 +660,6 @@ export default function Navbar() {
           </Sheet>
         </div>
       </div>
-    </motion.nav>
+    </motion.header>
   );
 }

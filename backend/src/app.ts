@@ -15,6 +15,8 @@ import analyticsRoutes from "./modules/analytics/routes.js";
 import uploadRoutes from "./modules/uploads/routes.js";
 import questionRoutes from "./modules/questions/routes.js";
 import contentRoutes from "./modules/content/routes.js";
+import studyRoutes from "./modules/study/routes.js";
+import exploreRoutes from "./modules/explore/routes.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -71,6 +73,8 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api", questionRoutes);
 app.use("/api", contentRoutes);
 app.use("/api", learningRoutes);
+app.use("/api/study", studyRoutes);
+app.use("/api/explore", exploreRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -185,6 +185,153 @@ export async function submitQuizResult(
   return json.data;
 }
 
+export type StudyFlashcardRecord = {
+  id: string;
+  front: string;
+  back: string;
+  tag: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  mastered: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PracticeQuestionRecord = {
+  id: string;
+  question: string;
+  options: string[];
+  explanation: string;
+  topic: string;
+  createdAt: string;
+};
+
+async function readStudyResponse<T>(res: Response): Promise<T> {
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Study request failed");
+  }
+  return json.data as T;
+}
+
+export async function fetchStudyFlashcards(
+  token: string,
+): Promise<StudyFlashcardRecord[]> {
+  return readStudyResponse(
+    await fetch(`${API_URL}/study/flashcards`, {
+      headers: { Authorization: ["Bearer", token].join(" ") },
+      cache: "no-store",
+    }),
+  );
+}
+
+export async function createStudyFlashcard(
+  token: string,
+  input: Pick<StudyFlashcardRecord, "front" | "back" | "tag">,
+): Promise<StudyFlashcardRecord> {
+  return readStudyResponse(
+    await fetch(`${API_URL}/study/flashcards`, {
+      method: "POST",
+      headers: {
+        Authorization: ["Bearer", token].join(" "),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+export async function setStudyFlashcardMastered(
+  token: string,
+  flashcardId: string,
+  mastered: boolean,
+): Promise<StudyFlashcardRecord> {
+  return readStudyResponse(
+    await fetch(
+      `${API_URL}/study/flashcards/${encodeURIComponent(flashcardId)}/mastered`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: ["Bearer", token].join(" "),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mastered }),
+      },
+    ),
+  );
+}
+
+export async function deleteStudyFlashcard(
+  token: string,
+  flashcardId: string,
+): Promise<{ id: string }> {
+  return readStudyResponse(
+    await fetch(
+      `${API_URL}/study/flashcards/${encodeURIComponent(flashcardId)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: ["Bearer", token].join(" ") },
+      },
+    ),
+  );
+}
+
+export async function fetchPracticeQuestions(
+  token: string,
+): Promise<PracticeQuestionRecord[]> {
+  return readStudyResponse(
+    await fetch(`${API_URL}/study/practice-questions`, {
+      headers: { Authorization: ["Bearer", token].join(" ") },
+      cache: "no-store",
+    }),
+  );
+}
+
+export async function createPracticeQuestion(
+  token: string,
+  input: {
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+    explanation: string;
+    topic: string;
+  },
+): Promise<PracticeQuestionRecord> {
+  return readStudyResponse(
+    await fetch(`${API_URL}/study/practice-questions`, {
+      method: "POST",
+      headers: {
+        Authorization: ["Bearer", token].join(" "),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }),
+  );
+}
+
+export async function submitPracticeAnswer(
+  token: string,
+  questionId: string,
+  selectedAnswerIndex: number,
+): Promise<{
+  isCorrect: boolean;
+  correctAnswerIndex: number;
+  explanation: string;
+}> {
+  return readStudyResponse(
+    await fetch(
+      `${API_URL}/study/practice-questions/${encodeURIComponent(questionId)}/answer`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: ["Bearer", token].join(" "),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ selectedAnswerIndex }),
+      },
+    ),
+  );
+}
+
 export async function saveProgress(
   token: string,
   lessonId: string,

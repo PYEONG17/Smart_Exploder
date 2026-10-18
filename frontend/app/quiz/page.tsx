@@ -35,6 +35,13 @@ import {
   fetchMyCourses,
   createLessonQuiz,
   generateAssessment,
+  fetchStudyFlashcards,
+  createStudyFlashcard,
+  setStudyFlashcardMastered,
+  deleteStudyFlashcard,
+  fetchPracticeQuestions,
+  createPracticeQuestion,
+  submitPracticeAnswer,
   type AssessmentDifficulty,
 } from "@/lib/api";
 import type { Course, Lesson } from "@/types";
@@ -47,15 +54,17 @@ export type Flashcard = {
   tag: string;
   difficulty?: "EASY" | "MEDIUM" | "HARD";
   mastered?: boolean;
+  isCustom?: boolean;
 };
 
 export type PracticeQuestion = {
   id: string;
   question: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer?: number;
   explanation: string;
   topic: string;
+  isCustom?: boolean;
 };
 
 // ── Initial Mock / Default Data ─────────────────────────────────────
@@ -135,19 +144,27 @@ export default function QuizHubPage() {
   const [activeTab, setActiveTab] = useState<"flashcards" | "practice" | "teacher-assignment">("flashcards");
 
   // ── Flashcard state ───────────────────────────────────────────────
-  const [flashcards, setFlashcards] = useState<Flashcard[]>(defaultFlashcards);
+  const [savedFlashcards, setSavedFlashcards] =
+    useState<Flashcard[]>(defaultFlashcards);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
   const [newTag, setNewTag] = useState("Toán học");
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [isSavingCard, setIsSavingCard] = useState(false);
 
   // ── Practice Quiz State ──────────────────────────────────────────
-  const [questions, setQuestions] = useState<PracticeQuestion[]>(defaultQuestions);
+  const [savedQuestions, setSavedQuestions] =
+    useState<PracticeQuestion[]>(defaultQuestions);
+  const [studyDataToken, setStudyDataToken] = useState<string | null>(null);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+  const [revealedCorrectAnswer, setRevealedCorrectAnswer] = useState<
+    number | null
+  >(null);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
@@ -158,6 +175,7 @@ export default function QuizHubPage() {
   const [newQCorrect, setNewQCorrect] = useState(0);
   const [newQExplanation, setNewQExplanation] = useState("");
   const [newQTopic, setNewQTopic] = useState("Toán học");
+  const [isSavingQuestion, setIsSavingQuestion] = useState(false);
 
   // ── Teacher Assignment Creation State ────────────────────────────
   const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
@@ -187,6 +205,43 @@ export default function QuizHubPage() {
     }
   }, [token, isTeacher]);
 
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    Promise.all([fetchStudyFlashcards(token), fetchPracticeQuestions(token)])
+      .then(([savedFlashcards, savedQuestions]) => {
+        if (!active) return;
+        setSavedFlashcards([
+          ...savedFlashcards.map((card) => ({ ...card, isCustom: true })),
+          ...defaultFlashcards,
+        ]);
+        setSavedQuestions([
+          ...savedQuestions.map((question) => ({
+            ...question,
+            isCustom: true,
+          })),
+          ...defaultQuestions,
+        ]);
+        setStudyDataToken(token);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not load your saved flashcards and practice questions.",
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const flashcards =
+    token && studyDataToken === token ? savedFlashcards : defaultFlashcards;
+  const questions =
+    token && studyDataToken === token ? savedQuestions : defaultQuestions;
+
   const selectedCourse = teacherCourses.find((c) => c.id === selectedCourseId);
   const lessonOptions: Lesson[] = selectedCourse?.lessons || [];
 
@@ -201,46 +256,142 @@ export default function QuizHubPage() {
     setCurrentCardIndex((prev) => (prev - 1 + flashcards.length) % flashcards.length);
   };
 
-  const toggleMastered = (id: string) => {
-    setFlashcards((prev) =>
-      prev.map((card) =>
-        card.id === id ? { ...card, mastered: !card.mastered } : card
-      )
-    );
+  const toggleMastered = async (id: string) => {
+    const card = flashcards.find((item) => item.id === id);
+    if (!card) return;
+    const mastered = !card.mastered;
+    if (card.isCustom) {
+      if (!token) return;
+      try {
+        const updated = await setStudyFlashcardMastered(token, id, mastered);
+        setSavedFlashcards((prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, mastered: updated.mastered } : item,
+          ),
+        );
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not update flashcard",
+        );
+        return;
+      }
+    } else {
+      setSavedFlashcards((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, mastered } : item)),
+      );
+    }
     toast.success(isVietnamese ? "Đã cập nhật trạng thái thẻ!" : "Card status updated!");
   };
 
-  const handleAddFlashcard = (e: React.FormEvent) => {
+  const handleDeleteFlashcard = async (id: string) => {
+    if (!token) return;
+    const deletedIndex = flashcards.findIndex((card) => card.id === id);
+    try {
+      await deleteStudyFlashcard(token, id);
+      setSavedFlashcards((prev) => prev.filter((card) => card.id !== id));
+      setCurrentCardIndex((index) =>
+        Math.min(
+          Math.max(0, index - (deletedIndex < index ? 1 : 0)),
+          Math.max(0, flashcards.length - 2),
+        ),
+      );
+      setIsFlipped(false);
+      toast.success(isVietnamese ? "Đã xóa flashcard." : "Flashcard deleted.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not delete flashcard",
+      );
+    }
+  };
+
+  const handleAddFlashcard = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      toast.error(
+        isVietnamese
+          ? "Đăng nhập để lưu flashcard của bạn."
+          : "Please sign in to save your flashcards.",
+      );
+      return;
+    }
     if (!newFront.trim() || !newBack.trim()) {
       toast.error(isVietnamese ? "Vui lòng nhập mặt trước và mặt sau thẻ" : "Please fill in front and back");
       return;
     }
-    const newCard: Flashcard = {
-      id: "fc-" + Date.now(),
-      front: newFront.trim(),
-      back: newBack.trim(),
-      tag: newTag,
-      difficulty: "MEDIUM",
-      mastered: false,
-    };
-    setFlashcards((prev) => [newCard, ...prev]);
-    setNewFront("");
-    setNewBack("");
-    setShowAddCardModal(false);
-    toast.success(isVietnamese ? "Đã thêm thẻ ghi nhớ mới!" : "Flashcard added successfully!");
+    setIsSavingCard(true);
+    try {
+      const saved = await createStudyFlashcard(token, {
+        front: newFront.trim(),
+        back: newBack.trim(),
+        tag: newTag.trim(),
+      });
+      setSavedFlashcards((prev) => [{ ...saved, isCustom: true }, ...prev]);
+      setCurrentCardIndex(0);
+      setIsFlipped(false);
+      setNewFront("");
+      setNewBack("");
+      setShowAddCardModal(false);
+      toast.success(isVietnamese ? "Đã thêm thẻ ghi nhớ mới!" : "Flashcard added successfully!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : isVietnamese
+            ? "Không thể lưu flashcard."
+            : "Could not save flashcard.",
+      );
+    } finally {
+      setIsSavingCard(false);
+    }
   };
 
   // Practice Quiz controls
   const handleSelectOption = (idx: number) => {
-    if (isAnswerSubmitted) return;
+    if (isAnswerSubmitted || isSubmittingAnswer) return;
     setSelectedAnswer(idx);
   };
 
-  const handleSubmitAnswer = () => {
-    if (selectedAnswer === null) return;
+  const handleSubmitAnswer = async () => {
+    if (selectedAnswer === null || isSubmittingAnswer) return;
+    const question = questions[currentQIndex];
+    if (!question) return;
+
+    let correctAnswer = question.correctAnswer;
+    if (question.isCustom) {
+      if (!token) {
+        toast.error(
+          isVietnamese
+            ? "Đăng nhập để chấm và lưu câu trả lời."
+            : "Please sign in to check and save your answer.",
+        );
+        return;
+      }
+      setIsSubmittingAnswer(true);
+      try {
+        const result = await submitPracticeAnswer(
+          token,
+          question.id,
+          selectedAnswer,
+        );
+        correctAnswer = result.correctAnswerIndex;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : isVietnamese
+              ? "Không thể chấm câu trả lời."
+              : "Could not check your answer.",
+        );
+        return;
+      } finally {
+        setIsSubmittingAnswer(false);
+      }
+    }
+
+    if (correctAnswer === undefined) return;
+    setRevealedCorrectAnswer(correctAnswer);
     setIsAnswerSubmitted(true);
-    if (selectedAnswer === questions[currentQIndex].correctAnswer) {
+    if (selectedAnswer === correctAnswer) {
       setScore((s) => s + 1);
       toast.success(isVietnamese ? "Chính xác! Làm tốt lắm 🎉" : "Correct! Well done 🎉");
     } else {
@@ -253,6 +404,7 @@ export default function QuizHubPage() {
       setCurrentQIndex((i) => i + 1);
       setSelectedAnswer(null);
       setIsAnswerSubmitted(false);
+      setRevealedCorrectAnswer(null);
     } else {
       setQuizFinished(true);
     }
@@ -262,30 +414,59 @@ export default function QuizHubPage() {
     setCurrentQIndex(0);
     setSelectedAnswer(null);
     setIsAnswerSubmitted(false);
+    setRevealedCorrectAnswer(null);
     setScore(0);
     setQuizFinished(false);
   };
 
-  const handleAddQuestion = (e: React.FormEvent) => {
+  const handleAddQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      toast.error(
+        isVietnamese
+          ? "Đăng nhập để lưu câu hỏi ôn tập."
+          : "Please sign in to save your practice questions.",
+      );
+      return;
+    }
     if (!newQTitle.trim() || newQOptions.some((opt) => !opt.trim())) {
       toast.error(isVietnamese ? "Vui lòng nhập đầy đủ câu hỏi và 4 lựa chọn" : "Please fill in all options");
       return;
     }
-    const newQ: PracticeQuestion = {
-      id: "q-" + Date.now(),
-      question: newQTitle.trim(),
-      options: newQOptions.map((o) => o.trim()),
-      correctAnswer: newQCorrect,
-      explanation: newQExplanation.trim() || (isVietnamese ? "Đáp án chính xác." : "Correct answer."),
-      topic: newQTopic,
-    };
-    setQuestions((prev) => [...prev, newQ]);
-    setNewQTitle("");
-    setNewQOptions(["", "", "", ""]);
-    setNewQExplanation("");
-    setShowAddQuestionModal(false);
-    toast.success(isVietnamese ? "Đã thêm câu hỏi ôn tập mới!" : "Practice question added!");
+    setIsSavingQuestion(true);
+    try {
+      const saved = await createPracticeQuestion(token, {
+        question: newQTitle.trim(),
+        options: newQOptions.map((option) => option.trim()),
+        correctAnswerIndex: newQCorrect,
+        explanation:
+          newQExplanation.trim() ||
+          (isVietnamese ? "Đáp án chính xác." : "Correct answer."),
+        topic: newQTopic.trim(),
+      });
+      setSavedQuestions((prev) => [{ ...saved, isCustom: true }, ...prev]);
+      setCurrentQIndex(0);
+      setSelectedAnswer(null);
+      setIsAnswerSubmitted(false);
+      setRevealedCorrectAnswer(null);
+      setScore(0);
+      setQuizFinished(false);
+      setNewQTitle("");
+      setNewQOptions(["", "", "", ""]);
+      setNewQExplanation("");
+      setShowAddQuestionModal(false);
+      toast.success(isVietnamese ? "Đã thêm câu hỏi ôn tập mới!" : "Practice question added!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : isVietnamese
+            ? "Không thể lưu câu hỏi ôn tập."
+            : "Could not save the practice question.",
+      );
+    } finally {
+      setIsSavingQuestion(false);
+    }
   };
 
   // Teacher AI Assessment generation and direct publishing
@@ -366,50 +547,78 @@ export default function QuizHubPage() {
     <main className="min-h-screen bg-background pb-20 pt-24">
       <div className="page-container max-w-6xl">
         {/* Header Section */}
-        <div className="relative mb-8 overflow-hidden rounded-3xl border border-border/80 bg-card p-6 shadow-sm md:p-10">
-          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        {/* Header Section (NoraClass Style) */}
+        <div className="relative mb-8 overflow-hidden rounded-3xl border border-neutral-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-6 shadow-xs md:p-10 backdrop-blur-xl">
+          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
           <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
             <div>
-              <div className="eyebrow mb-3">
-                <BrainCircuit className="h-4 w-4" />
-                {isVietnamese ? "Trung tâm Luyện tập & Đánh giá" : "Practice & Assessment Hub"}
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-blue-50/90 dark:border-blue-800/60 dark:bg-blue-950/50 px-3.5 py-1 text-xs font-bold text-blue-600 dark:text-blue-400 mb-3 backdrop-blur-md">
+                <BrainCircuit className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span>{isVietnamese ? "Đấu trường Luyện tập & Đánh giá" : "Practice & Assessment Hub"}</span>
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
-                {isVietnamese ? "Quiz & Flashcard Thông Minh" : "Smart Quiz & Flashcards"}
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white md:text-4xl">
+                {isVietnamese ? (
+                  <>
+                    Quiz & Flashcard{" "}
+                    <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                      Thông Minh
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Smart{" "}
+                    <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                      Quiz & Flashcards
+                    </span>
+                  </>
+                )}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-neutral-600 dark:text-slate-400 md:text-base">
                 {isVietnamese
-                  ? "Tăng tốc ghi nhớ thuật ngữ STEM với thẻ ghi nhớ tương tác, luyện tập câu hỏi trắc nghiệm và giao bài tập kiểm tra cho học sinh."
+                  ? "Tăng tốc ghi nhớ thuật ngữ STEM với thẻ ghi nhớ tương tác, luyện tập câu hỏi trắc nghiệm tự động chấm điểm và bộ đề thi chuẩn GDPT 2018."
                   : "Accelerate your STEM retention with interactive flashcards, practice quizzes, and teacher assignment tools."}
               </p>
             </div>
 
-            {/* Quick action buttons */}
+            {/* Quick action buttons (NoraClass Pills) */}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant={activeTab === "flashcards" ? "default" : "outline"}
-                className="rounded-xl font-semibold gap-2"
+                className={`rounded-xl font-semibold gap-2 transition-all ${
+                  activeTab === "flashcards"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                    : "border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                }`}
                 onClick={() => setActiveTab("flashcards")}
               >
                 <Layers className="h-4 w-4" />
-                Flashcard ({flashcards.length})
+                <span>Flashcard ({flashcards.length})</span>
               </Button>
               <Button
                 variant={activeTab === "practice" ? "default" : "outline"}
-                className="rounded-xl font-semibold gap-2"
+                className={`rounded-xl font-semibold gap-2 transition-all ${
+                  activeTab === "practice"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                    : "border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                }`}
                 onClick={() => setActiveTab("practice")}
               >
                 <HelpCircle className="h-4 w-4" />
-                {isVietnamese ? "Ôn tập Quiz" : "Practice Quiz"}
+                <span>{isVietnamese ? "Ôn tập Quiz" : "Practice Quiz"}</span>
               </Button>
               {isTeacher && (
                 <Button
                   variant={activeTab === "teacher-assignment" ? "default" : "outline"}
-                  className="rounded-xl font-semibold gap-2 border-primary/30"
+                  className={`rounded-xl font-semibold gap-2 transition-all ${
+                    activeTab === "teacher-assignment"
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                      : "border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                  }`}
                   onClick={() => setActiveTab("teacher-assignment")}
                 >
-                  <GraduationCap className="h-4 w-4 text-primary" />
-                  {isVietnamese ? "Giáo viên Giao Bài" : "Assign Quiz"}
+                  <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span>{isVietnamese ? "Giáo viên Giao Bài" : "Assign Quiz"}</span>
                 </Button>
               )}
             </div>
@@ -423,7 +632,7 @@ export default function QuizHubPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="px-3 py-1 font-semibold text-xs rounded-xl">
-                  {currentCardIndex + 1} / {flashcards.length} {isVietnamese ? "thẻ" : "cards"}
+                  {flashcards.length ? currentCardIndex + 1 : 0} / {flashcards.length} {isVietnamese ? "thẻ" : "cards"}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {flashcards.filter((c) => c.mastered).length} {isVietnamese ? "đã thuộc" : "mastered"}
@@ -473,7 +682,7 @@ export default function QuizHubPage() {
                     </h3>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border/70 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2 pt-4 border-t border-border/70 text-xs text-muted-foreground">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -491,7 +700,22 @@ export default function QuizHubPage() {
                         ? (isVietnamese ? "Đã ghi nhớ" : "Mastered")
                         : (isVietnamese ? "Đánh dấu đã thuộc" : "Mark as mastered")}
                     </button>
-                    <span>{isVietnamese ? "Nhấn phím Cách để lật" : "Press Space to flip"}</span>
+                    <span className="text-center">{isVietnamese ? "Nhấn phím Cách để lật" : "Press Space to flip"}</span>
+                    {currentCard.isCustom && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDeleteFlashcard(currentCard.id);
+                        }}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-destructive transition-colors hover:bg-destructive/10"
+                        aria-label={
+                          isVietnamese ? "Xóa flashcard" : "Delete flashcard"
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -587,8 +811,18 @@ export default function QuizHubPage() {
                       >
                         {isVietnamese ? "Hủy" : "Cancel"}
                       </Button>
-                      <Button type="submit" className="rounded-xl font-semibold">
-                        {isVietnamese ? "Thêm thẻ" : "Add Card"}
+                      <Button
+                        type="submit"
+                        className="rounded-xl font-semibold"
+                        disabled={isSavingCard}
+                      >
+                        {isSavingCard
+                          ? isVietnamese
+                            ? "Đang lưu..."
+                            : "Saving..."
+                          : isVietnamese
+                            ? "Thêm thẻ"
+                            : "Add Card"}
                       </Button>
                     </div>
                   </form>
@@ -657,7 +891,10 @@ export default function QuizHubPage() {
                 <div className="space-y-3">
                   {questions[currentQIndex].options.map((option, idx) => {
                     const isSelected = selectedAnswer === idx;
-                    const isCorrect = idx === questions[currentQIndex].correctAnswer;
+                    const isCorrect =
+                      idx ===
+                      (revealedCorrectAnswer ??
+                        questions[currentQIndex].correctAnswer);
                     let optionStyle = "border-border/80 hover:bg-muted/60";
 
                     if (isAnswerSubmitted) {
@@ -677,7 +914,7 @@ export default function QuizHubPage() {
                         key={idx}
                         type="button"
                         onClick={() => handleSelectOption(idx)}
-                        disabled={isAnswerSubmitted}
+                        disabled={isAnswerSubmitted || isSubmittingAnswer}
                         className={`w-full flex items-center gap-3 p-4 text-left rounded-2xl border text-sm transition-all ${optionStyle}`}
                       >
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-current text-xs font-bold">
@@ -712,10 +949,16 @@ export default function QuizHubPage() {
                   {!isAnswerSubmitted ? (
                     <Button
                       onClick={handleSubmitAnswer}
-                      disabled={selectedAnswer === null}
+                      disabled={selectedAnswer === null || isSubmittingAnswer}
                       className="rounded-xl font-semibold px-6"
                     >
-                      {isVietnamese ? "Kiểm tra đáp án" : "Check Answer"}
+                      {isSubmittingAnswer
+                        ? isVietnamese
+                          ? "Đang chấm..."
+                          : "Checking..."
+                        : isVietnamese
+                          ? "Kiểm tra đáp án"
+                          : "Check Answer"}
                     </Button>
                   ) : (
                     <Button onClick={handleNextQuestion} className="rounded-xl font-semibold px-6">
@@ -814,8 +1057,18 @@ export default function QuizHubPage() {
                       >
                         {isVietnamese ? "Hủy" : "Cancel"}
                       </Button>
-                      <Button type="submit" className="rounded-xl font-semibold">
-                        {isVietnamese ? "Lưu câu hỏi" : "Save Question"}
+                      <Button
+                        type="submit"
+                        className="rounded-xl font-semibold"
+                        disabled={isSavingQuestion}
+                      >
+                        {isSavingQuestion
+                          ? isVietnamese
+                            ? "Đang lưu..."
+                            : "Saving..."
+                          : isVietnamese
+                            ? "Lưu câu hỏi"
+                            : "Save Question"}
                       </Button>
                     </div>
                   </form>

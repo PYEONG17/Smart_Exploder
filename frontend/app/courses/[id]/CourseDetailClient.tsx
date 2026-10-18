@@ -231,15 +231,15 @@ export default function CourseDetailClient({
       <section className="py-8 md:py-12 bg-background">
         <div className="mx-auto max-w-7xl px-6">
           {/* Tabs */}
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-1 mb-8 w-fit">
+          <div className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 dark:border-slate-800 bg-neutral-100/70 dark:bg-slate-900/70 p-1.5 mb-8 w-fit">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                className={`rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
+                    : "text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white"
                 }`}
               >
                 {tab.label}
