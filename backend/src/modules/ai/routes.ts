@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { Router } from "express";
-import { requireAuth, requireRole } from "../../middlewares/auth.middleware.js";
+import { requireAuth, requireRole, optionalAuth } from "../../middlewares/auth.middleware.js";
 import {
   chatWithGemini,
   generateAssessmentWithGemini,
@@ -11,6 +11,18 @@ import {
   generateLessonDraft,
 } from "./studio.controller.js";
 import { lessonTutorChat } from "./lesson-tutor.controller.js";
+import {
+  translateLabText,
+  translateLabTexts,
+} from "./lab-translation.controller.js";
+import { generateBilingualLessonDraft } from "../lessons/lesson.controller.js";
+import {
+  createAiConversation,
+  deleteAiConversation,
+  getAiConversation,
+  listAiConversations,
+  sendAiConversationMessage,
+} from "./conversations.controller.js";
 
 const router = Router();
 const windowMs = 60_000;
@@ -19,7 +31,7 @@ function createUserRateLimiter(requestLimit: number, message: string) {
   const userRequests = new Map<string, { count: number; resetAt: number }>();
 
   return (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user?.id;
+    const userId = req.user?.id || (req.ip ? String(req.ip) : "anonymous");
     if (!userId) return next();
 
     const now = Date.now();
@@ -59,6 +71,10 @@ const limitLessonTutorRequests = createUserRateLimiter(
   15,
   "Bạn đã hỏi quá nhiều câu liên tiếp. Vui lòng thử lại sau một phút.",
 );
+const limitLabTranslationRequests = createUserRateLimiter(
+  10,
+  "Bạn đã yêu cầu dịch quá nhiều lần. Vui lòng thử lại sau một phút.",
+);
 const limitAssessmentRequests = createUserRateLimiter(
   3,
   "Bạn đã tạo nhiều đề liên tiếp. Vui lòng thử lại sau một phút.",
@@ -71,9 +87,41 @@ const limitStudioRequests = createUserRateLimiter(
 const teacherAi = [requireAuth, requireRole("TEACHER", "ADMIN"), limitStudioRequests];
 
 router.post("/chat", requireAuth, limitChatRequests, chatWithGemini);
-router.post("/lesson-tutor", requireAuth, limitLessonTutorRequests, lessonTutorChat);
+router.post("/lesson-tutor", optionalAuth, limitLessonTutorRequests, lessonTutorChat);
+router.post(
+  "/lab-translate",
+  optionalAuth,
+  limitLabTranslationRequests,
+  translateLabText,
+);
+router.post(
+  "/lab-translate/batch",
+  optionalAuth,
+  limitLabTranslationRequests,
+  translateLabTexts,
+);
+router.get("/conversations", requireAuth, listAiConversations);
+router.post(
+  "/conversations",
+  requireAuth,
+  limitChatRequests,
+  createAiConversation,
+);
+router.get("/conversations/:id", requireAuth, getAiConversation);
+router.post(
+  "/conversations/:id/messages",
+  requireAuth,
+  limitChatRequests,
+  sendAiConversationMessage,
+);
+router.delete("/conversations/:id", requireAuth, deleteAiConversation);
 router.post("/studio/outline", ...teacherAi, generateCourseOutline);
 router.post("/studio/lessons/:lessonId/draft", ...teacherAi, generateLessonDraft);
+router.post(
+  "/studio/lessons/bilingual-draft",
+  ...teacherAi,
+  generateBilingualLessonDraft,
+);
 router.post("/studio/lessons/:lessonId/resources", ...teacherAi, findLessonResources);
 router.post(
   "/assessments/generate",

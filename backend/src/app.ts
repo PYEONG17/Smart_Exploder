@@ -5,7 +5,6 @@ import path from "path";
 import prisma from "./config/db.js";
 
 import courseRoutes from "./modules/courses/course.routes.js";
-import classRoutes from "./modules/classes/class.routes.js";
 import lessonRoutes from "./modules/lessons/lesson.routes.js";
 import authRoutes from "./modules/auth/routes.js";
 import usersRoutes from "./modules/users/routes.js";
@@ -17,6 +16,8 @@ import questionRoutes from "./modules/questions/routes.js";
 import contentRoutes from "./modules/content/routes.js";
 import studyRoutes from "./modules/study/routes.js";
 import exploreRoutes from "./modules/explore/routes.js";
+import labModelRoutes from "./modules/labs/lab-models.routes.js";
+import customLabRoutes from "./modules/labs/custom-labs.routes.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -65,16 +66,17 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/classes", classRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/explore", exploreRoutes);
+app.use("/api/study", studyRoutes);
+app.use("/api/lab-models", labModelRoutes);
+app.use("/api/labs", customLabRoutes);
 app.use("/api", questionRoutes);
 app.use("/api", contentRoutes);
 app.use("/api", learningRoutes);
-app.use("/api/study", studyRoutes);
-app.use("/api/explore", exploreRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

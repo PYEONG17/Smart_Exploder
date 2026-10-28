@@ -38,7 +38,10 @@ export default function Footer() {
                 className="rounded-xl shadow-xs border border-slate-200 dark:border-slate-800"
               />
               <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                Smart<span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">Explorer</span>
+                Smart
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+                  Explorer
+                </span>
               </span>
             </Link>
 
@@ -89,7 +92,11 @@ export default function Footer() {
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
                 >
                   <Box className="w-3.5 h-3.5 text-blue-500" />
-                  <span>{locale === "vi" ? "Mô hình 3D tương tác" : "Interactive 3D Studio"}</span>
+                  <span>
+                    {locale === "vi"
+                      ? "Mô hình 3D tương tác"
+                      : "Interactive 3D Studio"}
+                  </span>
                 </Link>
               </li>
               <li>
@@ -98,7 +105,11 @@ export default function Footer() {
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
                 >
                   <Video className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>{locale === "vi" ? "Video bài giảng ngắt đố" : "Checkpoint Video Lessons"}</span>
+                  <span>
+                    {locale === "vi"
+                      ? "Video bài giảng ngắt đố"
+                      : "Checkpoint Video Lessons"}
+                  </span>
                 </Link>
               </li>
               <li>
@@ -107,7 +118,11 @@ export default function Footer() {
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
                 >
                   <Bot className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>{locale === "vi" ? "Trợ lý AI Nora Tutor 24/7" : "Nora AI STEM Tutor"}</span>
+                  <span>
+                    {locale === "vi"
+                      ? "Trợ lý AI Nora Tutor 24/7"
+                      : "Nora AI STEM Tutor"}
+                  </span>
                 </Link>
               </li>
               <li>
@@ -116,7 +131,11 @@ export default function Footer() {
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-                  <span>{locale === "vi" ? "Đấu trường Quiz & Flashcard" : "Gamified Quizzes & Flashcards"}</span>
+                  <span>
+                    {locale === "vi"
+                      ? "Đấu trường Quiz & Flashcard"
+                      : "Gamified Quizzes & Flashcards"}
+                  </span>
                 </Link>
               </li>
               <li>
@@ -125,7 +144,11 @@ export default function Footer() {
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
                 >
                   <Globe className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>{locale === "vi" ? "Teacher Studio & LMS" : "Teacher Studio & LMS"}</span>
+                  <span>
+                    {locale === "vi"
+                      ? "Teacher Studio & LMS"
+                      : "Teacher Studio & LMS"}
+                  </span>
                 </Link>
               </li>
             </ul>
@@ -142,7 +165,9 @@ export default function Footer() {
                   href="/courses?subject=math"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Toán học Tiểu học (Lớp 1 - 5)" : "Primary Math (Grades 1 - 5)"}
+                  {locale === "vi"
+                    ? "Toán học Tiểu học (Lớp 1 - 5)"
+                    : "Primary Math (Grades 1 - 5)"}
                 </Link>
               </li>
               <li>
@@ -150,7 +175,9 @@ export default function Footer() {
                   href="/courses?subject=math"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Toán học THCS (Lớp 6 - 9)" : "Middle School Math (Grades 6 - 9)"}
+                  {locale === "vi"
+                    ? "Toán học THCS (Lớp 6 - 9)"
+                    : "Middle School Math (Grades 6 - 9)"}
                 </Link>
               </li>
               <li>
@@ -158,7 +185,9 @@ export default function Footer() {
                   href="/courses?subject=science"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Khoa học tự nhiên & Sinh học" : "Natural Science & Biology"}
+                  {locale === "vi"
+                    ? "Khoa học tự nhiên & Sinh học"
+                    : "Natural Science & Biology"}
                 </Link>
               </li>
               <li>
@@ -166,7 +195,9 @@ export default function Footer() {
                   href="/courses?subject=physics"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Vật lý & Hóa học thực hành" : "Physics & Chemistry Labs"}
+                  {locale === "vi"
+                    ? "Vật lý & Hóa học thực hành"
+                    : "Physics & Chemistry Labs"}
                 </Link>
               </li>
               <li>
@@ -174,7 +205,9 @@ export default function Footer() {
                   href="/courses?subject=cambridge"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Thuật ngữ Tiếng Anh STEM" : "STEM English Vocabulary"}
+                  {locale === "vi"
+                    ? "Thuật ngữ Tiếng Anh STEM"
+                    : "STEM English Vocabulary"}
                 </Link>
               </li>
             </ul>
@@ -207,7 +240,9 @@ export default function Footer() {
                   href="/dashboard"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  {locale === "vi" ? "Bảng điều khiển học tập" : "Learning Dashboard"}
+                  {locale === "vi"
+                    ? "Bảng điều khiển học tập"
+                    : "Learning Dashboard"}
                 </Link>
               </li>
               <li>
@@ -225,11 +260,16 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
           <div>
-            © {currentYear} SmartExplorer Platform. {locale === "vi" ? "Bản quyền thuộc về Nguyễn Tiến Bình." : "All Rights Reserved."}
+            © {currentYear} SmartExplorer Platform.{" "}
+            {locale === "vi"
+              ? "Bản quyền thuộc về Nguyễn Tiến Bình."
+              : "All Rights Reserved."}
           </div>
           <div className="flex items-center gap-4">
             <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {locale === "vi" ? "Chuẩn GDPT 2018 · Cambridge STEM K-9" : "GDPT 2018 · Cambridge STEM K-9"}
+              {locale === "vi"
+                ? "Chuẩn GDPT · Cambridge STEM K-9"
+                : "GDPT 2018 · Cambridge STEM K-9"}
             </span>
           </div>
         </div>

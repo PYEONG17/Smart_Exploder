@@ -11,7 +11,10 @@ import {
   Layers,
   Users,
   TrendingUp,
+  Box,
+  Database,
 } from "lucide-react";
+import TeacherExploreManager from "@/components/teacher/TeacherExploreManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fetchMyCourses } from "@/lib/api";
@@ -30,9 +33,19 @@ export default function TeacherDashboardPage() {
   });
   const { token, user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [activeTab, setActiveTab] = useState<"courses" | "explore_3d">("courses");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { t, locale } = useLang();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const tabParam = new URLSearchParams(window.location.search).get("tab");
+      if (tabParam === "explore" || tabParam === "explore_3d" || tabParam === "3d") {
+        setActiveTab("explore_3d");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -129,6 +142,24 @@ export default function TeacherDashboardPage() {
           </div>
 
           <div className="relative flex flex-wrap items-center gap-3">
+            <Button
+              variant={activeTab === "explore_3d" ? "default" : "outline"}
+              onClick={() => setActiveTab(activeTab === "explore_3d" ? "courses" : "explore_3d")}
+              className={`rounded-xl py-5 font-semibold ${
+                activeTab === "explore_3d"
+                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md"
+                  : ""
+              }`}
+            >
+              <Database className="mr-2 h-4 w-4 text-cyan-500" />
+              <span>{locale === "vi" ? "Kho Học Liệu 3D (DB)" : "3D Materials DB"}</span>
+            </Button>
+            <Button variant="outline" className="rounded-xl py-5" asChild>
+              <Link href="/teacher/labs/new">
+                <Plus className="mr-2 h-4 w-4" />
+                {locale === "vi" ? "Tạo thí nghiệm Lab" : "Create a Lab"}
+              </Link>
+            </Button>
             <Button variant="outline" className="rounded-xl py-5" asChild>
               <Link href="/teacher/assessment-generator">
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -175,7 +206,44 @@ export default function TeacherDashboardPage() {
           })}
         </div>
 
-        {/* Courses Table / Cards */}
+        {/* Primary Tab Switcher */}
+        <div className="flex items-center gap-3 mb-6 border-b border-border pb-3">
+          <button
+            onClick={() => setActiveTab("courses")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              activeTab === "courses"
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            <Layers className="h-4 w-4" />
+            <span>{t("teacher.courses")}</span>
+            <Badge variant="secondary" className="ml-1 text-[11px] py-0 px-2 bg-white/20 text-white">
+              {courses.length}
+            </Badge>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("explore_3d")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              activeTab === "explore_3d"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            <Box className="h-4 w-4" />
+            <span>{locale === "vi" ? "Kho Học Liệu 3D & Song Ngữ (Database)" : "3D Materials DB Manager"}</span>
+            <Badge variant="outline" className="ml-1 text-[10px] py-0 px-2 border-cyan-400/50 text-cyan-400">
+              PostgreSQL
+            </Badge>
+          </button>
+        </div>
+
+        {/* Tab Content 1: 3D Explore DB Manager */}
+        {activeTab === "explore_3d" && <TeacherExploreManager />}
+
+        {/* Tab Content 2: Courses Table / Cards */}
+        {activeTab === "courses" && (
         <div className="premium-card p-5 md:p-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -303,6 +371,7 @@ export default function TeacherDashboardPage() {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

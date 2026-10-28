@@ -159,14 +159,6 @@ export const translations = {
     "dashboard.ach.streak7": "Chuỗi 7 ngày",
     "dashboard.ach.streak7_desc": "Học tập liên tục 7 ngày trong tuần",
 
-    // ── Classes Page (/classes) ───────────────────────────────
-    "classes.title": "Lớp học của tôi",
-    "classes.subtitle": "Quản lý lớp học và theo dõi tiến độ cùng giáo viên",
-    "classes.join": "Tham gia lớp mới",
-    "classes.no_class": "Chưa tham gia lớp học nào",
-    "classes.students": "học sinh",
-    "classes.teacher": "Giáo viên:",
-
     // ── AI Page (/ai) ─────────────────────────────────────────
     "ai.title": "Trợ lý AI STEM",
     "ai.subtitle": "Hỏi bất cứ điều gì về Toán và Khoa học",
@@ -419,14 +411,6 @@ export const translations = {
     "dashboard.ach.scientist_desc": "Explored 3 3D models in the library",
     "dashboard.ach.streak7": "7-Day Streak",
     "dashboard.ach.streak7_desc": "Studied 7 consecutive days",
-
-    // ── Classes Page (/classes) ───────────────────────────────
-    "classes.title": "My Classes",
-    "classes.subtitle": "Manage classes and track progress with your teacher",
-    "classes.join": "Join a new class",
-    "classes.no_class": "Not enrolled in any class yet",
-    "classes.students": "students",
-    "classes.teacher": "Teacher:",
 
     // ── AI Page (/ai) ─────────────────────────────────────────
     "ai.title": "STEM AI Tutor",

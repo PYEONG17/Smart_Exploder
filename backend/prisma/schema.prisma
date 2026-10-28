@@ -37,6 +37,7 @@ model User {
   progress     Progress[]
   quizAttempts QuizAttempt[]
   createdCourses Course[]
+  aiConversations AIConversation[]
   memberships  TenantMembership[]
   interactiveResponses InteractiveResponse[]
   videoWatchEvents VideoWatchEvent[]
@@ -45,6 +46,8 @@ model User {
   studyFlashcards StudyFlashcard[]
   practiceQuestions PracticeQuestion[]
   practiceAnswerAttempts PracticeAnswerAttempt[]
+  uploadedLabModels LabModel[] @relation("LabModelUploader")
+  createdCustomLabs CustomLab[] @relation("CustomLabCreator")
 
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -163,15 +166,6 @@ model UserRole {
 // -----------------------------------------------------------------------------
 // COURSE MODELS
 // -----------------------------------------------------------------------------
-model Class {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
 model Course {
   id          String   @id @default(uuid())
   title       String
@@ -200,6 +194,7 @@ model Lesson {
   titleEn     String?
   description String?
   descEn      String?
+  vocabulary  Json       @default("[]")
   order       Int
   duration    String?
   
@@ -241,6 +236,43 @@ model Material {
   
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model LabModel {
+  id            String   @id @default(uuid())
+  experimentId  String   @unique
+  title         String
+  url           String
+  uploadedById  String
+  uploadedBy    User     @relation("LabModelUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([uploadedById])
+}
+
+model CustomLab {
+  id            String   @id @default(uuid())
+  title         String
+  titleEn       String
+  subject       String
+  grade         String
+  summary       String   @db.Text
+  summaryEn     String   @db.Text
+  safetyNotice  String?  @db.Text
+  safetyNoticeEn String? @db.Text
+  equipment     Json
+  steps         Json
+  vocabulary    Json
+  activities    Json
+  attachments   Json     @default("[]")
+  createdById   String
+  createdBy     User     @relation("CustomLabCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([subject, grade])
+  @@index([createdById, createdAt])
 }
 
 model LessonQuestion {
@@ -504,4 +536,73 @@ model PracticeAnswerAttempt {
 
   @@index([userId, createdAt])
   @@index([questionId, createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// 3D/XR EXPLORE LEARNING MATERIALS (YOOBOOK STYLE)
+// -----------------------------------------------------------------------------
+model ExploreMaterial {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  title           String
+  titleEn         String
+  description     String   @db.Text
+  descriptionEn   String   @db.Text
+  category        String   // "natural_science" | "social_science" | "teaching_support" | "virtual_lab" | "sandbox" | "question_bank"
+  categoryLabelVi String   @default("Khoa học tự nhiên K12")
+  categoryLabelEn String   @default("Natural Science K12")
+  grade           String   @default("all") // "6" | "7" | "8" | "9" | "all"
+  subject         String   @default("science") // "math" | "physics" | "chemistry" | "biology" | "history_geo" | "stem" | "science"
+  subjectLabelVi  String   @default("Khoa học")
+  subjectLabelEn  String   @default("Science")
+  type            String   @default("3d_model") // "3d_model" | "virtual_lab" | "interactive_video" | "sandbox" | "quiz"
+  typeLabelVi     String   @default("Mô hình 3D")
+  typeLabelEn     String   @default("3D Model")
+  modelType       String   @default("sphere")
+  thumbnailUrl    String?
+  curriculum      String   @default("GDPT 2018")
+  textbook        String   @default("Kết Nối Tri Thức")
+  viewsCount      Int      @default(0)
+  rating          Float    @default(5.0)
+  tags            String[] @default([])
+  bilingualTerms  Json     @default("[]") // Array of BilingualTerm
+  autoTourStops   Json     @default("[]") // Array of AutoTourStop
+  miniQuiz        Json     @default("[]") // Array of MiniQuizQuestion
+  aiPromptContext String?  @db.Text
+  relatedCourseId String?
+  relatedLessonId String?
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([grade])
+  @@index([subject])
+  @@index([type])
+  @@map("explore_materials")
+}
+
+model AIConversation {
+  id        String      @id @default(uuid())
+  title     String
+  grade     String?
+  locale    String      @default("vi")
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model AIMessage {
+  id             String         @id @default(uuid())
+  role           String
+  content        String         @db.Text
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
 }

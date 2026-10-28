@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS "ClassCourse";
+DROP TABLE IF EXISTS "ClassMembership";
+DROP TABLE IF EXISTS "Class";

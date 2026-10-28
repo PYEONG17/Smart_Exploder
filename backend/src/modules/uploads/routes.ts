@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireRole } from "../../middlewares/auth.middleware.js";
 import {
   courseThumbnailUpload,
+  lesson3DModelUpload,
   lessonMaterialUpload,
   lessonVideoUpload,
 } from "../../utils/course-media.js";
@@ -27,6 +28,12 @@ router.post(
   "/lessons/:lessonId/material",
   authorizeLessonVideoUpload,
   lessonMaterialUpload,
+  uploadLessonMaterial,
+);
+router.post(
+  "/lessons/:lessonId/model",
+  authorizeLessonVideoUpload,
+  lesson3DModelUpload,
   uploadLessonMaterial,
 );
 router.post(

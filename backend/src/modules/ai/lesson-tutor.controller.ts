@@ -53,7 +53,7 @@ const lessonTutorRequestSchema = z
   });
 
 // ── Build system prompt ──────────────────────────────────────────────────────
-function buildSystemPrompt(
+export function buildSystemPrompt(
   lessonContext?: z.infer<typeof lessonTutorRequestSchema>["context"],
   lessonKnowledge?: string,
 ): string {

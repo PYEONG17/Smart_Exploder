@@ -1,17 +1,123 @@
 import type {
   Course,
-  ClassItem,
   Lesson,
   Video,
   Material,
   CreateCourseDTO,
   CreateLessonDTO,
+  LessonVocabularyTerm,
   QuestionType,
   ProgressStatus,
   ActivityType,
 } from "@/types";
+import type { CustomLabInput, CustomLabRecord } from "@/types/custom-lab";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+export async function translateLabText(
+  token: string | null,
+  input: { text: string; sourceLanguage: "vi" | "en" },
+): Promise<string> {
+  const res = await fetch(`${API_URL}/ai/lab-translate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      ...input,
+      targetLanguage: input.sourceLanguage === "vi" ? "en" : "vi",
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || typeof json.data?.translation !== "string") {
+    throw new Error(json.message || "Không thể dịch nội dung Lab.");
+  }
+  return json.data.translation;
+}
+
+export async function translateLabTexts(
+  items: Array<{ id: string; text: string }>,
+): Promise<Record<string, string>> {
+  const res = await fetch(`${API_URL}/ai/lab-translate/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success || !Array.isArray(json.data?.translations)) {
+    throw new Error(json.message || "Không thể dịch song ngữ nội dung Lab.");
+  }
+  return Object.fromEntries(
+    json.data.translations.map(
+      (item: { id: string; translation: string }) => [
+        item.id,
+        item.translation,
+      ],
+    ),
+  ) as Record<string, string>;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export async function fetchCustomLabs(): Promise<CustomLabRecord[]> {
+  const res = await fetch(`${API_URL}/labs`, { cache: "no-store" });
+  const json = await res.json();
+  if (!res.ok || !json.success || !Array.isArray(json.data)) {
+    throw new Error(json.message || "Failed to fetch lab experiments");
+  }
+  return json.data as CustomLabRecord[];
+}
+
+export async function fetchCustomLab(id: string): Promise<CustomLabRecord> {
+  const res = await fetch(`${API_URL}/labs/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.message || "Failed to fetch lab experiment");
+  }
+  return json.data as CustomLabRecord;
+}
+
+export async function createCustomLab(
+  token: string,
+  input: CustomLabInput,
+  files: File[] = [],
+): Promise<CustomLabRecord> {
+  const headers = new Headers({ Authorization: ["Bearer", token].join(" ") });
+  let body: BodyInit;
+  if (files.length) {
+    const formData = new FormData();
+    formData.append("input", JSON.stringify(input));
+    files.forEach((file) => formData.append("files", file));
+    body = formData;
+  } else {
+    headers.set("Content-Type", "application/json");
+    body = JSON.stringify(input);
+  }
+  const res = await fetch(`${API_URL}/labs`, { method: "POST", headers, body });
+  const json = await res.json();
+  if (!res.ok || !json.success || !json.data) {
+    const errors = Array.isArray(json.errors)
+      ? json.errors
+          .map((issue: { path?: string; message?: string }) =>
+            [issue.path, issue.message].filter(Boolean).join(": "),
+          )
+          .join("; ")
+      : "";
+    throw new Error([json.message || "Failed to create lab", errors].filter(Boolean).join(": "));
+  }
+  return json.data as CustomLabRecord;
+}
 
 export type LessonWithCourse = Lesson & {
   course: Course & { lessons: Lesson[] };
@@ -67,7 +173,7 @@ export async function postLessonQuestion(
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: ["Bearer", token].join(" "),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input),
@@ -125,7 +231,7 @@ export async function fetchCourseById(
   id: string,
   token?: string | null,
 ): Promise<Course | null> {
-  const res = await fetch(`${API_URL}/courses/${id}`, {
+  const res = await fetch(`${API_URL}/courses/${encodeURIComponent(id)}`, {
     cache: "no-store",
     ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
   });
@@ -137,20 +243,11 @@ export async function fetchCourseById(
   return json.data;
 }
 
-export async function fetchClasses(): Promise<ClassItem[]> {
-  const res = await fetch(`${API_URL}/classes`, { cache: "no-store" });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || "Failed to fetch classes");
-  }
-  return json.data;
-}
-
 export async function fetchLessonById(
   id: string,
   token: string,
 ): Promise<LessonWithCourse | null> {
-  const res = await fetch(`${API_URL}/lessons/${id}`, {
+  const res = await fetch(`${API_URL}/lessons/${encodeURIComponent(id)}`, {
     cache: "no-store",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -160,7 +257,7 @@ export async function fetchLessonById(
     if (res.status === 403 && json.code === "LESSON_LOCKED") {
       throw new Error(`LESSON_LOCKED:${json.message}`);
     }
-    throw new Error(json.message || "Failed to fetch lesson");
+    throw new ApiError(json.message || "Failed to fetch lesson", res.status);
   }
   return json.data;
 }
@@ -847,14 +944,14 @@ export async function uploadLessonMaterial(
   lessonId: string,
   file: File,
   title: string,
-  type: "PDF" | "DOCUMENT" | "OTHER",
+  type: "PDF" | "DOCUMENT" | "MODEL_3D" | "OTHER",
 ): Promise<Material> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("title", title);
   formData.append("type", type);
   const res = await fetch(
-    `${API_URL}/uploads/lessons/${encodeURIComponent(lessonId)}/material`,
+    `${API_URL}/uploads/lessons/${encodeURIComponent(lessonId)}/${type === "MODEL_3D" ? "model" : "material"}`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -866,6 +963,47 @@ export async function uploadLessonMaterial(
     throw new Error(json.message || "Failed to upload lesson material");
   }
   return json.data;
+}
+
+export type LabModelRecord = {
+  id: string;
+  experimentId: string;
+  title: string;
+  url: string;
+  updatedAt: string;
+};
+
+export async function fetchLabModels(): Promise<LabModelRecord[]> {
+  const res = await fetch(`${API_URL}/lab-models`, { cache: "no-store" });
+  const json = await res.json();
+  if (!res.ok || !json.success || !Array.isArray(json.data)) {
+    throw new Error(json.message || "Failed to fetch lab models");
+  }
+  return json.data as LabModelRecord[];
+}
+
+export async function uploadLabModel(
+  token: string,
+  experimentId: string,
+  file: File,
+  title: string,
+): Promise<LabModelRecord> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("title", title);
+  const res = await fetch(
+    `${API_URL}/lab-models/${encodeURIComponent(experimentId)}`,
+    {
+      method: "POST",
+      headers: { Authorization: ["Bearer", token].join(" ") },
+      body: formData,
+    },
+  );
+  const json = await res.json();
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.message || "Failed to upload lab model");
+  }
+  return json.data as LabModelRecord;
 }
 
 export async function createLessonMaterial(
@@ -882,7 +1020,7 @@ export async function createLessonMaterial(
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: ["Bearer", token].join(" "),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input),
@@ -912,6 +1050,24 @@ export async function createLesson(
     throw new Error(json.message || "Failed to create lesson");
   }
   return json;
+}
+
+export type BilingualLessonDraft = {
+  contentEn: string;
+  vocabulary: LessonVocabularyTerm[];
+};
+
+export async function generateBilingualLessonDraft(
+  token: string,
+  input: { sourceText: string; grade: string; subject: string },
+): Promise<BilingualLessonDraft> {
+  return sendManagedRequest(
+    token,
+    "POST",
+    "/ai/studio/lessons/bilingual-draft",
+    input,
+    "Could not create the English lesson and vocabulary",
+  );
 }
 
 export async function fetchMyCourses(token: string): Promise<Course[]> {
@@ -1030,8 +1186,9 @@ export async function getMe(token: string): Promise<AuthUser> {
     cache: "no-store",
   });
   const json = await res.json();
-  if (!res.ok || !json.success)
-    throw new Error(json.message || "Failed to fetch user");
+  if (!res.ok || !json.success) {
+    throw new ApiError(json.message || "Failed to fetch user", res.status);
+  }
   return json.data;
 }
 
@@ -1071,7 +1228,7 @@ export async function uploadAvatar(
 
   const res = await fetch(`${API_URL}/users/${userId}/avatar`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: ["Bearer", token].join(" ") },
     body: formData,
   });
   const json = await res.json();
@@ -1148,7 +1305,7 @@ export async function sendChatMessage(
 }
 
 export async function sendLessonTutorMessage(
-  token: string,
+  token: string | null | undefined,
   prompt: string,
   history: { role: "user" | "assistant"; content: string }[] = [],
   context?: {
@@ -1171,12 +1328,16 @@ export async function sendLessonTutorMessage(
     }
   }
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_URL}/ai/lesson-tutor`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify({
       prompt,
       history: completeHistory.slice(-10),
@@ -1448,5 +1609,207 @@ export function reorderLessonVideos(
     `/lessons/${encodeURIComponent(lessonId)}/videos/order`,
     { videoIds },
     "Failed to reorder videos",
+  );
+}
+
+// ─────────────────────────────────────────────
+// 3D/XR EXPLORE LEARNING MATERIALS (PostgreSQL DB)
+// ─────────────────────────────────────────────
+
+export async function fetchExploreMaterials(
+  params?: Record<string, string>,
+): Promise<{ success: boolean; total: number; data: any[]; source: string }> {
+  const query = new URLSearchParams(params || {}).toString();
+  const res = await fetch(`${API_URL}/explore${query ? `?${query}` : ""}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to fetch explore materials");
+  }
+  return json;
+}
+
+export async function createExploreMaterial(
+  data: any,
+  token?: string,
+): Promise<{ success: boolean; data: any; message: string }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/explore`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to create explore material");
+  }
+  return json;
+}
+
+export async function updateExploreMaterial(
+  id: string,
+  data: any,
+  token?: string,
+): Promise<{ success: boolean; data: any; message: string }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/explore/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to update explore material");
+  }
+  return json;
+}
+
+export async function deleteExploreMaterial(
+  id: string,
+  token?: string,
+): Promise<{ success: boolean; message: string }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/explore/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to delete explore material");
+  }
+  return json;
+}
+
+export async function syncSeedExploreMaterials(
+  token?: string,
+): Promise<{ success: boolean; message: string; data: any }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/explore/seed`, {
+    method: "POST",
+    headers,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to seed explore materials");
+  }
+  return json;
+}
+
+async function readApiData<T>(res: Response, fallback: string): Promise<T> {
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || fallback);
+  }
+  return json.data as T;
+}
+
+export type AiConversationSummary = {
+  id: string;
+  title: string;
+  grade: string | null;
+  locale: "vi" | "en";
+  createdAt: string;
+  updatedAt: string;
+  messages?: Pick<AiConversationMessage, "role" | "content">[];
+};
+
+export type AiConversationMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+};
+
+export type AiConversationDetail = Omit<AiConversationSummary, "messages"> & {
+  messages: AiConversationMessage[];
+};
+
+export async function fetchAiConversations(
+  token: string,
+): Promise<AiConversationSummary[]> {
+  return readApiData(
+    await fetch(`${API_URL}/ai/conversations`, {
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+    }),
+    "Could not load chat history",
+  );
+}
+
+export async function createAiConversation(
+  token: string,
+  input: { grade?: string; locale: "vi" | "en" },
+): Promise<AiConversationSummary> {
+  return readApiData(
+    await fetch(`${API_URL}/ai/conversations`, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }),
+    "Could not create a conversation",
+  );
+}
+
+export async function fetchAiConversation(
+  token: string,
+  id: string,
+): Promise<AiConversationDetail> {
+  return readApiData(
+    await fetch(`${API_URL}/ai/conversations/${encodeURIComponent(id)}`, {
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+    }),
+    "Could not load this conversation",
+  );
+}
+
+export async function sendAiConversationMessage(
+  token: string,
+  conversationId: string,
+  input: { prompt: string; grade?: string; locale: "vi" | "en" },
+): Promise<{
+  conversation: { id: string; title: string };
+  userMessage: AiConversationMessage;
+  assistantMessage: AiConversationMessage;
+}> {
+  return readApiData(
+    await fetch(
+      `${API_URL}/ai/conversations/${encodeURIComponent(conversationId)}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      },
+    ),
+    "Could not get an AI reply",
+  );
+}
+
+export async function deleteAiConversation(
+  token: string,
+  id: string,
+): Promise<{ id: string }> {
+  return readApiData(
+    await fetch(`${API_URL}/ai/conversations/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + token },
+    }),
+    "Could not delete this conversation",
   );
 }

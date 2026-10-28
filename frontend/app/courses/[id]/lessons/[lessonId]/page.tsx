@@ -14,7 +14,6 @@ import {
   X,
   HelpCircle,
   Box,
-  Bot,
   MessageCircle,
   Loader2,
   Sparkles,
@@ -23,15 +22,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { mockCourses, mockLessons } from "@/lib/mock-data";
 import { Quiz } from "@/components/lessons/Quiz";
+import { BilingualLessonContent } from "@/components/lessons/BilingualLessonContent";
 import { InteractiveEventOverlay } from "@/components/lessons/InteractiveEventOverlay";
-import { LessonAIPanel } from "@/components/ai/LessonAIPanel";
+import { FloatingLessonChatbot } from "@/components/ai/FloatingLessonChatbot";
 import { ThreeDViewer, type ModelType } from "@/components/ui/ThreeDViewer";
+import { Uploaded3DModelViewer } from "@/components/ui/Uploaded3DModelViewer";
 import {
   fetchLessonById,
   fetchLessonQuestions,
   postLessonQuestion,
   recordVideoWatchHeartbeat,
   saveProgress,
+  ApiError,
   type LessonQuestion,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +47,7 @@ import type {
 import { useInteractiveVideoStore } from "@/stores/interactiveVideoStore";
 import { toast } from "sonner";
 import { getYouTubeEmbedUrl } from "@/lib/video-url";
+import { getLessonRoute } from "@/lib/lesson-route";
 import {
   getYouTubeVideoId,
   isYouTubePlayerReady,
@@ -116,14 +119,18 @@ export default function LessonDetailPage({
 }) {
   const { id, lessonId } = use(params);
   const router = useRouter();
-  const { token, user, isLoading: isAuthLoading } = useAuth();
+  const { token, user, logout, isLoading: isAuthLoading } = useAuth();
   const { locale } = useLang();
   const isVietnamese = locale === "vi";
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingState, setIsLoading] = useState(true);
+  const [loadedLessonId, setLoadedLessonId] = useState<string | null>(null);
+  const isLoading = isLoadingState || loadedLessonId !== lessonId;
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLessonNotFound, setIsLessonNotFound] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isLessonLocked, setIsLessonLocked] = useState(false);
 
   const [activeTab, setActiveTab] = useState<
@@ -147,6 +154,12 @@ export default function LessonDetailPage({
     null,
   );
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [learningPanelTab, setLearningPanelTab] = useState<
+    "content" | "vocabulary" | "materials"
+  >("content");
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(
+    null,
+  );
   const activeCheckpoint = useInteractiveVideoStore(
     (state) => state.activeEvent,
   );
@@ -219,13 +232,9 @@ export default function LessonDetailPage({
     if (isAuthLoading) return;
     let isActive = true;
     if (!token) {
-      setIsLoading(false);
       router.replace("/login");
       return () => { isActive = false; };
     }
-    setIsLoading(true);
-    setIsLessonLocked(false);
-    setLoadError(null);
     const demoData = getDemoCourseLessons(id);
     const applyDemoData = () => {
       const demoLesson = demoData?.lessons.find((item) => item.id === lessonId);
@@ -233,6 +242,9 @@ export default function LessonDetailPage({
       setCourse(demoData.course);
       setLessons(demoData.lessons);
       setLesson(demoLesson);
+      setIsLessonLocked(false);
+      setLoadError(null);
+      setIsLessonNotFound(false);
       setIsLessonCompleted(demoLesson.isCompleted ?? false);
 
       return true;
@@ -242,6 +254,9 @@ export default function LessonDetailPage({
       .then((lessonData) => {
         if (!isActive) return;
         if (lessonData?.courseId === id) {
+          setIsLessonLocked(false);
+          setLoadError(null);
+          setIsLessonNotFound(false);
           setCourse(lessonData.course);
           setLessons(lessonData.course.lessons ?? [lessonData]);
           setLesson(lessonData);
@@ -252,26 +267,38 @@ export default function LessonDetailPage({
           setIsLessonCompleted(Boolean(lessonData.isCompleted));
 
         } else if (!applyDemoData()) {
-          setLoadError("Không tìm thấy bài học.");
+          setLoadError(null);
+          setIsLessonLocked(false);
+          setIsLessonNotFound(true);
         }
       })
       .catch((error: unknown) => {
-        if (isActive && error instanceof Error && error.message.startsWith("LESSON_LOCKED:")) {
+        if (isActive && error instanceof ApiError && error.status === 401) {
+          logout();
+          router.replace("/login");
+        } else if (isActive && error instanceof Error && error.message.startsWith("LESSON_LOCKED:")) {
           setIsLessonLocked(true);
+          setLoadError(null);
+          setIsLessonNotFound(false);
         } else if (isActive && !applyDemoData()) {
+          setIsLessonLocked(false);
+          setIsLessonNotFound(false);
           setLoadError(
             error instanceof Error ? error.message : "Không thể tải bài học.",
           );
         }
       })
       .finally(() => {
-        if (isActive) setIsLoading(false);
+        if (isActive) {
+          setLoadedLessonId(lessonId);
+          setIsLoading(false);
+        }
       });
 
     return () => {
       isActive = false;
     };
-  }, [id, lessonId, token, isAuthLoading, router]);
+  }, [id, lessonId, token, isAuthLoading, router, loadAttempt, logout]);
 
   useEffect(() => {
     const video = lesson?.videos?.find((item) => item.id === selectedVideoId) ?? lesson?.videos?.[0];
@@ -389,7 +416,7 @@ export default function LessonDetailPage({
           <p className="mt-2 text-sm text-muted-foreground">
             {isVietnamese ? "Hoàn thành các bài học trước trong khóa học để mở bài này." : "Complete the earlier lessons in this course to unlock this one."}
           </p>
-          <Button className="mt-5" onClick={() => router.push(`/courses/${id}`)}>
+          <Button className="mt-5" onClick={() => router.push(`/courses/${encodeURIComponent(id)}`)}>
             {isVietnamese ? "Quay lại khóa học" : "Back to course"}
           </Button>
         </div>
@@ -397,14 +424,56 @@ export default function LessonDetailPage({
     );
   }
 
-  if (loadError || !course || !lesson) {
+  if (isLessonNotFound) {
     notFound();
   }
+  if (loadError) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 pt-20">
+        <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+          <h1 className="text-xl font-bold">
+            {isVietnamese ? "Không thể tải bài học" : "Unable to load lesson"}
+          </h1>
+          <p role="alert" className="mt-2 text-sm text-muted-foreground">
+            {loadError}
+          </p>
+          <div className="mt-5 flex justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/courses/${encodeURIComponent(id)}`)}
+            >
+              {isVietnamese ? "Quay lại khóa học" : "Back to course"}
+            </Button>
+            <Button
+              onClick={() => {
+                setIsLoading(true);
+                setLoadAttempt((attempt) => attempt + 1);
+              }}
+            >
+              {isVietnamese ? "Thử lại" : "Retry"}
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  if (!course || !lesson) notFound();
 
   const lessonVideos = lesson.videos ?? [];
   const currentVideo =
     lessonVideos.find((video) => video.id === selectedVideoId) ??
     lessonVideos[0];
+  const lessonMaterials = lesson.materials ?? [];
+  const selectedMaterial =
+    lessonMaterials.find((material) => material.id === selectedMaterialId) ??
+    lessonMaterials.find((material) => material.type === "PDF") ??
+    lessonMaterials[0];
+  const canEmbedSelectedPdf =
+    selectedMaterial?.type === "PDF" &&
+    selectedMaterial.url.includes("/uploads/course-media/");
+  const canEmbedSelectedModel =
+    selectedMaterial?.type === "MODEL_3D" &&
+    selectedMaterial.url.split(/[?#]/)[0]?.toLowerCase().endsWith(".glb");
   const currentYouTubeEmbed = currentVideo
     ? getYouTubeEmbedUrl(currentVideo.url)
     : null;
@@ -662,7 +731,7 @@ export default function LessonDetailPage({
             )}
           </Button>
           <Link
-            href={`/courses/${course.id}`}
+            href={`/courses/${encodeURIComponent(course.id)}`}
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -745,9 +814,7 @@ export default function LessonDetailPage({
               return (
                 <Link
                   key={l.id}
-                  href={
-                    l.isLocked ? "#" : `/courses/${course.id}/lessons/${l.id}`
-                  }
+                  href={l.isLocked ? "#" : getLessonRoute(course.id, l.id)}
                   className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
                     isCurrent
                       ? "border border-primary/30 bg-primary/10 font-semibold text-primary shadow-xs"
@@ -785,7 +852,11 @@ export default function LessonDetailPage({
 
         {/* Main Content Area */}
         <main className="min-w-0 flex-1 overflow-y-auto bg-background/60 p-4 lg:p-8">
-          <div className="max-w-4xl mx-auto">
+          <div
+            className={`mx-auto ${
+              activeTab === "video" ? "max-w-6xl" : "max-w-4xl"
+            }`}
+          >
             {/* Tabs Header */}
             <div className="mb-7 flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/70 bg-card/75 p-1.5 shadow-sm scrollbar-hide">
               {tabs.map((tab) => {
@@ -810,6 +881,8 @@ export default function LessonDetailPage({
             {/* Tab: Video */}
             {activeTab === "video" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.9fr)]">
+                  <div className="min-w-0">
                 {lessonVideos.length > 1 && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {lessonVideos.map((video) => (
@@ -938,38 +1011,160 @@ export default function LessonDetailPage({
                       ? lesson.title
                       : lesson.titleEn || lesson.title}
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {isVietnamese
-                      ? lesson.description
-                      : lesson.descEn || lesson.description}
-                  </p>
+                </div>
+                  </div>
+
+                  <aside className="min-w-0 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
+                    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                      <div
+                        role="tablist"
+                        aria-label={
+                          isVietnamese ? "Tài nguyên bài học" : "Lesson resources"
+                        }
+                        className="grid grid-cols-3 border-b border-border"
+                      >
+                        {(
+                          [
+                            ["content", isVietnamese ? "Kiến thức" : "Theory"],
+                            ["vocabulary", isVietnamese ? "Từ vựng" : "Vocabulary"],
+                            ["materials", isVietnamese ? "Tài liệu" : "Materials"],
+                          ] as const
+                        ).map(([tab, label]) => (
+                          <button
+                            key={tab}
+                            id={`lesson-panel-tab-${tab}`}
+                            type="button"
+                            role="tab"
+                            aria-selected={learningPanelTab === tab}
+                            aria-controls="lesson-learning-panel"
+                            onClick={() => setLearningPanelTab(tab)}
+                            className={`border-b-2 px-2 py-3 text-xs font-semibold transition-colors ${
+                              learningPanelTab === tab
+                                ? "border-primary text-primary"
+                                : "border-transparent text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div
+                        id="lesson-learning-panel"
+                        role="tabpanel"
+                        aria-labelledby={`lesson-panel-tab-${learningPanelTab}`}
+                        className="p-3"
+                      >
+                        {learningPanelTab === "content" && (
+                          <BilingualLessonContent
+                            contentVi={lesson.description ?? ""}
+                            contentEn={lesson.descEn ?? ""}
+                            vocabulary={lesson.vocabulary ?? []}
+                            isVietnamese={isVietnamese}
+                            section="content"
+                          />
+                        )}
+                        {learningPanelTab === "vocabulary" && (
+                          <BilingualLessonContent
+                            contentVi={lesson.description ?? ""}
+                            contentEn={lesson.descEn ?? ""}
+                            vocabulary={lesson.vocabulary ?? []}
+                            isVietnamese={isVietnamese}
+                            section="vocabulary"
+                          />
+                        )}
+                        {learningPanelTab === "materials" && (
+                          <div className="space-y-3">
+                            {lessonMaterials.length ? (
+                              <>
+                                <div className="space-y-2">
+                                  {lessonMaterials.map((material) => (
+                                    <button
+                                      key={material.id}
+                                      type="button"
+                                      aria-pressed={
+                                        selectedMaterial?.id === material.id
+                                      }
+                                      onClick={() =>
+                                        setSelectedMaterialId(material.id)
+                                      }
+                                      className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                                        selectedMaterial?.id === material.id
+                                          ? "border-primary/40 bg-primary/5"
+                                          : "border-border hover:bg-muted/60"
+                                      }`}
+                                    >
+                                      <FileText className="h-4 w-4 shrink-0 text-primary" />
+                                      <span className="min-w-0 flex-1 truncate">
+                                        {material.title}
+                                      </span>
+                                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                                        {material.type}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                                {selectedMaterial && (
+                                  <div className="space-y-2">
+                                    {canEmbedSelectedModel ? (
+                                      <Uploaded3DModelViewer
+                                        url={selectedMaterial.url}
+                                        title={selectedMaterial.title}
+                                        className="h-[62vh] max-h-[42rem]"
+                                      />
+                                    ) : canEmbedSelectedPdf ? (
+                                      <iframe
+                                        src={selectedMaterial.url}
+                                        title={selectedMaterial.title}
+                                        loading="lazy"
+                                        className="h-[62vh] max-h-[42rem] w-full rounded-lg border border-border bg-background"
+                                      />
+                                    ) : (
+                                      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                                        {isVietnamese
+                                          ? "Tài liệu này không thể xem trực tiếp tại đây. Mở tài liệu để tiếp tục đọc."
+                                          : "This material cannot be previewed here. Open it to continue reading."}
+                                      </p>
+                                    )}
+                                    <a
+                                      href={selectedMaterial.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      {isVietnamese
+                                        ? "Mở tài liệu ở tab mới"
+                                        : "Open material in a new tab"}
+                                    </a>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                                {isVietnamese
+                                  ? "Bài học chưa có tài liệu đính kèm."
+                                  : "No materials are attached to this lesson."}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </aside>
                 </div>
               </div>
             )}
 
             {/* Tab: Content (Theory) */}
             {activeTab === "content" && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl">
-                <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
-                  <div className="prose prose-blue dark:prose-invert max-w-none">
-                    {(isVietnamese
-                      ? lesson.description
-                      : lesson.descEn || lesson.description
-                    )?.trim() ? (
-                      <div className="whitespace-pre-wrap leading-7 text-muted-foreground">
-                        {isVietnamese
-                          ? lesson.description
-                          : lesson.descEn || lesson.description}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">
-                        {isVietnamese
-                          ? "Giáo viên chưa thêm nội dung lý thuyết cho bài học này."
-                          : "The teacher has not added theory content for this lesson yet."}
-                      </p>
-                    )}
-                  </div>
-                </div>
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <BilingualLessonContent
+                  contentVi={lesson.description ?? ""}
+                  contentEn={lesson.descEn ?? ""}
+                  vocabulary={lesson.vocabulary ?? []}
+                  isVietnamese={isVietnamese}
+                />
               </div>
             )}
 
@@ -1234,19 +1429,18 @@ export default function LessonDetailPage({
           </div>
         </main>
 
-        {/* AI Assistant Panel */}
-        {isAiOpen && (
-          <LessonAIPanel
-            token={token}
-            lessonId={lesson.id}
-            lessonTitle={isVietnamese ? lesson.title : lesson.titleEn || lesson.title}
-            lessonDescription={isVietnamese ? lesson.description : lesson.descEn || lesson.description}
-            courseLevel={course.level}
-            courseSubject={course.subjectLabel || course.subject}
-            isVietnamese={isVietnamese}
-            onClose={() => setIsAiOpen(false)}
-          />
-        )}
+        {/* Floating AI Chatbot Widget (Ô chatbot nhỏ nhỏ trực tiếp trong bài giảng) */}
+        <FloatingLessonChatbot
+          token={token}
+          lessonId={lesson.id}
+          lessonTitle={isVietnamese ? lesson.title : lesson.titleEn || lesson.title}
+          lessonDescription={isVietnamese ? lesson.description : lesson.descEn || lesson.description}
+          courseLevel={course.level}
+          courseSubject={course.subjectLabel || course.subject}
+          isVietnamese={isVietnamese}
+          isOpen={isAiOpen}
+          onOpenChange={setIsAiOpen}
+        />
       </div>
     </div>
   );

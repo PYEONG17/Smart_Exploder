@@ -15,10 +15,8 @@ import {
   BookOpen,
   Bot,
   FlaskConical,
-  School,
   Sparkles,
   ArrowRight,
-  Layers,
   GraduationCap,
   LayoutDashboard,
   Trophy,
@@ -35,9 +33,8 @@ import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useLang } from "@/contexts/LanguageContext";
-import { useAuth, type AuthUser } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
-import type { TranslationKey } from "@/lib/i18n";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -75,6 +72,10 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  React.useEffect(() => {
+    window.localStorage.removeItem("smart_explorer_user_flipbooks");
+  }, []);
+
   const productsList = [
     {
       icon: Box,
@@ -99,17 +100,6 @@ export default function Navbar() {
       accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/60",
     },
     {
-      icon: BookOpen,
-      titleVi: "Sách tương tác (Flipbook)",
-      titleEn: "Interactive Books",
-      descVi: "Giáo trình lật trang sinh động kèm âm thanh & bài tập",
-      descEn: "Digital flipbooks with audio & self-paced quizzes",
-      href: "/books",
-      badgeVi: "Lật trang số",
-      badgeEn: "Interactive Book",
-      accent: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60",
-    },
-    {
       icon: Bot,
       titleVi: "Trợ lý Nora AI",
       titleEn: "Nora AI STEM Tutor",
@@ -126,21 +116,10 @@ export default function Navbar() {
       titleEn: "Virtual Simulation Lab",
       descVi: "Thí nghiệm ảo Vật lý, Hóa học, Sinh học an toàn và trực quan",
       descEn: "Safe virtual physics, chemistry & biology simulations",
-      href: "/three-d",
+      href: "/lab",
       badgeVi: "Phòng Lab ảo",
       badgeEn: "Virtual Lab",
       accent: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400 border-purple-200/60 dark:border-purple-800/60",
-    },
-    {
-      icon: School,
-      titleVi: "Dành cho trường học & LMS",
-      titleEn: "For Schools & LMS",
-      descVi: "Tích hợp sẵn sàng với Canvas, Google Classroom, Moodle",
-      descEn: "LTI 1.3 integration with Canvas, Moodle, Classroom",
-      href: "/classes",
-      badgeVi: "LMS Ready",
-      badgeEn: "LMS Ready",
-      accent: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60",
     },
   ];
 
@@ -229,8 +208,6 @@ export default function Navbar() {
                         const Icon = prod.icon;
                         const title = locale === "vi" ? prod.titleVi : prod.titleEn;
                         const desc = locale === "vi" ? prod.descVi : prod.descEn;
-                        const badge = locale === "vi" ? prod.badgeVi : prod.badgeEn;
-
                         return (
                           <Link
                             key={idx}
@@ -317,21 +294,10 @@ export default function Navbar() {
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
-              {locale === "vi" ? "Đấu trường Quiz" : "Quiz Arena"}
+              {locale === "vi" ? "Thẻ" : "Quiz Flash Card"}
             </Link>
 
-            <Link
-              href="/classes"
-              className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
-                pathname.startsWith("/classes")
-                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
-                  : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
-              }`}
-            >
-              {locale === "vi" ? "Lớp học" : "Classes"}
-            </Link>
-
-            {/* Role-specific Links */}
+            {/* Role  */}
             {user?.role === "STUDENT" && (
               <Link
                 href="/dashboard"
@@ -362,7 +328,7 @@ export default function Navbar() {
 
         {/* Right side: Lang + Auth + Theme + Mobile */}
         <div className="flex items-center gap-2 sm:gap-3 text-neutral-700 dark:text-slate-200">
-          {/* Language Switcher (NoraClass pill) */}
+          {/*chuyen doi ngon ngu */}
           <motion.button
             onClick={toggleLocale}
             whileHover={{ scale: 1.04 }}
@@ -505,24 +471,6 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  href="/books"
-                  onClick={() => setOpen(false)}
-                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
-                    pathname.startsWith("/books")
-                      ? "bg-emerald-600 text-white font-bold"
-                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-emerald-500" />
-                    <span>{locale === "vi" ? "Sách tương tác (Flipbook)" : "Interactive Books"}</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300">
-                    3D Flip
-                  </span>
-                </Link>
-
-                <Link
                   href="/whiteboard"
                   onClick={() => setOpen(false)}
                   className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
@@ -564,19 +512,6 @@ export default function Navbar() {
                 >
                   <Trophy className="w-4 h-4 text-amber-500" />
                   <span>{locale === "vi" ? "Đấu trường Quiz" : "Quiz Arena"}</span>
-                </Link>
-
-                <Link
-                  href="/classes"
-                  onClick={() => setOpen(false)}
-                  className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
-                    pathname.startsWith("/classes")
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
-                      : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <School className="w-4 h-4 text-emerald-500" />
-                  <span>{locale === "vi" ? "Lớp học" : "Classes"}</span>
                 </Link>
 
                 {user?.role === "STUDENT" && (

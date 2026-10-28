@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useLang } from "@/contexts/LanguageContext";
 import { motion } from "motion/react";
-import { Star, Quote, Award, Sparkles, CheckCircle2 } from "lucide-react";
+import { Star } from "lucide-react";
 
 /**
  * Testimonials & Trust Section: NoraClass Social Proof.
@@ -117,7 +117,7 @@ export default function TestimonialsSection() {
                   </div>
 
                   <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal italic">
-                    "{quote}"
+                    &ldquo;{quote}&rdquo;
                   </p>
                 </div>
 

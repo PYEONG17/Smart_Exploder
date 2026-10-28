@@ -20,6 +20,7 @@ import {
   Pencil,
   Sparkles,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ import {
   reorderLessonVideos,
   updateCourse,
   updateLesson,
+  generateBilingualLessonDraft,
   updateLessonVideoMetadata,
   createLessonQuiz,
   createLessonMaterial,
@@ -68,6 +70,7 @@ import type {
   Lesson,
   Material,
   MaterialType,
+  LessonVocabularyTerm,
 } from "@/types";
 
 type QuizQuestionDraft = {
@@ -304,7 +307,11 @@ export default function CourseEditStudioPage({
     locale === "en" ? "en" : "vi",
   );
   const [newLessonTitle, setNewLessonTitle] = useState("");
-  const [newLessonDescription, setNewLessonDescription] = useState("");
+  const [lessonContentVi, setLessonContentVi] = useState("");
+  const [lessonContentEn, setLessonContentEn] = useState("");
+  const [lessonVocabulary, setLessonVocabulary] = useState<LessonVocabularyTerm[]>([]);
+  const [isGeneratingBilingualDraft, setIsGeneratingBilingualDraft] =
+    useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
   const [isAiOutlineOpen, setIsAiOutlineOpen] = useState(false);
@@ -375,7 +382,9 @@ export default function CourseEditStudioPage({
 
   const resetLessonForm = () => {
     setNewLessonTitle("");
-    setNewLessonDescription("");
+    setLessonContentVi("");
+    setLessonContentEn("");
+    setLessonVocabulary([]);
     setNewLessonDuration("20 phút");
   };
 
@@ -392,16 +401,13 @@ export default function CourseEditStudioPage({
   };
 
   const openEditLesson = (lesson: Lesson) => {
-    const useEnglish = contentLanguage === "en";
     setEditingLessonId(lesson.id);
     setNewLessonTitle(
-      (useEnglish ? lesson.titleEn : lesson.title) || lesson.title,
+      (contentLanguage === "en" ? lesson.titleEn : lesson.title) || lesson.title,
     );
-    setNewLessonDescription(
-      (useEnglish ? lesson.descEn : lesson.description) ||
-        lesson.description ||
-        "",
-    );
+    setLessonContentVi(lesson.description ?? "");
+    setLessonContentEn(lesson.descEn ?? "");
+    setLessonVocabulary(lesson.vocabulary ?? []);
     setNewLessonDuration(lesson.duration || "20 phút");
     setIsAddLessonOpen(true);
   };
@@ -626,13 +632,31 @@ export default function CourseEditStudioPage({
       toast.error("Vui lòng đăng nhập để lưu bài học.");
       return;
     }
+    if (
+      lessonVocabulary.some((term) =>
+        [
+          term.termVi,
+          term.termEn,
+          term.pronunciation,
+          term.definitionVi,
+          term.definitionEn,
+          term.exampleVi,
+          term.exampleEn,
+        ].some((value) => !value.trim()),
+      )
+    ) {
+      toast.error("Hoàn thiện tất cả trường của từ vựng trước khi lưu.");
+      return;
+    }
 
     if (editingLessonId) {
       setIsSavingLesson(true);
       try {
         const updated = await updateLesson(token, editingLessonId, {
           title: newLessonTitle.trim(),
-          description: newLessonDescription.trim(),
+          description: lessonContentVi.trim(),
+          descEn: lessonContentEn.trim() || undefined,
+          vocabulary: lessonVocabulary,
           duration: newLessonDuration.trim() || undefined,
           sourceLanguage: contentLanguage,
         });
@@ -660,7 +684,9 @@ export default function CourseEditStudioPage({
       const res = await createLesson(token, {
         courseId: id,
         title: newLessonTitle.trim(),
-        description: newLessonDescription.trim() || undefined,
+        description: lessonContentVi.trim() || undefined,
+        descEn: lessonContentEn.trim() || undefined,
+        vocabulary: lessonVocabulary,
         sourceLanguage: contentLanguage,
         order:
           lessons.reduce(
@@ -670,9 +696,7 @@ export default function CourseEditStudioPage({
         duration: newLessonDuration,
       });
       setLessons((prev) => [...prev, res.data]);
-      setNewLessonTitle("");
-      setNewLessonDescription("");
-      setIsAddLessonOpen(false);
+      closeLessonModal();
       toast.success("Đã thêm bài học mới vào khóa học!");
     } catch (saveError) {
       toast.error(
@@ -682,6 +706,36 @@ export default function CourseEditStudioPage({
       );
     } finally {
       setIsSavingLesson(false);
+    }
+  };
+
+  const handleGenerateBilingualDraft = async () => {
+    if (!token) {
+      toast.error("Vui lòng đăng nhập lại.");
+      return;
+    }
+    if (lessonContentVi.trim().length < 40) {
+      toast.error("Nhập ít nhất 40 ký tự nội dung tiếng Việt trước khi tạo.");
+      return;
+    }
+    setIsGeneratingBilingualDraft(true);
+    try {
+      const draft = await generateBilingualLessonDraft(token, {
+        sourceText: lessonContentVi.trim(),
+        grade: course?.level ?? "6",
+        subject: course?.subjectLabel ?? course?.subject ?? "STEM",
+      });
+      setLessonContentEn(draft.contentEn);
+      setLessonVocabulary(draft.vocabulary);
+      toast.success("Đã tạo bản tiếng Anh và từ vựng. Hãy kiểm tra trước khi lưu.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể tạo bản song ngữ cho bài học.",
+      );
+    } finally {
+      setIsGeneratingBilingualDraft(false);
     }
   };
 
@@ -1057,17 +1111,20 @@ export default function CourseEditStudioPage({
       toast.error("Nhập tên tài liệu và chọn tệp hoặc nhập URL tài liệu.");
       return;
     }
-    if (materialFile && materialFile.size > 50 * 1024 * 1024) {
-      toast.error("Tài liệu vượt quá giới hạn tải lên 50 MB.");
+    const materialFileLimit =
+      materialType === "MODEL_3D" ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+    if (materialFile && materialFile.size > materialFileLimit) {
+      toast.error(
+        materialType === "MODEL_3D"
+          ? "Mô hình 3D vượt quá giới hạn tải lên 100 MB."
+          : "Tài liệu vượt quá giới hạn tải lên 50 MB.",
+      );
       return;
     }
     setIsUploadingMaterial(true);
     try {
       let savedMaterial: Material;
       if (materialFile) {
-        if (materialType === "MODEL_3D") {
-          throw new Error("Upload tệp hiện hỗ trợ PDF, DOCX, PPTX và TXT.");
-        }
         savedMaterial = await uploadLessonMaterial(
           token,
           lessonId,
@@ -1350,7 +1407,7 @@ export default function CourseEditStudioPage({
         {/* Add Lesson Modal */}
         {isAddLessonOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border p-6 rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in-95">
+            <div className="bg-card border border-border p-6 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg">
                   {editingLessonId ? "Sửa bài học" : "Thêm bài học mới"}
@@ -1388,17 +1445,226 @@ export default function CourseEditStudioPage({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
-                    {contentLanguage === "vi" ? "Nội dung lý thuyết / bài giảng (không bắt buộc)" : "Theory / lesson content (optional)"}
+                    Nội dung bài giảng — Tiếng Việt
                   </label>
                   <textarea
-                    rows={8}
+                    rows={6}
                     maxLength={5000}
-                    value={newLessonDescription}
-                    onChange={(e) => setNewLessonDescription(e.target.value)}
-                    placeholder={contentLanguage === "vi" ? "Nhập nội dung lý thuyết, các ý chính và ví dụ cho bài học..." : "Enter the lesson theory, key points, and examples..."}
+                    value={lessonContentVi}
+                    onChange={(e) => setLessonContentVi(e.target.value)}
+                    placeholder="Nhập nội dung bài giảng, các ý chính và ví dụ bằng tiếng Việt..."
                     className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none resize-none"
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">{contentLanguage === "vi" ? "Học sinh xem nội dung này trong tab Lý thuyết. Có thể xuống dòng để chia ý." : "Students see this in the Theory tab. Use line breaks to organize sections."}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Nội dung này là nguồn để AI tạo bản tiếng Anh đơn giản và từ vựng trọng tâm.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-xs font-semibold text-foreground">
+                      Bản tiếng Anh cho học sinh
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isGeneratingBilingualDraft || isSavingLesson}
+                      onClick={() => void handleGenerateBilingualDraft()}
+                    >
+                      {isGeneratingBilingualDraft ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-1.5 h-4 w-4" />
+                      )}
+                      {isGeneratingBilingualDraft
+                        ? "Đang tạo..."
+                        : "Tạo tiếng Anh + từ vựng bằng AI"}
+                    </Button>
+                  </div>
+                  <textarea
+                    rows={6}
+                    maxLength={5000}
+                    value={lessonContentEn}
+                    onChange={(e) => setLessonContentEn(e.target.value)}
+                    placeholder="Bản tiếng Anh đơn giản sẽ xuất hiện ở đây. Giáo viên có thể chỉnh sửa trước khi lưu."
+                    className="w-full resize-y rounded-xl border border-border bg-background px-4 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-3 rounded-xl border border-border bg-background p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-sm font-semibold">
+                        Từ vựng bài học ({lessonVocabulary.length})
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Có thể chỉnh sửa, thêm hoặc xóa từ trước khi lưu.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={lessonVocabulary.length >= 15 || isSavingLesson}
+                      onClick={() =>
+                        setLessonVocabulary((current) => [
+                          ...current,
+                          {
+                            termVi: "",
+                            termEn: "",
+                            pronunciation: "",
+                            definitionVi: "",
+                            definitionEn: "",
+                            exampleVi: "",
+                            exampleEn: "",
+                          },
+                        ])
+                      }
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Thêm từ
+                    </Button>
+                  </div>
+                  {lessonVocabulary.length === 0 && (
+                    <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                      Tạo danh sách bằng AI hoặc thêm từ vựng thủ công.
+                    </p>
+                  )}
+                  {lessonVocabulary.length > 0 && (
+                    <div className="space-y-3">
+                    {lessonVocabulary.map((term, index) => (
+                      <div
+                        key={`${index}-${term.termEn}`}
+                        className="grid gap-2 rounded-lg border border-border/70 p-3 sm:grid-cols-2"
+                      >
+                        <div className="flex justify-end sm:col-span-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Xóa từ vựng ${index + 1}`}
+                            disabled={isSavingLesson}
+                            onClick={() =>
+                              setLessonVocabulary((current) =>
+                                current.filter((_, itemIndex) => itemIndex !== index),
+                              )
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <input
+                          aria-label={`Từ tiếng Việt ${index + 1}`}
+                          value={term.termVi}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, termVi: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="Từ tiếng Việt"
+                          className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                        <input
+                          aria-label={`English vocabulary ${index + 1}`}
+                          value={term.termEn}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, termEn: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="English term"
+                          className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                        <input
+                          aria-label={`Phiên âm ${index + 1}`}
+                          value={term.pronunciation}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, pronunciation: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="IPA pronunciation"
+                          className="rounded-lg border border-border bg-card px-3 py-2 text-sm sm:col-span-2"
+                        />
+                        <textarea
+                          aria-label={`Định nghĩa ${term.termEn}`}
+                          value={term.definitionVi}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, definitionVi: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="Giải nghĩa tiếng Việt"
+                          rows={2}
+                          className="resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                        <textarea
+                          aria-label={`English definition ${term.termEn}`}
+                          value={term.definitionEn}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, definitionEn: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="Simple English definition"
+                          rows={2}
+                          className="resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                        <textarea
+                          aria-label={`Ví dụ ${term.termEn}`}
+                          value={term.exampleVi}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, exampleVi: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="Ví dụ tiếng Việt"
+                          rows={2}
+                          className="resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                        <textarea
+                          aria-label={`English example ${term.termEn}`}
+                          value={term.exampleEn}
+                          onChange={(event) =>
+                            setLessonVocabulary((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, exampleEn: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                          placeholder="Simple English example"
+                          rows={2}
+                          className="resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
@@ -1422,7 +1688,7 @@ export default function CourseEditStudioPage({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSavingLesson}
+                    disabled={isSavingLesson || isGeneratingBilingualDraft}
                     className="bg-blue-600 text-white"
                   >
                     {isSavingLesson
@@ -2546,8 +2812,8 @@ export default function CourseEditStudioPage({
                         </button>
                       </span>
                     ))}
-                  </div>
-                )}
+                    </div>
+                    )}
 
                 {/* Upload Material Modal */}
                 {isUploadMaterialOpen === lesson.id && (
@@ -2570,24 +2836,32 @@ export default function CourseEditStudioPage({
                         />
                         <select
                           value={materialType}
-                          onChange={(e) =>
-                            setMaterialType(e.target.value as MaterialType)
-                          }
+                          onChange={(e) => {
+                            setMaterialType(e.target.value as MaterialType);
+                            setMaterialFile(null);
+                            setMaterialUrl("");
+                          }}
                           className="w-full px-3 py-2 bg-background border border-border rounded-xl font-medium"
                         >
                           <option value="PDF">Tài liệu PDF</option>
                           <option value="DOCUMENT">Tài liệu DOCX / PPTX</option>
                           <option value="OTHER">Tệp TXT hoặc tài liệu khác</option>
-                          <option value="MODEL_3D">Link mô hình 3D</option>
+                          <option value="MODEL_3D">Mô hình 3D GLB / Link</option>
                         </select>
                       </div>
                       <label className="block space-y-1">
                         <span className="font-medium">
-                          Tải tài liệu lên (PDF, DOCX, PPTX, TXT; tối đa 50 MB)
+                          {materialType === "MODEL_3D"
+                            ? "Tải mô hình 3D lên (.glb; tối đa 100 MB)"
+                            : "Tải tài liệu lên (PDF, DOCX, PPTX, TXT; tối đa 50 MB)"}
                         </span>
                         <input
                           type="file"
-                          accept=".pdf,.docx,.pptx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
+                          accept={
+                            materialType === "MODEL_3D"
+                              ? ".glb,model/gltf-binary,application/octet-stream"
+                              : ".pdf,.docx,.pptx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain"
+                          }
                           disabled={isUploadingMaterial}
                           onChange={(event) => {
                             const file = event.currentTarget.files?.[0] ?? null;

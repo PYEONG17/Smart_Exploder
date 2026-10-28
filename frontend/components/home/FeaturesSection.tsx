@@ -6,19 +6,12 @@ import { motion } from "motion/react";
 import {
   Box,
   PenTool,
-  BookOpen,
   FlaskConical,
   Bot,
   Languages,
   Trophy,
-  GraduationCap,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
-  Maximize2,
-  RotateCw,
-  Eye,
-  Sliders,
 } from "lucide-react";
 
 /**
@@ -77,30 +70,6 @@ export default function FeaturesSection() {
       ],
       href: "/courses",
       previewType: "whiteboard",
-    },
-    {
-      id: "feature-flipbook",
-      icon: BookOpen,
-      titleVi: "Sách tương tác (Flipbook)",
-      titleEn: "Interactive Books",
-      descVi:
-        "Biến tài liệu PDF hoặc giáo trình thành sách lật trang sinh động có âm thanh phát âm bản xứ, hoạt ảnh và câu hỏi trắc nghiệm tự chấm điểm.",
-      descEn:
-        "Convert course materials into interactive flipbooks with rich media, native audio pronunciation, and self-graded quizzes.",
-      badgeVi: "Lật trang số",
-      badgeEn: "Interactive Flip",
-      bulletsVi: [
-        "Hiệu ứng lật trang 3D chân thực, đọc mượt trên máy tính & tablet",
-        "Phát âm từ vựng khoa học tiếng Anh chuẩn bản ngữ",
-        "Nhúng bài tập ngắt đố kiểm tra hiểu bài ngay trên trang sách",
-      ],
-      bulletsEn: [
-        "Smooth 3D page flip experience on all devices",
-        "Native English STEM pronunciation player",
-        "Embedded self-assessment checkpoint questions",
-      ],
-      href: "/books",
-      previewType: "flipbook",
     },
     {
       id: "feature-simulation",
@@ -162,24 +131,11 @@ export default function FeaturesSection() {
       descVi:
         "Biến việc học thành hành trình phiêu lưu đầy hào hứng với hệ thống tích lũy XP, chuỗi ngày học Streak, huy hiệu và bảng xếp hạng.",
       descEn:
-        "Turn learning into an adventure with XP, daily study streaks, skill badges, and class leaderboards.",
+        "Turn learning into an adventure with XP, daily study streaks, skill badges, and leaderboards.",
       badgeVi: "Tích lũy XP",
       badgeEn: "XP & Streaks",
       color: "text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border-amber-200/60",
       href: "/quiz",
-    },
-    {
-      icon: GraduationCap,
-      titleVi: "Studio dành cho Giáo viên & LMS",
-      titleEn: "Teacher Studio & LMS Integration",
-      descVi:
-        "Soạn bài giảng video ngắt đố trong vài phút, đồng bộ điểm số với Canvas, Google Classroom, Moodle và theo dõi phổ điểm cả lớp.",
-      descEn:
-        "Build checkpoint lessons in minutes, sync grades with Canvas/Moodle, and monitor real-time class analytics.",
-      badgeVi: "Dành cho Thầy Cô",
-      badgeEn: "For Educators",
-      color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200/60",
-      href: "/classes",
     },
   ];
 
@@ -341,23 +297,6 @@ export default function FeaturesSection() {
                           <span className="px-1.5 py-0.5 rounded bg-white/10">Bút vẽ</span>
                           <span className="px-1.5 py-0.5 rounded bg-white/10">Thước</span>
                           <span className="px-1.5 py-0.5 rounded bg-white/10">Ghi chú</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {tool.previewType === "flipbook" && (
-                      <div className="relative aspect-[16/10] w-full rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 p-3 flex flex-col justify-between overflow-hidden">
-                        <div className="flex items-center justify-between text-[10px] text-white/70">
-                          <span>Trang 24/48</span>
-                          <span className="text-amber-300">Lật trang tự động</span>
-                        </div>
-                        <div className="my-auto text-left pl-2 border-l-2 border-cyan-400">
-                          <p className="text-[11px] font-bold text-white">Chương 3: Hệ Mặt Trời</p>
-                          <p className="text-[10px] text-slate-300">Quỹ đạo các hành tinh & Vệ tinh</p>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] text-white/90">
-                          <span>🔊 Audio Song ngữ</span>
-                          <span className="text-cyan-300">Trắc nghiệm nhúng ➜</span>
                         </div>
                       </div>
                     )}

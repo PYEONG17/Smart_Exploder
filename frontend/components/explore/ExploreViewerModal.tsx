@@ -22,6 +22,13 @@ import {
   GraduationCap,
   Globe,
   Tag,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  List,
+  Check,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +37,7 @@ import { ThreeDViewer } from "@/components/ui/ThreeDViewer";
 import { useLang } from "@/contexts/LanguageContext";
 import type { ExploreMaterial, AutoTourStop, BilingualTerm, MiniQuizQuestion } from "@/lib/explore-data.config";
 import Link from "next/link";
+import { sendLessonTutorMessage } from "@/lib/api";
 
 interface ExploreViewerModalProps {
   material: ExploreMaterial | null;
@@ -59,6 +67,45 @@ export default function ExploreViewerModal({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [showExplanation, setShowExplanation] = useState<Record<string, boolean>>({});
 
+  // Bilingual Audio TTS & Flashcard state
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+  const [termsViewMode, setTermsViewMode] = useState<"flashcard" | "list">("flashcard");
+  const [cardIndex, setCardIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [masteredTerms, setMasteredTerms] = useState<Record<string, boolean>>({});
+
+  const speak = (text: string, lang: "en" | "vi" = "en", key?: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === "en" ? "en-US" : "vi-VN";
+    utterance.rate = 0.9;
+
+    const voices = window.speechSynthesis.getVoices();
+    const targetVoice = voices.find((v) =>
+      lang === "en"
+        ? (v.lang.startsWith("en-US") || v.lang.startsWith("en-GB") || v.lang.startsWith("en"))
+        : (v.lang.startsWith("vi") || v.name.includes("Vietnamese"))
+    );
+    if (targetVoice) utterance.voice = targetVoice;
+
+    const currentKey = key || text;
+    setSpeakingKey(currentKey);
+    utterance.onend = () => setSpeakingKey(null);
+    utterance.onerror = () => setSpeakingKey(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isOpen]);
+
   // Reset states when material changes
   useEffect(() => {
     if (material) {
@@ -66,6 +113,8 @@ export default function ExploreViewerModal({
       setIsPlayingTour(false);
       setSelectedAnswers({});
       setShowExplanation({});
+      setCardIndex(0);
+      setIsCardFlipped(false);
       // Initial AI greeting
       setAiMessages([
         {
@@ -103,7 +152,7 @@ export default function ExploreViewerModal({
   const currentTourStop: AutoTourStop | undefined =
     material.autoTourStops && material.autoTourStops[tourStep];
 
-  const handleAskAI = (questionText?: string) => {
+  const handleAskAI = async (questionText?: string) => {
     const q = questionText || userQuestion;
     if (!q.trim()) return;
 
@@ -111,8 +160,21 @@ export default function ExploreViewerModal({
     setUserQuestion("");
     setIsAiTyping(true);
 
-    // Call backend AI API or smart fallback
-    setTimeout(() => {
+    try {
+      const history = aiMessages
+        .slice(-6)
+        .map((m) => ({ role: m.role, content: m.text }));
+
+      const reply = await sendLessonTutorMessage(null, q, history, {
+        grade: material.grade,
+        subject: material.subjectLabelVi || material.subject,
+        lessonTitle: locale === "vi" ? material.title : material.titleEn,
+        lessonDescription: `${locale === "vi" ? material.description : material.descriptionEn}. Model 3D: ${material.modelType}`,
+        locale: locale === "vi" ? "vi" : "en",
+      });
+
+      setAiMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+    } catch {
       let reply = "";
       const lower = q.toLowerCase();
 
@@ -139,8 +201,9 @@ export default function ExploreViewerModal({
       }
 
       setAiMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+    } finally {
       setIsAiTyping(false);
-    }, 1000);
+    }
   };
 
   const handleSelectAnswer = (questionId: string, optionIdx: number) => {
@@ -433,44 +496,348 @@ export default function ExploreViewerModal({
                 </div>
               )}
 
-              {/* 2. BILINGUAL TERMS TAB */}
+              {/* 2. BILINGUAL TERMS & 3D FLASHCARD TAB */}
               {activeTab === "terms" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white">
-                      Thuật ngữ Khoa học Anh - Việt
-                    </h3>
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400">
-                      GDPT 2018
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-neutral-400">
-                    Tra cứu nhanh các khái niệm và từ vựng chuyên ngành STEM song ngữ liên quan đến mô hình.
-                  </p>
-
-                  <div className="space-y-2.5">
-                    {material.bilingualTerms.map((term, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3.5 rounded-2xl border border-neutral-800 bg-neutral-950/60 hover:border-neutral-700 transition-colors"
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <h4 className="text-xs font-bold text-emerald-400">
-                            {term.termVi}
-                          </h4>
-                          <span className="text-xs font-bold font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded-full">
-                            {term.termEn}
-                          </span>
-                        </div>
-                        <p className="text-xs text-neutral-300 leading-relaxed mb-1">
-                          {term.definitionVi}
-                        </p>
-                        <p className="text-[11px] text-neutral-400 italic">
-                          "{term.definitionEn}"
-                        </p>
+                <div className="space-y-4">
+                  {/* Tab Header & View Mode Switcher */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-800 pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                          <Globe className="h-4 w-4 text-emerald-400" />
+                          <span>Học liệu Song ngữ Anh - Việt</span>
+                        </h3>
+                        <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400">
+                          IPA + TTS Audio
+                        </Badge>
                       </div>
-                    ))}
+                      <p className="text-[11px] text-neutral-400 mt-0.5">
+                        Luyện phát âm chuẩn bản ngữ và ghi nhớ từ vựng qua thẻ Flashcard 3D.
+                      </p>
+                    </div>
+
+                    {/* Switcher Mode: Flashcard 3D vs List */}
+                    <div className="flex items-center bg-neutral-900 p-0.5 rounded-xl border border-neutral-800 self-start sm:self-auto shrink-0">
+                      <button
+                        onClick={() => {
+                          setTermsViewMode("flashcard");
+                          setIsCardFlipped(false);
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                          termsViewMode === "flashcard"
+                            ? "bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-200"
+                        }`}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        <span>Flashcard 3D</span>
+                      </button>
+                      <button
+                        onClick={() => setTermsViewMode("list")}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                          termsViewMode === "list"
+                            ? "bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-200"
+                        }`}
+                      >
+                        <List className="h-3 w-3" />
+                        <span>Danh sách</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* MODE A: FLASHCARD 3D INTERACTIVE VIEW */}
+                  {termsViewMode === "flashcard" && material.bilingualTerms.length > 0 && (() => {
+                    const currentTerm = material.bilingualTerms[cardIndex] || material.bilingualTerms[0];
+                    const isMastered = masteredTerms[currentTerm.termEn];
+
+                    return (
+                      <div className="space-y-4">
+                        {/* Progress and status header */}
+                        <div className="flex items-center justify-between text-xs text-neutral-400">
+                          <span className="font-semibold text-neutral-300">
+                            Thẻ {cardIndex + 1} / {material.bilingualTerms.length}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const nextIdx = Math.floor(Math.random() * material.bilingualTerms.length);
+                                setCardIndex(nextIdx);
+                                setIsCardFlipped(false);
+                              }}
+                              className="flex items-center gap-1 text-[11px] hover:text-white transition-colors bg-neutral-900 hover:bg-neutral-800 px-2 py-0.5 rounded-lg border border-neutral-800"
+                            >
+                              <Shuffle className="h-3 w-3" />
+                              <span>Xáo trộn</span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                setMasteredTerms((prev) => ({
+                                  ...prev,
+                                  [currentTerm.termEn]: !prev[currentTerm.termEn],
+                                }))
+                              }
+                              className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border transition-all ${
+                                isMastered
+                                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                                  : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white"
+                              }`}
+                            >
+                              <Check className="h-3 w-3" />
+                              <span>{isMastered ? "Đã thuộc" : "Đánh dấu thuộc"}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 3D Perspective Card Container */}
+                        <div
+                          className="relative h-[280px] w-full perspective-[1000px] cursor-pointer group"
+                          onClick={() => setIsCardFlipped(!isCardFlipped)}
+                        >
+                          <motion.div
+                            animate={{ rotateY: isCardFlipped ? 180 : 0 }}
+                            transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+                            style={{ transformStyle: "preserve-3d" }}
+                            className="relative w-full h-full rounded-3xl"
+                          >
+                            {/* FRONT FACE: ENGLISH + PHONETICS + AUDIO */}
+                            <div
+                              style={{ backfaceVisibility: "hidden" }}
+                              className="absolute inset-0 rounded-3xl border border-cyan-500/30 bg-gradient-to-br from-slate-900 via-neutral-900 to-cyan-950/40 p-6 flex flex-col justify-between shadow-2xl overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400/80 bg-cyan-950/80 border border-cyan-800/50 px-2.5 py-0.5 rounded-full">
+                                  English Term • {currentTerm.partOfSpeech || "noun"}
+                                </span>
+                                <span className="text-[11px] text-neutral-400 flex items-center gap-1">
+                                  <RotateCw className="h-3 w-3" />
+                                  <span>Nhấn để lật</span>
+                                </span>
+                              </div>
+
+                              <div className="text-center my-auto space-y-2">
+                                <h4 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-cyan-400">
+                                  {currentTerm.termEn}
+                                </h4>
+
+                                {currentTerm.phonetics && (
+                                  <div className="inline-block px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono text-sm tracking-wide shadow-inner">
+                                    {currentTerm.phonetics}
+                                  </div>
+                                )}
+
+                                <div className="pt-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      speak(currentTerm.termEn, "en", `card-en-${currentTerm.termEn}`);
+                                    }}
+                                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                                      speakingKey === `card-en-${currentTerm.termEn}`
+                                        ? "bg-cyan-500 text-white shadow-lg shadow-cyan-500/30 scale-105"
+                                        : "bg-cyan-950/90 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60"
+                                    }`}
+                                  >
+                                    <Volume2
+                                      className={`h-4 w-4 ${
+                                        speakingKey === `card-en-${currentTerm.termEn}` ? "animate-pulse" : ""
+                                      }`}
+                                    />
+                                    <span>
+                                      {speakingKey === `card-en-${currentTerm.termEn}` ? "Đang phát âm..." : "Nghe phát âm chuẩn (US)"}
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="text-center">
+                                <span className="text-[11px] text-cyan-400/70 font-medium">
+                                  Mặt sau: Nghĩa tiếng Việt & Câu ví dụ thực tế ➔
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* BACK FACE: VIETNAMESE + DEFINITION + EXAMPLES */}
+                            <div
+                              style={{
+                                backfaceVisibility: "hidden",
+                                transform: "rotateY(180deg)",
+                              }}
+                              className="absolute inset-0 rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-neutral-900 to-emerald-950/40 p-5 flex flex-col justify-between shadow-2xl overflow-y-auto"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400/80 bg-emerald-950/80 border border-emerald-800/50 px-2.5 py-0.5 rounded-full">
+                                  Tiếng Việt • GDPT 2018
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    speak(currentTerm.termVi, "vi", `card-vi-${currentTerm.termVi}`);
+                                  }}
+                                  className="flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40"
+                                >
+                                  <Volume2 className="h-3 w-3" />
+                                  <span>Đọc tiếng Việt</span>
+                                </button>
+                              </div>
+
+                              <div className="space-y-2 my-1">
+                                <h4 className="text-xl font-bold text-emerald-400">
+                                  {currentTerm.termVi}
+                                </h4>
+                                <p className="text-xs text-neutral-200 leading-relaxed">
+                                  {currentTerm.definitionVi}
+                                </p>
+
+                                {currentTerm.exampleEn && (
+                                  <div className="rounded-xl bg-neutral-950/70 border border-emerald-500/20 p-2.5 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                                        Ví dụ ngữ cảnh:
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          speak(currentTerm.exampleEn!, "en", `ex-${currentTerm.termEn}`);
+                                        }}
+                                        className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                                        title="Nghe câu ví dụ"
+                                      >
+                                        <Volume2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                    <p className="text-[11px] text-cyan-200 italic">
+                                      "{currentTerm.exampleEn}"
+                                    </p>
+                                    {currentTerm.exampleVi && (
+                                      <p className="text-[11px] text-neutral-400">
+                                        ➔ {currentTerm.exampleVi}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="text-center pt-1 border-t border-emerald-900/40">
+                                <span className="text-[10px] text-neutral-400">
+                                  Nhấn để lật lại mặt tiếng Anh ↺
+                                </span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        </div>
+
+                        {/* Navigation controls below card */}
+                        <div className="flex items-center justify-between pt-1">
+                          <button
+                            onClick={() => {
+                              setCardIndex((prev) => (prev > 0 ? prev - 1 : material.bilingualTerms.length - 1));
+                              setIsCardFlipped(false);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-semibold text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all"
+                          >
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            <span>Thẻ trước</span>
+                          </button>
+
+                          <button
+                            onClick={() => setIsCardFlipped(!isCardFlipped)}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/60 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 transition-all shadow-sm"
+                          >
+                            <RotateCw className="h-3.5 w-3.5" />
+                            <span>Lật mặt {isCardFlipped ? "tiếng Anh" : "tiếng Việt"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setCardIndex((prev) => (prev < material.bilingualTerms.length - 1 ? prev + 1 : 0));
+                              setIsCardFlipped(false);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-semibold text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all"
+                          >
+                            <span>Thẻ kế tiếp</span>
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* MODE B: EXPANDED LIST VIEW */}
+                  {termsViewMode === "list" && (
+                    <div className="space-y-3">
+                      {material.bilingualTerms.map((term, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-2xl border border-neutral-800 bg-neutral-950/70 hover:border-neutral-700 transition-all space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-bold text-emerald-400">
+                                  {term.termVi}
+                                </h4>
+                                <button
+                                  onClick={() => speak(term.termVi, "vi", `list-vi-${idx}`)}
+                                  className="text-neutral-500 hover:text-emerald-400 transition-colors p-0.5"
+                                  title="Phát âm tiếng Việt"
+                                >
+                                  <Volume2 className={`h-3 w-3 ${speakingKey === `list-vi-${idx}` ? "text-emerald-400 animate-pulse" : ""}`} />
+                                </button>
+                              </div>
+                              {term.partOfSpeech && (
+                                <span className="text-[10px] text-neutral-500 italic">
+                                  ({term.partOfSpeech})
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {term.phonetics && (
+                                <span className="text-[10px] font-mono text-cyan-400/80 bg-neutral-900 px-2 py-0.5 rounded-md border border-neutral-800">
+                                  {term.phonetics}
+                                </span>
+                              )}
+                              <span className="text-xs font-bold font-mono text-cyan-300 bg-cyan-950/80 border border-cyan-800/50 px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                                <span>{term.termEn}</span>
+                                <button
+                                  onClick={() => speak(term.termEn, "en", `list-en-${idx}`)}
+                                  className="hover:text-white transition-colors"
+                                  title="Phát âm tiếng Anh chuẩn"
+                                >
+                                  <Volume2 className={`h-3 w-3 ${speakingKey === `list-en-${idx}` ? "text-cyan-400 animate-pulse" : ""}`} />
+                                </button>
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-neutral-300 leading-relaxed">
+                            {term.definitionVi}
+                          </p>
+                          <p className="text-[11px] text-neutral-400 italic">
+                            "{term.definitionEn}"
+                          </p>
+
+                          {term.exampleEn && (
+                            <div className="rounded-xl bg-neutral-900/60 p-2 text-[11px] border border-neutral-800/80 space-y-0.5">
+                              <div className="flex items-center justify-between text-neutral-400 text-[10px] uppercase font-semibold">
+                                <span>Ví dụ câu song ngữ:</span>
+                                <button
+                                  onClick={() => speak(term.exampleEn!, "en", `list-ex-${idx}`)}
+                                  className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                                >
+                                  <Volume2 className="h-2.5 w-2.5" />
+                                  <span>Nghe câu</span>
+                                </button>
+                              </div>
+                              <p className="text-cyan-200/90 font-medium">"{term.exampleEn}"</p>
+                              {term.exampleVi && <p className="text-neutral-400">➔ {term.exampleVi}</p>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

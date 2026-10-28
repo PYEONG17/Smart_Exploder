@@ -1959,6 +1959,8 @@ export default function WhiteboardCanvas() {
                     className="text-[11px] px-1.5 py-0.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 max-w-[130px] truncate"
                   >
                     <optgroup label="Bộ Sách Kết Nối Tri Thức (KNTT)">
+                      <option value="human_heart">Tim người 3D (KNTT 8)</option>
+                      <option value="fluid_pressure">Áp suất chất lỏng (KNTT 8)</option>
                       <option value="crystal_nacl">Muối ăn NaCl (KNTT 7)</option>
                       <option value="archimedes_buoyancy">Lực Archimedes (KNTT 8)</option>
                       <option value="solar_eclipse">Nhật thực (KNTT 6)</option>

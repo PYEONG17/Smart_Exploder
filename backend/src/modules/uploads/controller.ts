@@ -1,13 +1,18 @@
 import type { NextFunction, Request, Response } from "express";
+import type { Material as PrismaMaterial } from "@prisma/client";
+import { unlink } from "node:fs/promises";
 import prisma from "../../config/db.js";
 import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
-import { getCourseMediaUrl } from "../../utils/course-media.js";
+import {
+  getCourseMediaUrl,
+  isValidGlbFile,
+} from "../../utils/course-media.js";
 import { z } from "zod";
 
 const materialInputSchema = z.object({
   title: z.string().trim().min(2).max(150),
-  type: z.enum(["PDF", "DOCUMENT", "OTHER"]),
+  type: z.enum(["PDF", "DOCUMENT", "MODEL_3D", "OTHER"]),
 });
 const materialLinkInputSchema = z.object({
   title: z.string().trim().min(2).max(150),
@@ -27,7 +32,7 @@ export async function authorizeLessonVideoUpload(
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
   if (req.user.role !== "ADMIN" && lesson.course.createdById !== req.user.id) {
-    throw new AppError("You can only upload video to your own courses", 403);
+    throw new AppError("You can only upload content to your own courses", 403);
   }
   next();
 }
@@ -48,17 +53,48 @@ export function uploadLessonVideo(req: Request, res: Response) {
 
 export async function uploadLessonMaterial(req: Request, res: Response) {
   if (!req.user) throw new AppError("Authentication required", 401);
-  if (!req.file) throw new AppError("Choose a document to upload", 400);
-  const input = materialInputSchema.parse(req.body);
+  if (!req.file) throw new AppError("Choose a file to upload", 400);
+  const parsedInput = materialInputSchema.safeParse(req.body);
+  if (!parsedInput.success) {
+    await unlink(req.file.path);
+    throw new AppError("The material details are invalid", 400);
+  }
+  const input = parsedInput.data;
+  if (input.type === "MODEL_3D") {
+    let validGlb: boolean;
+    try {
+      validGlb = await isValidGlbFile(req.file.path);
+    } catch (error) {
+      await unlink(req.file.path);
+      throw error;
+    }
+    if (!validGlb) {
+      await unlink(req.file.path);
+      throw new AppError("The uploaded file is not a valid GLB 2.0 model", 400);
+    }
+  }
+  if (
+    input.type !== "MODEL_3D" &&
+    req.file.originalname.toLowerCase().endsWith(".glb")
+  ) {
+    await unlink(req.file.path);
+    throw new AppError("GLB files must be uploaded as a 3D model", 400);
+  }
   const url = getCourseMediaUrl(req, req.user.id, req.file.filename);
-  const material = await prisma.material.create({
-    data: {
-      title: input.title,
-      type: input.type,
-      url,
-      lessonId: String(req.params.lessonId),
-    },
-  });
+  let material: PrismaMaterial;
+  try {
+    material = await prisma.material.create({
+      data: {
+        title: input.title,
+        type: input.type,
+        url,
+        lessonId: String(req.params.lessonId),
+      },
+    });
+  } catch (error) {
+    await unlink(req.file.path);
+    throw error;
+  }
   res.status(201).json(success(material, "Lesson material uploaded"));
 }
 

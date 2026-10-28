@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Course, Lesson } from "@/types";
 import { fetchMyProgress } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLessonRoute } from "@/lib/lesson-route";
 
 export type CourseDetailCourse = Course & {
   descriptionEn?: string;
@@ -180,7 +181,7 @@ export default function CourseDetailClient({
 
                 {nextLesson ? (
                   <Link
-                    href={`/courses/${course.id}/lessons/${nextLesson.id}`}
+                    href={getLessonRoute(course.id, nextLesson.id)}
                     className="w-full inline-flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-white/90 font-semibold shadow-lg rounded-lg px-6 py-3 text-sm transition-colors"
                   >
                     <PlayCircle className="h-4 w-4" />
@@ -213,7 +214,7 @@ export default function CourseDetailClient({
           </div>
           {nextLesson ? (
             <Link
-              href={`/courses/${course.id}/lessons/${nextLesson.id}`}
+              href={getLessonRoute(course.id, nextLesson.id)}
               className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
             >
               <PlayCircle className="h-4 w-4" />
@@ -335,7 +336,7 @@ export default function CourseDetailClient({
                         </p>
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/courses/${course.id}/lessons/${lesson.id}`}
+                            href={getLessonRoute(course.id, lesson.id)}
                             className="inline-flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
                           >
                             <PlayCircle className="h-3.5 w-3.5" />

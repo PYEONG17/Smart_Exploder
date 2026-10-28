@@ -119,12 +119,6 @@ export default function HeroSection() {
                 <span>{locale === "vi" ? "Đăng ký miễn phí" : "Get Started Free"}</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                href="/classes"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3.5 text-sm font-medium text-neutral-700 dark:text-slate-200 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <span>{locale === "vi" ? "Dành cho trường học & LMS" : "For Schools & LMS"}</span>
-              </Link>
             </div>
 
             {/* Trust and Social Proof bar */}

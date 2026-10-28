@@ -36,7 +36,9 @@ export type ModelType =
   | "archimedes_buoyancy"
   | "electric_circuit"
   | "chromosome"
-  | "molecule_ethene";
+  | "molecule_ethene"
+  | "human_heart"
+  | "fluid_pressure";
 
 interface ThreeDViewerProps {
   modelType?: ModelType | string;
@@ -934,7 +936,330 @@ function EtheneMoleculeModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 17. BASIC GEOMETRY MODELS
+// 17. HUMAN HEART & CIRCULATORY SYSTEM (KHTN 8 KNTT - Bài 31 & 32: Cấu tạo Tim & Hệ tuần hoàn)
+// ============================================================================
+function HumanHeartModel({ wireframe }: { wireframe: boolean }) {
+  const heartGroupRef = useRef<THREE.Group>(null);
+  const bloodOxygenatedRef = useRef<THREE.Group>(null);
+  const bloodDeoxygenatedRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    // Physiological cardiac cycle (Lub-Dub rhythm)
+    const beat = Math.sin(t * 3.5);
+    const lubDub = 1 + (beat > 0.4 ? 0.06 : 0) + (Math.sin(t * 7) > 0.7 ? 0.03 : 0);
+    if (heartGroupRef.current) {
+      heartGroupRef.current.scale.set(lubDub, lubDub * 1.02, lubDub);
+      heartGroupRef.current.rotation.y = Math.sin(t * 0.3) * 0.15;
+    }
+
+    // Circulating blood flow particles
+    if (bloodOxygenatedRef.current) {
+      bloodOxygenatedRef.current.children.forEach((child, i) => {
+        const offset = (t * 0.8 + i * 0.3) % 1;
+        child.position.y = 0.5 + offset * 1.2;
+        child.position.x = 0.2 + Math.sin(offset * Math.PI) * 0.4;
+      });
+    }
+    if (bloodDeoxygenatedRef.current) {
+      bloodDeoxygenatedRef.current.children.forEach((child, i) => {
+        const offset = (t * 0.8 + i * 0.3) % 1;
+        child.position.y = 1.2 - offset * 1.2;
+        child.position.x = -0.5 - Math.cos(offset * Math.PI) * 0.2;
+      });
+    }
+  });
+
+  return (
+    <group position={[0, -0.2, 0]}>
+      {/* Main pulsating muscular heart */}
+      <group ref={heartGroupRef}>
+        {/* Left Ventricle (Tâm thất trái - thành cơ dày, bơm máu giàu O2 đi nuôi cơ thể) */}
+        <Sphere args={[0.7, 32, 32]} position={[0.28, -0.35, 0.1]} scale={[1.1, 1.35, 0.95]}>
+          <meshStandardMaterial
+            color="#be123c"
+            roughness={0.35}
+            metalness={0.15}
+            wireframe={wireframe}
+          />
+        </Sphere>
+
+        {/* Right Ventricle (Tâm thất phải - bơm máu nghèo O2 lên phổi) */}
+        <Sphere args={[0.62, 32, 32]} position={[-0.32, -0.32, 0.15]} scale={[1.0, 1.25, 0.9]}>
+          <meshStandardMaterial
+            color="#9f1239"
+            roughness={0.4}
+            metalness={0.1}
+            wireframe={wireframe}
+          />
+        </Sphere>
+
+        {/* Apex of the heart (Đỉnh tim nhọn chúc xuống dưới sang trái) */}
+        <Cylinder args={[0.45, 0.1, 0.7, 24]} position={[0.15, -0.95, 0.1]} rotation={[0, 0, -0.2]}>
+          <meshStandardMaterial color="#881337" roughness={0.35} wireframe={wireframe} />
+        </Cylinder>
+
+        {/* Left Atrium (Tâm nhĩ trái) */}
+        <Sphere args={[0.48, 24, 24]} position={[0.42, 0.38, -0.1]} scale={[1, 1.1, 0.9]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.4} wireframe={wireframe} />
+        </Sphere>
+
+        {/* Right Atrium (Tâm nhĩ phải) */}
+        <Sphere args={[0.5, 24, 24]} position={[-0.45, 0.32, 0.05]} scale={[1.05, 1.1, 0.95]}>
+          <meshStandardMaterial color="#991b1b" roughness={0.4} wireframe={wireframe} />
+        </Sphere>
+
+        {/* Anterior Interventricular Sulcus & Coronary vessels (Rãnh liên thất & Động mạch vành) */}
+        <mesh position={[-0.02, -0.35, 0.62]} rotation={[0, 0, 0.3]}>
+          <cylinderGeometry args={[0.025, 0.025, 1.2, 12]} />
+          <meshStandardMaterial color="#ef4444" emissive="#b91c1c" emissiveIntensity={0.6} />
+        </mesh>
+        <mesh position={[0.15, -0.4, 0.6]} rotation={[0, 0, -0.4]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.8, 12]} />
+          <meshStandardMaterial color="#38bdf8" emissive="#0284c7" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+
+      {/* Aorta Arch (Cung động mạch chủ uốn cong - Đỏ tươi mang máu giàu O2) */}
+      <group position={[0.1, 0.6, 0]}>
+        {/* Curving Aortic Arch */}
+        <Torus args={[0.45, 0.15, 16, 60, Math.PI * 0.95]} rotation={[0, 0, -Math.PI / 4]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.25} wireframe={wireframe} />
+        </Torus>
+        {/* 3 Major Artery Branches: Thân cánh tay đầu, ĐM cảnh chung trái, ĐM dưới đòn trái */}
+        <Cylinder args={[0.05, 0.05, 0.45, 16]} position={[-0.15, 0.5, 0.05]} rotation={[0, 0, -0.1]}>
+          <meshStandardMaterial color="#f43f5e" roughness={0.2} wireframe={wireframe} />
+        </Cylinder>
+        <Cylinder args={[0.045, 0.045, 0.5, 16]} position={[0.02, 0.55, 0]} rotation={[0, 0, 0.05]}>
+          <meshStandardMaterial color="#f43f5e" roughness={0.2} wireframe={wireframe} />
+        </Cylinder>
+        <Cylinder args={[0.045, 0.045, 0.5, 16]} position={[0.18, 0.52, -0.05]} rotation={[0, 0, 0.2]}>
+          <meshStandardMaterial color="#f43f5e" roughness={0.2} wireframe={wireframe} />
+        </Cylinder>
+      </group>
+
+      {/* Pulmonary Trunk & Arteries (Thân động mạch phổi - Xanh ngọc dẫn máu lên phổi) */}
+      <group position={[-0.05, 0.45, 0.25]}>
+        <Cylinder args={[0.14, 0.14, 0.6, 20]} rotation={[0.2, 0, 0.35]}>
+          <meshStandardMaterial color="#0284c7" roughness={0.25} wireframe={wireframe} />
+        </Cylinder>
+        {/* Left & Right branches */}
+        <Cylinder args={[0.09, 0.09, 0.5, 16]} position={[-0.28, 0.22, -0.15]} rotation={[0, 0, Math.PI / 3]}>
+          <meshStandardMaterial color="#0284c7" roughness={0.25} wireframe={wireframe} />
+        </Cylinder>
+        <Cylinder args={[0.09, 0.09, 0.5, 16]} position={[0.25, 0.18, -0.2]} rotation={[0, 0, -Math.PI / 3]}>
+          <meshStandardMaterial color="#0284c7" roughness={0.25} wireframe={wireframe} />
+        </Cylinder>
+      </group>
+
+      {/* Superior & Inferior Vena Cava (Tĩnh mạch chủ trên & dưới - Xanh dương) */}
+      <group position={[-0.65, 0.25, -0.1]}>
+        {/* Superior */}
+        <Cylinder args={[0.13, 0.13, 0.85, 20]} position={[0, 0.4, 0]}>
+          <meshStandardMaterial color="#0369a1" roughness={0.3} wireframe={wireframe} />
+        </Cylinder>
+        {/* Inferior */}
+        <Cylinder args={[0.13, 0.13, 0.7, 20]} position={[0, -0.7, 0]}>
+          <meshStandardMaterial color="#0369a1" roughness={0.3} wireframe={wireframe} />
+        </Cylinder>
+      </group>
+
+      {/* 4 Pulmonary Veins (Tĩnh mạch phổi - 4 nhánh đỏ đổ vào tâm nhĩ trái) */}
+      <group position={[0.65, 0.35, -0.25]}>
+        <Cylinder args={[0.06, 0.06, 0.35, 12]} position={[0, 0.12, 0.1]} rotation={[0, 0, Math.PI / 2.2]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.3} />
+        </Cylinder>
+        <Cylinder args={[0.06, 0.06, 0.35, 12]} position={[0, -0.12, 0.1]} rotation={[0, 0, Math.PI / 2.2]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.3} />
+        </Cylinder>
+        <Cylinder args={[0.06, 0.06, 0.35, 12]} position={[-0.1, 0.12, -0.15]} rotation={[0, 0, Math.PI / 2.2]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.3} />
+        </Cylinder>
+        <Cylinder args={[0.06, 0.06, 0.35, 12]} position={[-0.1, -0.12, -0.15]} rotation={[0, 0, Math.PI / 2.2]}>
+          <meshStandardMaterial color="#e11d48" roughness={0.3} />
+        </Cylinder>
+      </group>
+
+      {/* Circulating Blood Flow Particles */}
+      <group ref={bloodOxygenatedRef}>
+        {[0, 1, 2].map((i) => (
+          <Sphere key={i} args={[0.045, 12, 12]} position={[0.2, 0.8, 0.1]}>
+            <meshStandardMaterial color="#fda4af" emissive="#f43f5e" emissiveIntensity={2.5} />
+          </Sphere>
+        ))}
+      </group>
+      <group ref={bloodDeoxygenatedRef}>
+        {[0, 1, 2].map((i) => (
+          <Sphere key={i} args={[0.045, 12, 12]} position={[-0.65, 0.6, 0]}>
+            <meshStandardMaterial color="#7dd3fc" emissive="#0284c7" emissiveIntensity={2.5} />
+          </Sphere>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+// ============================================================================
+// 18. FLUID PRESSURE & HYDROSTATICS (KHTN 8 KNTT - Bài 16: Áp suất chất lỏng p = d.h)
+// ============================================================================
+function FluidPressureModel({ wireframe }: { wireframe: boolean }) {
+  const bubblesGroupRef = useRef<THREE.Group>(null);
+  const jet1Ref = useRef<THREE.Group>(null);
+  const jet2Ref = useRef<THREE.Group>(null);
+  const jet3Ref = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    // Rising bubbles inside liquid column
+    if (bubblesGroupRef.current) {
+      bubblesGroupRef.current.children.forEach((b, idx) => {
+        b.position.y = -1.2 + ((t * 0.6 + idx * 0.45) % 2.5);
+        b.position.x = Math.sin(t * 1.5 + idx) * 0.3;
+      });
+    }
+
+    // Dynamic water jet ripple pulses
+    if (jet1Ref.current) jet1Ref.current.scale.set(1, 1 + Math.sin(t * 4) * 0.08, 1);
+    if (jet2Ref.current) jet2Ref.current.scale.set(1, 1 + Math.sin(t * 4.5) * 0.08, 1);
+    if (jet3Ref.current) jet3Ref.current.scale.set(1, 1 + Math.sin(t * 5) * 0.08, 1);
+  });
+
+  return (
+    <group position={[0, -0.1, 0]}>
+      {/* Transparent Glass Vessel Cylinder (Bình trụ thủy tinh) */}
+      <Cylinder args={[0.9, 0.9, 2.9, 32]} position={[0, 0, 0]}>
+        <meshPhysicalMaterial
+          color="#e0f2fe"
+          transparent
+          opacity={0.3}
+          roughness={0.05}
+          transmission={0.8}
+          thickness={0.4}
+          wireframe={wireframe}
+        />
+      </Cylinder>
+
+      {/* Blue Liquid Column (Cột chất lỏng nước d = 10,000 N/m3) */}
+      <Cylinder args={[0.86, 0.86, 2.6, 32]} position={[0, -0.1, 0]}>
+        <meshStandardMaterial
+          color="#0284c7"
+          transparent
+          opacity={0.55}
+          roughness={0.1}
+          metalness={0.1}
+          wireframe={wireframe}
+        />
+      </Cylinder>
+
+      {/* Meniscus / Liquid Top Surface */}
+      <Cylinder args={[0.86, 0.86, 0.04, 32]} position={[0, 1.2, 0]}>
+        <meshStandardMaterial color="#38bdf8" transparent opacity={0.8} />
+      </Cylinder>
+
+      {/* Sturdy Laboratory Base Stand (Chân đế phòng thí nghiệm) */}
+      <Cylinder args={[1.3, 1.4, 0.15, 32]} position={[0, -1.5, 0]}>
+        <meshStandardMaterial color="#1e293b" metalness={0.7} roughness={0.3} />
+      </Cylinder>
+
+      {/* Graduation Marks & Ruler Scale (Thước đo độ sâu h) */}
+      <group position={[-0.92, 0, 0]}>
+        {[-1.0, -0.5, 0, 0.5, 1.0].map((y, idx) => (
+          <Box key={idx} args={[0.06, 0.02, 0.15]} position={[0, y, 0]}>
+            <meshStandardMaterial color="#f8fafc" emissive="#94a3b8" emissiveIntensity={0.5} />
+          </Box>
+        ))}
+      </group>
+
+      {/* 3 ORIFICES & FLEXIBLE RUBBER MEMBRANES AT DEPTHS h1, h2, h3 */}
+      {/* Depth h1 (Nông h1 = 0.4): Màng cao su phồng nhẹ p1 = d.h1 */}
+      <group position={[0.9, 0.6, 0]}>
+        <Cylinder args={[0.12, 0.12, 0.08, 16]} rotation={[0, 0, Math.PI / 2]}>
+          <meshStandardMaterial color="#334155" />
+        </Cylinder>
+        {/* Rubber membrane hemisphere */}
+        <Sphere args={[0.11, 16, 16]} position={[0.05, 0, 0]} scale={[0.6, 1, 1]}>
+          <meshStandardMaterial color="#f59e0b" roughness={0.6} />
+        </Sphere>
+      </group>
+
+      {/* Depth h2 (Trung bình h2 = 1.0): Màng cao su phồng vừa p2 = d.h2 */}
+      <group position={[0.9, 0.0, 0]}>
+        <Cylinder args={[0.12, 0.12, 0.08, 16]} rotation={[0, 0, Math.PI / 2]}>
+          <meshStandardMaterial color="#334155" />
+        </Cylinder>
+        {/* Rubber membrane hemisphere bulges more */}
+        <Sphere args={[0.13, 16, 16]} position={[0.09, 0, 0]} scale={[1.1, 1.1, 1.1]}>
+          <meshStandardMaterial color="#f59e0b" roughness={0.6} />
+        </Sphere>
+      </group>
+
+      {/* Depth h3 (Sâu nhất h3 = 1.6): Màng cao su phồng căng nhất p3 = d.h3 */}
+      <group position={[0.9, -0.6, 0]}>
+        <Cylinder args={[0.12, 0.12, 0.08, 16]} rotation={[0, 0, Math.PI / 2]}>
+          <meshStandardMaterial color="#334155" />
+        </Cylinder>
+        {/* Rubber membrane hemisphere bulges maximally */}
+        <Sphere args={[0.16, 16, 16]} position={[0.14, 0, 0]} scale={[1.6, 1.2, 1.2]}>
+          <meshStandardMaterial color="#f59e0b" roughness={0.6} emissive="#b45309" emissiveIntensity={0.2} />
+        </Sphere>
+      </group>
+
+      {/* 3 PARABOLIC WATER JETS (Tia nước phun xa theo áp suất) */}
+      {/* Jet 1: Short range */}
+      <group ref={jet1Ref} position={[0.95, 0.6, 0]}>
+        <mesh position={[0.3, -0.15, 0]} rotation={[0, 0, -0.45]}>
+          <cylinderGeometry args={[0.03, 0.02, 0.7, 12]} />
+          <meshStandardMaterial color="#38bdf8" transparent opacity={0.7} />
+        </mesh>
+      </group>
+
+      {/* Jet 2: Medium range */}
+      <group ref={jet2Ref} position={[0.95, 0.0, 0]}>
+        <mesh position={[0.55, -0.22, 0]} rotation={[0, 0, -0.38]}>
+          <cylinderGeometry args={[0.035, 0.025, 1.2, 12]} />
+          <meshStandardMaterial color="#38bdf8" transparent opacity={0.75} />
+        </mesh>
+      </group>
+
+      {/* Jet 3: Longest range (Max pressure p = d.h) */}
+      <group ref={jet3Ref} position={[0.95, -0.6, 0]}>
+        <mesh position={[0.85, -0.28, 0]} rotation={[0, 0, -0.32]}>
+          <cylinderGeometry args={[0.04, 0.03, 1.8, 12]} />
+          <meshStandardMaterial color="#38bdf8" transparent opacity={0.85} emissive="#0284c7" emissiveIntensity={0.4} />
+        </mesh>
+      </group>
+
+      {/* Omnidirectional Hydrostatic Pressure Force Vectors (Áp suất tác dụng theo mọi phương) */}
+      {[
+        { pos: [-0.6, 0.4, 0], rot: [0, 0, Math.PI / 2], len: 0.25 },
+        { pos: [-0.6, -0.2, 0], rot: [0, 0, Math.PI / 2], len: 0.45 },
+        { pos: [-0.6, -0.8, 0], rot: [0, 0, Math.PI / 2], len: 0.7 },
+        { pos: [0, -1.3, 0], rot: [0, 0, 0], len: 0.65 },
+      ].map((v, i) => (
+        <group key={i} position={v.pos as [number, number, number]} rotation={v.rot as [number, number, number]}>
+          <Cylinder args={[0.018, 0.018, v.len, 8]} position={[0, -v.len / 2, 0]}>
+            <meshStandardMaterial color="#ef4444" emissive="#b91c1c" emissiveIntensity={0.6} />
+          </Cylinder>
+          <Cylinder args={[0.05, 0.001, 0.1, 8]} position={[0, -v.len, 0]}>
+            <meshStandardMaterial color="#ef4444" emissive="#b91c1c" emissiveIntensity={0.6} />
+          </Cylinder>
+        </group>
+      ))}
+
+      {/* Rising Bubbles inside */}
+      <group ref={bubblesGroupRef}>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <Sphere key={i} args={[0.045, 12, 12]} position={[0, -1 + i * 0.4, 0]}>
+            <meshStandardMaterial color="#e0f2fe" transparent opacity={0.6} roughness={0.1} />
+          </Sphere>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+// ============================================================================
+// 19. BASIC GEOMETRY MODELS
 // ============================================================================
 function BasicModel({ type, wireframe }: { type: string; wireframe: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -1025,6 +1350,10 @@ export function ThreeDViewer({
         return <ChromosomeModel wireframe={wireframe} />;
       case "molecule_ethene":
         return <EtheneMoleculeModel wireframe={wireframe} />;
+      case "human_heart":
+        return <HumanHeartModel wireframe={wireframe} />;
+      case "fluid_pressure":
+        return <FluidPressureModel wireframe={wireframe} />;
       default:
         return <BasicModel type={currentShape} wireframe={wireframe} />;
     }
@@ -1080,6 +1409,8 @@ export function ThreeDViewer({
             { id: "light_prism", label: "Lăng kính (KHTN 7)" },
             { id: "magnetic_field", label: "Từ trường (KHTN 8)" },
             { id: "archimedes_buoyancy", label: "Lực Ác-si-mét (KHTN 8)" },
+            { id: "fluid_pressure", label: "Áp suất chất lỏng (KHTN 8)" },
+            { id: "human_heart", label: "Tim người 3D (KHTN 8)" },
             { id: "electric_circuit", label: "Mạch điện (KHTN 8)" },
             { id: "molecule_methane", label: "Metan CH4 (KHTN 8/9)" },
             { id: "molecule_ethene", label: "Etilen C2H4 (KHTN 9)" },

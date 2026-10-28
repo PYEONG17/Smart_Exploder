@@ -25,6 +25,10 @@ import {
   Grid3X3,
   LayoutGrid,
   PenTool,
+  Database,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +60,16 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"popular" | "rating" | "newest">("popular");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    grade: false,
+    subject: false,
+    type: false,
+    textbook: false,
+  });
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Modal active material
   const [activeMaterial, setActiveMaterial] = useState<ExploreMaterial | null>(null);
@@ -70,6 +84,7 @@ export default function ExplorePage() {
         if (selectedGrade !== "all") queryParams.append("grade", selectedGrade);
         if (selectedSubject !== "all") queryParams.append("subject", selectedSubject);
         if (selectedType !== "all") queryParams.append("type", selectedType);
+        if (selectedTextbook !== "all") queryParams.append("textbook", selectedTextbook);
         if (searchQuery.trim()) queryParams.append("search", searchQuery.trim());
         queryParams.append("sortBy", sortBy);
 
@@ -98,6 +113,17 @@ export default function ExplorePage() {
       if (selectedType !== "all") {
         localFiltered = localFiltered.filter((m) => m.type === selectedType);
       }
+      if (selectedTextbook !== "all") {
+        const tbMap: Record<string, string> = {
+          ket_noi: "Kết Nối",
+          canh_dieu: "Cánh Diều",
+          chan_troi: "Chân Trời",
+        };
+        const target = tbMap[selectedTextbook] || selectedTextbook;
+        localFiltered = localFiltered.filter((m) =>
+          m.textbook && m.textbook.toLowerCase().includes(target.toLowerCase())
+        );
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         localFiltered = localFiltered.filter(
@@ -119,7 +145,7 @@ export default function ExplorePage() {
     }
 
     fetchFromApi();
-  }, [selectedCategory, selectedGrade, selectedSubject, selectedType, searchQuery, sortBy]);
+  }, [selectedCategory, selectedGrade, selectedSubject, selectedType, selectedTextbook, searchQuery, sortBy]);
 
   const handleOpenViewer = (material: ExploreMaterial) => {
     setActiveMaterial(material);
@@ -160,13 +186,13 @@ export default function ExplorePage() {
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Nền tảng Học liệu Số 3D/XR chuẩn GDPT 2018</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white text-balance leading-tight">
                 Kho Học Liệu Số{" "}
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
                   3D / XR & Mô Phỏng
                 </span>
               </h1>
-              <p className="mt-2 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 max-w-2xl leading-relaxed">
+              <p className="mt-2 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 max-w-2xl leading-relaxed text-balance">
                 Khám phá mô hình 3 chiều tương tác, thí nghiệm ảo Vật lý - Hóa học - Sinh học, Sandbox STEM và ngân hàng câu hỏi đánh giá năng lực dành cho học sinh K-9.
               </p>
               <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
@@ -180,11 +206,11 @@ export default function ExplorePage() {
                 </Link>
 
                 <Link
-                  href="/books"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all shadow-xs"
+                  href="/teacher?tab=explore"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all shadow-xs"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>Thư Viện Sách Lật Trang 3D (Flipbook)</span>
+                  <Database className="h-3.5 w-3.5 text-cyan-500" />
+                  <span>Quản Lý Học Liệu (Giáo Viên)</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
@@ -249,19 +275,27 @@ export default function ExplorePage() {
       {/* ── MAIN CONTENT LAYOUT: SIDEBAR + GRID ── */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* ── LEFT SIDEBAR FILTERS (YOOBOOK HIERARCHICAL FILTER) ── */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-28 rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 p-5 backdrop-blur-xl shadow-xs space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
-                  Bộ Lọc Phân Cấp
-                </span>
+          {/* ── LEFT SIDEBAR FILTERS (DEDICATED INDEPENDENT SCROLLBAR) ── */}
+          <aside className="hidden lg:flex lg:col-span-3 sticky top-24 max-h-[calc(100vh-7rem)] flex-col rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl shadow-sm overflow-hidden transition-all">
+            {/* Pinned Sticky Header inside Sidebar */}
+            <div className="p-4 border-b border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-800 dark:text-neutral-200">
+                    Bộ Lọc Phân Cấp
+                  </span>
+                  <span className="block text-[10px] text-neutral-400">
+                    Cuộn độc lập • {materials.length} học liệu
+                  </span>
+                </div>
               </div>
               {activeFiltersCount > 0 && (
                 <button
                   onClick={handleResetFilters}
-                  className="text-[11px] font-semibold text-rose-600 hover:underline inline-flex items-center gap-1"
+                  className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                 >
                   <RefreshCw className="h-3 w-3" />
                   <span>Đặt lại ({activeFiltersCount})</span>
@@ -269,107 +303,228 @@ export default function ExplorePage() {
               )}
             </div>
 
-            {/* 1. Filter by Grade (Khối lớp) */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300 flex items-center justify-between">
-                <span>Khối lớp (K-9)</span>
-                <span className="text-[11px] text-neutral-400">Cấp THCS</span>
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {EXPLORE_GRADES.map((g) => {
-                  const active = selectedGrade === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => setSelectedGrade(g.id)}
-                      className={`text-xs py-2 px-3 rounded-xl font-medium border text-left transition-all ${
-                        active
-                          ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold"
-                          : "border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-                      }`}
-                    >
-                      {g.labelVi}
-                    </button>
-                  );
-                })}
+            {/* Active filter badges quick-strip (if any active) */}
+            {activeFiltersCount > 0 && (
+              <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-blue-50/40 dark:bg-blue-950/20 flex flex-wrap gap-1 shrink-0">
+                {selectedGrade !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                    Lớp {selectedGrade}
+                    <button onClick={() => setSelectedGrade("all")} className="hover:opacity-75 cursor-pointer">×</button>
+                  </span>
+                )}
+                {selectedSubject !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                    {EXPLORE_SUBJECTS.find((s) => s.id === selectedSubject)?.labelVi}
+                    <button onClick={() => setSelectedSubject("all")} className="hover:opacity-75 cursor-pointer">×</button>
+                  </span>
+                )}
+                {selectedTextbook !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">
+                    {EXPLORE_TEXTBOOKS.find((t) => t.id === selectedTextbook)?.label}
+                    <button onClick={() => setSelectedTextbook("all")} className="hover:opacity-75 cursor-pointer">×</button>
+                  </span>
+                )}
+                {selectedType !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                    {EXPLORE_TYPES.find((t) => t.id === selectedType)?.labelVi}
+                    <button onClick={() => setSelectedType("all")} className="hover:opacity-75 cursor-pointer">×</button>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Dedicated Scrollable Filters Body with Custom Scrollbar */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-400 dark:hover:scrollbar-thumb-neutral-600 scrollbar-track-transparent">
+              {/* 1. Filter by Grade (Khối lớp) */}
+              <div className="rounded-2xl border border-neutral-100 dark:border-neutral-800/80 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+                <button
+                  type="button"
+                  onClick={() => toggleSection("grade")}
+                  className="w-full flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <GraduationCap className="h-3.5 w-3.5 text-blue-500" />
+                    <span>Khối lớp (K-9)</span>
+                    {selectedGrade !== "all" && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-bold">
+                        Lớp {selectedGrade}
+                      </span>
+                    )}
+                  </div>
+                  {collapsedSections.grade ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5 text-neutral-400" />
+                  )}
+                </button>
+
+                {!collapsedSections.grade && (
+                  <div className="grid grid-cols-2 gap-1.5 mt-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    {EXPLORE_GRADES.map((g) => {
+                      const active = selectedGrade === g.id;
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setSelectedGrade(g.id)}
+                          className={`text-xs py-1.5 px-2.5 rounded-xl font-medium border text-left transition-all cursor-pointer ${
+                            active
+                              ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold shadow-xs"
+                              : "border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/70 dark:hover:bg-neutral-800/50"
+                          }`}
+                        >
+                          {g.labelVi}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Filter by Subject (Môn học) */}
+              <div className="rounded-2xl border border-neutral-100 dark:border-neutral-800/80 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+                <button
+                  type="button"
+                  onClick={() => toggleSection("subject")}
+                  className="w-full flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <FlaskConical className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Môn học GDPT 2018</span>
+                    {selectedSubject !== "all" && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 font-bold truncate max-w-[100px]">
+                        {EXPLORE_SUBJECTS.find((s) => s.id === selectedSubject)?.labelVi}
+                      </span>
+                    )}
+                  </div>
+                  {collapsedSections.subject ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5 text-neutral-400" />
+                  )}
+                </button>
+
+                {!collapsedSections.subject && (
+                  <div className="space-y-1 mt-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    {EXPLORE_SUBJECTS.map((s) => {
+                      const active = selectedSubject === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSubject(s.id)}
+                          className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                            active
+                              ? "bg-emerald-600 text-white font-semibold shadow-xs"
+                              : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+                          }`}
+                        >
+                          <span>{s.labelVi}</span>
+                          {active && <Check className="h-3.5 w-3.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Filter by Resource Type (Định dạng học liệu) */}
+              <div className="rounded-2xl border border-neutral-100 dark:border-neutral-800/80 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+                <button
+                  type="button"
+                  onClick={() => toggleSection("type")}
+                  className="w-full flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Box className="h-3.5 w-3.5 text-purple-500" />
+                    <span>Định dạng học liệu số</span>
+                    {selectedType !== "all" && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 font-bold truncate max-w-[90px]">
+                        {EXPLORE_TYPES.find((t) => t.id === selectedType)?.labelVi}
+                      </span>
+                    )}
+                  </div>
+                  {collapsedSections.type ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5 text-neutral-400" />
+                  )}
+                </button>
+
+                {!collapsedSections.type && (
+                  <div className="space-y-1 mt-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    {EXPLORE_TYPES.map((t) => {
+                      const active = selectedType === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setSelectedType(t.id)}
+                          className={`w-full flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs transition-colors cursor-pointer ${
+                            active
+                              ? "bg-purple-600 text-white font-semibold shadow-xs"
+                              : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+                          }`}
+                        >
+                          <span>{t.labelVi}</span>
+                          {active && <Check className="h-3.5 w-3.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Filter by Textbook (Bộ sách) */}
+              <div className="rounded-2xl border border-neutral-100 dark:border-neutral-800/80 p-3 bg-neutral-50/50 dark:bg-neutral-900/50">
+                <button
+                  type="button"
+                  onClick={() => toggleSection("textbook")}
+                  className="w-full flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Bộ sách giáo khoa</span>
+                    {selectedTextbook !== "all" && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 font-bold truncate max-w-[90px]">
+                        {selectedTextbook === "ket_noi" ? "KNTT" : selectedTextbook === "canh_dieu" ? "Cánh Diều" : "Chân Trời"}
+                      </span>
+                    )}
+                  </div>
+                  {collapsedSections.textbook ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5 text-neutral-400" />
+                  )}
+                </button>
+
+                {!collapsedSections.textbook && (
+                  <div className="space-y-1 mt-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                    {EXPLORE_TEXTBOOKS.map((tb) => {
+                      const active = selectedTextbook === tb.id;
+                      return (
+                        <button
+                          key={tb.id}
+                          onClick={() => setSelectedTextbook(tb.id)}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-xl text-xs truncate transition-colors cursor-pointer ${
+                            active
+                              ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-50/90 dark:bg-blue-950/50 border border-blue-200/50 dark:border-blue-800/50 shadow-xs"
+                              : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/40"
+                          }`}
+                        >
+                          • {tb.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* 2. Filter by Subject (Môn học) */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                Môn học GDPT 2018
-              </label>
-              <div className="space-y-1">
-                {EXPLORE_SUBJECTS.map((s) => {
-                  const active = selectedSubject === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => setSelectedSubject(s.id)}
-                      className={`w-full flex items-center justify-between py-1.5 px-3 rounded-xl text-xs transition-colors ${
-                        active
-                          ? "bg-blue-600 text-white font-semibold"
-                          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
-                      }`}
-                    >
-                      <span>{s.labelVi}</span>
-                      {active && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Filter by Resource Type (Định dạng học liệu) */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                Định dạng học liệu số
-              </label>
-              <div className="space-y-1">
-                {EXPLORE_TYPES.map((t) => {
-                  const active = selectedType === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setSelectedType(t.id)}
-                      className={`w-full flex items-center justify-between py-1.5 px-3 rounded-xl text-xs transition-colors ${
-                        active
-                          ? "bg-emerald-600 text-white font-semibold"
-                          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
-                      }`}
-                    >
-                      <span>{t.labelVi}</span>
-                      {active && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4. Filter by Textbook (Bộ sách) */}
-            <div className="space-y-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-              <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
-                Bộ sách giáo khoa
-              </label>
-              <div className="space-y-1">
-                {EXPLORE_TEXTBOOKS.map((tb) => {
-                  const active = selectedTextbook === tb.id;
-                  return (
-                    <button
-                      key={tb.id}
-                      onClick={() => setSelectedTextbook(tb.id)}
-                      className={`w-full text-left py-1.5 px-2.5 rounded-xl text-xs truncate transition-colors ${
-                        active
-                          ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-50/80 dark:bg-blue-950/40"
-                          : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
-                      }`}
-                    >
-                      • {tb.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Pinned Bottom Summary Footer */}
+            <div className="p-3 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/90 dark:bg-neutral-900/90 text-[11px] text-neutral-500 flex items-center justify-between shrink-0">
+              <span className="flex items-center gap-1 font-medium">
+                <GraduationCap className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                Chuẩn GDPT 2018
+              </span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{materials.length} học liệu</span>
             </div>
           </aside>
 
@@ -600,6 +755,149 @@ export default function ExplorePage() {
           </main>
         </div>
       </div>
+
+      {/* ── MOBILE FILTER DRAWER (SLIDE-OVER FOR MOBILE & TABLET) ── */}
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex justify-end bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-[85vw] max-w-sm h-full bg-white dark:bg-neutral-900 shadow-2xl flex flex-col overflow-hidden border-l border-neutral-200 dark:border-neutral-800"
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Bộ Lọc Phân Cấp
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Filters */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+                {/* 1. Grade */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    Khối lớp (K-9)
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {EXPLORE_GRADES.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => setSelectedGrade(g.id)}
+                        className={`text-xs py-2 px-2.5 rounded-xl font-medium border text-left cursor-pointer ${
+                          selectedGrade === g.id
+                            ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold"
+                            : "border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400"
+                        }`}
+                      >
+                        {g.labelVi}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Subject */}
+                <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    Môn học GDPT 2018
+                  </label>
+                  <div className="space-y-1">
+                    {EXPLORE_SUBJECTS.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedSubject(s.id)}
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs cursor-pointer ${
+                          selectedSubject === s.id
+                            ? "bg-emerald-600 text-white font-semibold"
+                            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        <span>{s.labelVi}</span>
+                        {selectedSubject === s.id && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Type */}
+                <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    Định dạng học liệu
+                  </label>
+                  <div className="space-y-1">
+                    {EXPLORE_TYPES.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => setSelectedType(t.id)}
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-xl text-xs cursor-pointer ${
+                          selectedType === t.id
+                            ? "bg-purple-600 text-white font-semibold"
+                            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        <span>{t.labelVi}</span>
+                        {selectedType === t.id && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Textbook */}
+                <div className="space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    Bộ sách giáo khoa
+                  </label>
+                  <div className="space-y-1">
+                    {EXPLORE_TEXTBOOKS.map((tb) => (
+                      <button
+                        key={tb.id}
+                        onClick={() => setSelectedTextbook(tb.id)}
+                        className={`w-full text-left py-2 px-3 rounded-xl text-xs cursor-pointer ${
+                          selectedTextbook === tb.id
+                            ? "text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/40"
+                            : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+                        }`}
+                      >
+                        • {tb.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Apply / Reset */}
+              <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetFilters}
+                  className="rounded-xl text-xs cursor-pointer"
+                >
+                  Đặt lại
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="flex-1 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
+                >
+                  Xem {materials.length} học liệu
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── 3D XR VIEWER STUDIO MODAL ── */}
       <ExploreViewerModal

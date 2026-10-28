@@ -1,23 +1,37 @@
 import { Request, Response } from "express";
-import { INITIAL_EXPLORE_MATERIALS, ExploreMaterial } from "./data.js";
+import prisma from "../../config/db.js";
+import { seedExploreMaterials } from "./seed.js";
 
-// In-memory store initialized with default materials
-// Allows runtime addition/customization while running, easily customizable
-let materialsStore: ExploreMaterial[] = [...INITIAL_EXPLORE_MATERIALS];
+/**
+ * Helper: ensure DB has initial data on first request
+ */
+async function ensureDbSeeded() {
+  try {
+    const count = await prisma.exploreMaterial.count();
+    if (count === 0) {
+      console.log("No explore materials found in DB. Auto-seeding initial materials...");
+      await seedExploreMaterials();
+    }
+  } catch (err) {
+    console.error("Error checking or auto-seeding DB:", err);
+  }
+}
 
 /**
  * GET /api/explore
  * Query params:
- * - category: "natural_science" | "social_science" | "teaching_support" | "virtual_lab" | "sandbox" | "question_bank" | "all"
- * - grade: "6" | "7" | "8" | "9" | "all"
- * - subject: "math" | "physics" | "chemistry" | "biology" | "history_geo" | "technology" | "stem" | "all"
- * - type: "3d_model" | "virtual_lab" | "interactive_video" | "sandbox" | "quiz" | "all"
- * - search: keyword search in title, titleEn, tags, description
- * - textbook: "Kết Nối Tri Thức" | "Cánh Diều" | "Chân Trời Sáng Tạo" | "all"
+ * - category: string
+ * - grade: string
+ * - subject: string
+ * - type: string
+ * - search: keyword
+ * - textbook: string
  * - sortBy: "popular" | "rating" | "newest"
  */
 export async function listExploreMaterials(req: Request, res: Response) {
   try {
+    await ensureDbSeeded();
+
     const {
       category = "all",
       grade = "all",
@@ -28,65 +42,76 @@ export async function listExploreMaterials(req: Request, res: Response) {
       sortBy = "popular",
     } = req.query as Record<string, string>;
 
-    let results = [...materialsStore];
+    const where: any = {
+      isPublished: true,
+    };
 
-    // Filter by Category
     if (category && category !== "all") {
-      results = results.filter((item) => item.category === category);
+      where.category = category;
     }
 
-    // Filter by Grade
     if (grade && grade !== "all") {
-      results = results.filter((item) => item.grade === grade || item.grade === "all");
+      where.OR = [{ grade }, { grade: "all" }];
     }
 
-    // Filter by Subject
     if (subject && subject !== "all") {
-      results = results.filter((item) => item.subject === subject);
+      where.subject = subject;
     }
 
-    // Filter by Resource Type
     if (type && type !== "all") {
-      results = results.filter((item) => item.type === type);
+      where.type = type;
     }
 
-    // Filter by Textbook
     if (textbook && textbook !== "all") {
-      results = results.filter((item) => item.textbook.toLowerCase().includes(textbook.toLowerCase()));
+      const textbookNames: Record<string, string> = {
+        ket_noi: "Kết Nối Tri Thức",
+        canh_dieu: "Cánh Diều",
+        chan_troi: "Chân Trời Sáng Tạo",
+      };
+      where.textbook = {
+        contains: textbookNames[textbook] || textbook,
+        mode: "insensitive",
+      };
     }
 
-    // Search query
     if (search && search.trim() !== "") {
-      const q = search.trim().toLowerCase();
-      results = results.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.titleEn.toLowerCase().includes(q) ||
-          item.description.toLowerCase().includes(q) ||
-          item.tags.some((t) => t.toLowerCase().includes(q))
-      );
+      const q = search.trim();
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { titleEn: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+            { tags: { has: q } },
+          ],
+        },
+      ];
     }
 
-    // Sort
+    let orderBy: any = { viewsCount: "desc" };
     if (sortBy === "rating") {
-      results.sort((a, b) => b.rating - a.rating);
+      orderBy = { rating: "desc" };
     } else if (sortBy === "newest") {
-      results.reverse();
-    } else {
-      // default: popular by views
-      results.sort((a, b) => b.viewsCount - a.viewsCount);
+      orderBy = { createdAt: "desc" };
     }
+
+    const materials = await prisma.exploreMaterial.findMany({
+      where,
+      orderBy,
+    });
 
     return res.status(200).json({
       success: true,
-      total: results.length,
-      data: results,
+      total: materials.length,
+      data: materials,
+      source: "database",
     });
   } catch (error) {
     console.error("Error in listExploreMaterials:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error while fetching explore materials",
+      message: "Không thể tải học liệu từ cơ sở dữ liệu",
     });
   }
 }
@@ -97,6 +122,12 @@ export async function listExploreMaterials(req: Request, res: Response) {
  */
 export async function getExploreFilters(_req: Request, res: Response) {
   try {
+    await ensureDbSeeded();
+
+    const totalMaterials = await prisma.exploreMaterial.count({
+      where: { isPublished: true },
+    });
+
     const categories = [
       { id: "all", labelVi: "Tất cả học liệu", labelEn: "All Materials" },
       { id: "natural_science", labelVi: "Khoa học tự nhiên K12", labelEn: "Natural Science K12" },
@@ -137,9 +168,9 @@ export async function getExploreFilters(_req: Request, res: Response) {
 
     const textbooks = [
       { id: "all", label: "Tất cả bộ sách" },
-      { id: "ket_noi", label: "Kết Nối Tri Thức Với Cuộc Sống" },
-      { id: "canh_dieu", label: "Cánh Diều" },
-      { id: "chan_troi", label: "Chân Trời Sáng Tạo" },
+      { id: "Kết Nối Tri Thức", label: "Kết Nối Tri Thức Với Cuộc Sống" },
+      { id: "Cánh Diều", label: "Cánh Diều" },
+      { id: "Chân Trời Sáng Tạo", label: "Chân Trời Sáng Tạo" },
     ];
 
     return res.status(200).json({
@@ -150,7 +181,7 @@ export async function getExploreFilters(_req: Request, res: Response) {
         subjects,
         types,
         textbooks,
-        totalMaterials: materialsStore.length,
+        totalMaterials,
       },
     });
   } catch (error) {
@@ -167,8 +198,14 @@ export async function getExploreFilters(_req: Request, res: Response) {
  */
 export async function getExploreMaterialById(req: Request, res: Response) {
   try {
-    const { id } = req.params;
-    const material = materialsStore.find((m) => m.id === id || m.slug === id);
+    const id = String(req.params.id);
+
+    const material = await prisma.exploreMaterial.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+        isPublished: true,
+      },
+    });
 
     if (!material) {
       return res.status(404).json({
@@ -177,8 +214,11 @@ export async function getExploreMaterialById(req: Request, res: Response) {
       });
     }
 
-    // Increment view count
-    material.viewsCount += 1;
+    // Increment view count asynchronously
+    prisma.exploreMaterial.update({
+      where: { id: material.id },
+      data: { viewsCount: { increment: 1 } },
+    }).catch((e) => console.error("Could not increment views:", e));
 
     return res.status(200).json({
       success: true,
@@ -195,7 +235,7 @@ export async function getExploreMaterialById(req: Request, res: Response) {
 
 /**
  * POST /api/explore
- * Create / Add a new 3D model or material
+ * Create / Add a new 3D model or material into PostgreSQL DB
  */
 export async function createExploreMaterial(req: Request, res: Response) {
   try {
@@ -203,54 +243,190 @@ export async function createExploreMaterial(req: Request, res: Response) {
     if (!body.title || !body.category) {
       return res.status(400).json({
         success: false,
-        message: "Title and Category are required",
+        message: "Tiêu đề (title) và Danh mục (category) là bắt buộc",
       });
     }
 
-    const newMaterial: ExploreMaterial = {
-      id: `exp-${Date.now()}`,
-      slug: body.slug || body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      title: body.title,
-      titleEn: body.titleEn || body.title,
-      description: body.description || "",
-      descriptionEn: body.descriptionEn || "",
-      category: body.category,
-      categoryLabelVi: body.categoryLabelVi || body.category,
-      categoryLabelEn: body.categoryLabelEn || body.category,
-      grade: body.grade || "all",
-      subject: body.subject || "science",
-      subjectLabelVi: body.subjectLabelVi || "Khoa học",
-      subjectLabelEn: body.subjectLabelEn || "Science",
-      type: body.type || "3d_model",
-      typeLabelVi: body.typeLabelVi || "Mô hình 3D",
-      typeLabelEn: body.typeLabelEn || "3D Model",
-      modelType: body.modelType || "sphere",
-      thumbnailUrl: body.thumbnailUrl || "/thumbnails/default.jpg",
-      curriculum: body.curriculum || "GDPT 2018",
-      textbook: body.textbook || "Kết Nối Tri Thức",
-      viewsCount: 0,
-      rating: 5.0,
-      tags: body.tags || [],
-      bilingualTerms: body.bilingualTerms || [],
-      autoTourStops: body.autoTourStops || [],
-      miniQuiz: body.miniQuiz || [],
-      aiPromptContext: body.aiPromptContext || "",
-      relatedCourseId: body.relatedCourseId,
-      relatedLessonId: body.relatedLessonId,
-    };
+    const baseSlug = (body.slug || body.title)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    
+    // Ensure slug uniqueness
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await prisma.exploreMaterial.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
 
-    materialsStore.unshift(newMaterial);
+    const newMaterial = await prisma.exploreMaterial.create({
+      data: {
+        slug,
+        title: body.title,
+        titleEn: body.titleEn || body.title,
+        description: body.description || "",
+        descriptionEn: body.descriptionEn || "",
+        category: body.category,
+        categoryLabelVi: body.categoryLabelVi || "Khoa học tự nhiên K12",
+        categoryLabelEn: body.categoryLabelEn || "Natural Science K12",
+        grade: body.grade || "all",
+        subject: body.subject || "science",
+        subjectLabelVi: body.subjectLabelVi || "Khoa học",
+        subjectLabelEn: body.subjectLabelEn || "Science",
+        type: body.type || "3d_model",
+        typeLabelVi: body.typeLabelVi || "Mô hình 3D",
+        typeLabelEn: body.typeLabelEn || "3D Model",
+        modelType: body.modelType || "sphere",
+        thumbnailUrl: body.thumbnailUrl || "/images/explore/default.png",
+        curriculum: body.curriculum || "GDPT 2018",
+        textbook: body.textbook || "Kết Nối Tri Thức",
+        viewsCount: 0,
+        rating: 5.0,
+        tags: Array.isArray(body.tags) ? body.tags : (body.tags ? body.tags.split(",").map((s: string) => s.trim()) : []),
+        bilingualTerms: body.bilingualTerms || [],
+        autoTourStops: body.autoTourStops || [],
+        miniQuiz: body.miniQuiz || [],
+        aiPromptContext: body.aiPromptContext || "",
+        relatedCourseId: body.relatedCourseId,
+        relatedLessonId: body.relatedLessonId,
+        isPublished: true,
+      },
+    });
 
     return res.status(201).json({
       success: true,
-      message: "Learning material created successfully",
+      message: "Học liệu 3D đã được lưu thành công vào Database!",
       data: newMaterial,
     });
   } catch (error) {
     console.error("Error in createExploreMaterial:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error while creating material",
+      message: "Lỗi máy chủ khi tạo học liệu",
+    });
+  }
+}
+
+/**
+ * PUT /api/explore/:id
+ * Update an existing explore material in DB
+ */
+export async function updateExploreMaterial(req: Request, res: Response) {
+  try {
+    const id = String(req.params.id);
+    const body = req.body;
+
+    const existing = await prisma.exploreMaterial.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học liệu cần cập nhật",
+      });
+    }
+
+    const updated = await prisma.exploreMaterial.update({
+      where: { id },
+      data: {
+        title: body.title ?? existing.title,
+        titleEn: body.titleEn ?? existing.titleEn,
+        description: body.description ?? existing.description,
+        descriptionEn: body.descriptionEn ?? existing.descriptionEn,
+        category: body.category ?? existing.category,
+        categoryLabelVi: body.categoryLabelVi ?? existing.categoryLabelVi,
+        categoryLabelEn: body.categoryLabelEn ?? existing.categoryLabelEn,
+        grade: body.grade ?? existing.grade,
+        subject: body.subject ?? existing.subject,
+        subjectLabelVi: body.subjectLabelVi ?? existing.subjectLabelVi,
+        subjectLabelEn: body.subjectLabelEn ?? existing.subjectLabelEn,
+        type: body.type ?? existing.type,
+        typeLabelVi: body.typeLabelVi ?? existing.typeLabelVi,
+        typeLabelEn: body.typeLabelEn ?? existing.typeLabelEn,
+        modelType: body.modelType ?? existing.modelType,
+        thumbnailUrl: body.thumbnailUrl ?? existing.thumbnailUrl,
+        curriculum: body.curriculum ?? existing.curriculum,
+        textbook: body.textbook ?? existing.textbook,
+        tags: body.tags !== undefined ? (Array.isArray(body.tags) ? body.tags : body.tags.split(",").map((s: string) => s.trim())) : existing.tags,
+        bilingualTerms: body.bilingualTerms ?? existing.bilingualTerms,
+        autoTourStops: body.autoTourStops ?? existing.autoTourStops,
+        miniQuiz: body.miniQuiz ?? existing.miniQuiz,
+        aiPromptContext: body.aiPromptContext ?? existing.aiPromptContext,
+        isPublished: body.isPublished !== undefined ? body.isPublished : existing.isPublished,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật học liệu thành công!",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Error in updateExploreMaterial:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật học liệu",
+    });
+  }
+}
+
+/**
+ * DELETE /api/explore/:id
+ * Delete a material from PostgreSQL DB
+ */
+export async function deleteExploreMaterial(req: Request, res: Response) {
+  try {
+    const id = String(req.params.id);
+
+    const existing = await prisma.exploreMaterial.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy học liệu cần xóa",
+      });
+    }
+
+    await prisma.exploreMaterial.delete({
+      where: { id },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Đã xóa học liệu "${existing.title}" khỏi cơ sở dữ liệu`,
+      deletedId: id,
+    });
+  } catch (error) {
+    console.error("Error in deleteExploreMaterial:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi xóa học liệu",
+    });
+  }
+}
+
+/**
+ * POST /api/explore/seed
+ * Admin action to re-sync or restore standard curriculum materials
+ */
+export async function triggerSeedMaterials(_req: Request, res: Response) {
+  try {
+    const result = await seedExploreMaterials();
+    return res.status(200).json({
+      success: true,
+      message: "Đã đồng bộ thành công bộ học liệu chuẩn GDPT 2018 vào Database",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error in triggerSeedMaterials:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi đồng bộ học liệu vào Database",
     });
   }
 }

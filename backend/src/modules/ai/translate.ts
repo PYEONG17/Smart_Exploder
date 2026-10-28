@@ -39,8 +39,6 @@ export async function translateLearningText(
 
 export type BilingualText = { vi: string; en: string };
 
-// Authoring text is typed in one language; the other side is translated best-effort
-// and falls back to the original so saving never fails because of translation.
 export async function toBilingualText(
   text: string,
   sourceLanguage: LearningLanguage,

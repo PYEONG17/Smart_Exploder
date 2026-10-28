@@ -30,16 +30,6 @@ export interface User {
   createdAt?: string;
 }
 
-export interface ClassItem {
-  id: string;
-  name: string;
-  description?: string;
-  studentCount?: number;
-  courseCount?: number;
-  color?: string;
-  createdAt?: string;
-}
-
 export interface Material {
   id: string;
   title: string;
@@ -143,7 +133,18 @@ export interface Lesson {
   quizzes?: Quiz[];
   contentVi?: string;
   contentEn?: string;
+  vocabulary?: LessonVocabularyTerm[];
   model3DUrl?: string;
+}
+
+export interface LessonVocabularyTerm {
+  termVi: string;
+  termEn: string;
+  pronunciation: string;
+  definitionVi: string;
+  definitionEn: string;
+  exampleVi: string;
+  exampleEn: string;
 }
 
 export interface Course {
@@ -213,6 +214,7 @@ export interface CreateLessonDTO {
   titleEn?: string;
   description?: string;
   descEn?: string;
+  vocabulary?: LessonVocabularyTerm[];
   order: number;
   duration?: string;
   sourceLanguage?: "vi" | "en";

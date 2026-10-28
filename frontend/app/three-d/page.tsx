@@ -15,14 +15,17 @@ import {
   Eye,
   X,
   Sliders,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThreeDViewer } from "@/components/ui/ThreeDViewer";
+import { VirtualLabSimulator } from "@/components/lab/VirtualLabSimulator";
 import { useLang } from "@/contexts/LanguageContext";
 
 export default function ThreeDPage() {
   const { locale } = useLang();
+  const [activeTab, setActiveTab] = useState<"lab" | "models">("lab");
   const [selectedModel, setSelectedModel] = useState<string | null>("m1"); // Default to first model
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -33,6 +36,7 @@ export default function ThreeDPage() {
     { id: "Thiên văn", labelVi: "Thiên văn & Vũ trụ", labelEn: "Astronomy & Space" },
     { id: "Hóa học", labelVi: "Hóa học & Nguyên tử", labelEn: "Chemistry & Atoms" },
     { id: "Sinh học", labelVi: "Sinh học & Tế bào", labelEn: "Biology & Genetics" },
+    { id: "Vật lý", labelVi: "Vật lý & Cơ điện quang", labelEn: "Physics & Optics" },
   ];
 
   const filteredModels = useMemo(() => {
@@ -53,55 +57,102 @@ export default function ThreeDPage() {
     <div className="min-h-screen bg-neutral-50/50 dark:bg-[#0c1222] pt-28 pb-20 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* NoraClass Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-blue-50/90 dark:border-blue-800/60 dark:bg-blue-950/50 px-4 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 mb-4 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             <span>
               {locale === "vi"
-                ? "Bộ sưu tập mô hình trực quan chuẩn GDPT 2018"
-                : "K-9 Interactive 3D STEM Catalog"}
+                ? "Không gian Khoa học Thực nghiệm & Trực quan 3D • KNTT"
+                : "K-9 Interactive Science Lab & 3D STEM Catalog"}
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white text-balance leading-tight">
             {locale === "vi" ? (
               <>
                 Không gian Khám phá{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
-                  Mô hình 3D
+                <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                  Khoa học 3D & Phòng Lab
                 </span>
               </>
             ) : (
               <>
                 Interactive{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
-                  3D Studio
+                <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                  3D Studio & Virtual Lab
                 </span>
               </>
             )}
           </h1>
 
-          <p className="mt-3 text-sm sm:text-base text-neutral-600 dark:text-slate-300 leading-relaxed">
+          <p className="mt-3 text-sm sm:text-base text-neutral-600 dark:text-slate-300 leading-relaxed text-balance max-w-2xl mx-auto">
             {locale === "vi"
-              ? "Tương tác ba chiều thời gian thực: xoay 360°, phóng to chi tiết, bóc tách cơ quan và tra cứu thuật ngữ khoa học song ngữ Anh – Việt."
-              : "Manipulate 3D models in real-time: 360° rotation, zoom, dissect layers, and inspect bilingual terminology."}
+              ? "Thực hành thí nghiệm mô phỏng chuẩn SGK Kết Nối Tri Thức kết hợp kho mô hình 3D xoay 360°, phóng to chi tiết và học liệu song ngữ Anh – Việt."
+              : "Hands-on virtual simulations aligned with textbook curriculum, 360° interactive 3D anatomy, and bilingual STEM terms."}
           </p>
 
-          <div className="mt-5 flex items-center justify-center gap-3">
+          {/* Mode Switcher Tabs */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <div className="inline-flex p-1 rounded-2xl bg-neutral-200/80 dark:bg-slate-900 border border-neutral-300/80 dark:border-slate-800 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setActiveTab("lab")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === "lab"
+                    ? "bg-purple-600 text-white shadow-md shadow-purple-500/25 scale-[1.02]"
+                    : "text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white"
+                }`}
+              >
+                <FlaskConical className="w-4 h-4" />
+                <span>
+                  {locale === "vi"
+                    ? "Phòng Thí Nghiệm Ảo KNTT"
+                    : "Virtual Simulation Lab"}
+                </span>
+                <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded-md bg-white/20 text-white">
+                  Mới
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("models")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === "models"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/25 scale-[1.02]"
+                    : "text-neutral-600 dark:text-slate-400 hover:text-neutral-900 dark:hover:text-white"
+                }`}
+              >
+                <Box className="w-4 h-4" />
+                <span>
+                  {locale === "vi"
+                    ? "Studio Mô Hình 3D Bóc Tách"
+                    : "3D Dissection Models"}
+                </span>
+              </button>
+            </div>
+
             <Link
               href="/explore"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-neutral-100 dark:hover:bg-slate-700 text-neutral-700 dark:text-slate-200 border border-neutral-200 dark:border-slate-700 text-xs sm:text-sm font-semibold transition-all hover:scale-105 shadow-xs"
             >
-              <Box className="w-4 h-4" />
+              <Box className="w-3.5 h-3.5 text-blue-500" />
               <span>
                 {locale === "vi"
-                  ? "Xem Kho Học Liệu Số 3D/XR Đầy Đủ (YooBook Style)"
-                  : "Open Full 3D/XR Library (YooBook Layout)"}
+                  ? "Kho Học Liệu Số 3D/XR Đầy Đủ"
+                  : "Full 3D/XR Library"}
               </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
+
+        {activeTab === "lab" ? (
+          <div>
+            <VirtualLabSimulator embedded={true} />
+          </div>
+        ) : (
+          <>
 
         {/* ── Active 3D Viewer Studio Area ── */}
         {activeModel && (
@@ -273,6 +324,8 @@ export default function ThreeDPage() {
             );
           })}
         </div>
+      </>
+    )}
       </div>
     </div>
   );

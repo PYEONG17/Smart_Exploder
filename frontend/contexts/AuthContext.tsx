@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { getMe } from "@/lib/api";
+import { ApiError, getMe } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,8 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
           setUser(currentUser);
         })
-        .catch(() => {
-          // Keep the cached session while the API is temporarily unavailable.
+        .catch((error: unknown) => {
+          // Temporary API/network failures should not discard a cached session.
+          if (!isActive || !(error instanceof ApiError) || error.status !== 401) {
+            return;
+          }
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          setToken(null);
+          setUser(null);
         })
         .finally(() => {
           if (isActive) setIsLoading(false);

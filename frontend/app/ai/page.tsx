@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { mockAIChatHistory } from "@/lib/mock-data";
 import {
   Bot,
   Send,
@@ -19,7 +18,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { sendLessonTutorMessage } from "@/lib/api";
+import {
+  createAiConversation,
+  fetchAiConversation,
+  fetchAiConversations,
+  sendAiConversationMessage,
+  type AiConversationSummary,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useLang } from "@/contexts/LanguageContext";
@@ -84,8 +89,12 @@ export default function AIPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [conversations, setConversations] = useState<AiConversationSummary[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [gradeLevel, setGradeLevel] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const optimisticMessageCounter = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,6 +103,67 @@ export default function AIPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const selectConversation = async (conversationId: string) => {
+    if (!token || isTyping) return;
+    try {
+      const conversation = await fetchAiConversation(token, conversationId);
+      setActiveConversationId(conversation.id);
+      setGradeLevel(conversation.grade ?? "");
+      setMessages(
+        conversation.messages.map((message) => ({
+          id: message.id,
+          role: message.role,
+          content: message.content,
+          timestamp: message.createdAt,
+        })),
+      );
+      setIsSidebarOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : isVietnamese
+            ? "Không thể mở cuộc trò chuyện."
+            : "Could not open this conversation.",
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    void fetchAiConversations(token)
+      .then((items) => {
+        if (!active) return;
+        setConversations(items);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : isVietnamese
+              ? "Không thể tải lịch sử trò chuyện."
+              : "Could not load chat history.",
+        );
+      })
+      .finally(() => {
+        if (active) setIsLoadingHistory(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, isVietnamese]);
+
+  const handleNewChat = () => {
+    if (isTyping) return;
+    setActiveConversationId(null);
+    setMessages([]);
+    setInputValue("");
+    setGradeLevel("");
+    setIsSidebarOpen(false);
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputValue;
@@ -107,8 +177,10 @@ export default function AIPage() {
       return;
     }
 
+    optimisticMessageCounter.current += 1;
+    const optimisticId = `pending-${optimisticMessageCounter.current}`;
     const newUserMsg = {
-      id: String(messages.length),
+      id: optimisticId,
       role: "user" as const,
       content: text,
     };
@@ -117,28 +189,75 @@ export default function AIPage() {
     if (!textToSend) setInputValue("");
     setIsTyping(true);
 
+    let conversationId = activeConversationId;
     try {
-      // AI requests are sent through the backend so provider keys stay private.
-      const formattedHistory = messages.slice(-10).map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
+      if (!conversationId) {
+        const created = await createAiConversation(token, {
+          grade: gradeLevel || undefined,
+          locale,
+        });
+        conversationId = created.id;
+        setActiveConversationId(created.id);
+        setConversations((previous) => [
+          created,
+          ...previous.filter((item) => item.id !== created.id),
+        ]);
+      }
 
-      const aiReply = await sendLessonTutorMessage(token, text, formattedHistory, {
+      const response = await sendAiConversationMessage(token, conversationId, {
+        prompt: text,
         grade: gradeLevel || undefined,
-        subject: "Mathematics and Science",
         locale,
       });
-
-      setMessages((prev) => [
-        ...prev,
+      const now = new Date().toISOString();
+      setMessages((previous) => [
+        ...previous.filter((message) => message.id !== optimisticId),
         {
-          id: String(messages.length + 1),
+          id: response.userMessage.id,
+          role: "user",
+          content: response.userMessage.content,
+          timestamp: response.userMessage.createdAt,
+        },
+        {
+          id: response.assistantMessage.id,
           role: "assistant",
-          content: aiReply,
+          content: response.assistantMessage.content,
+          timestamp: response.assistantMessage.createdAt,
         },
       ]);
+      setConversations((previous) => {
+        const existing = previous.find((item) => item.id === response.conversation.id);
+        const updated: AiConversationSummary = {
+          id: response.conversation.id,
+          title: response.conversation.title,
+          grade: gradeLevel || existing?.grade || null,
+          locale,
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+          messages: [{ role: "user", content: text }],
+        };
+        return [updated, ...previous.filter((item) => item.id !== updated.id)];
+      });
     } catch (error: unknown) {
+      setMessages((previous) =>
+        previous.filter((message) => message.id !== optimisticId),
+      );
+      if (conversationId) {
+        try {
+          const saved = await fetchAiConversation(token, conversationId);
+          setMessages(
+            saved.messages.map((message) => ({
+              id: message.id,
+              role: message.role,
+              content: message.content,
+              timestamp: message.createdAt,
+            })),
+          );
+          setConversations(await fetchAiConversations(token));
+        } catch (syncError) {
+          console.error("Could not sync saved AI conversation:", syncError);
+        }
+      }
       toast.error(
         error instanceof Error
           ? error.message
@@ -177,7 +296,8 @@ export default function AIPage() {
       >
         <div className="flex items-center justify-between border-b border-border/70 p-4">
           <Button
-            onClick={() => setMessages([])}
+            onClick={handleNewChat}
+            disabled={isTyping}
             className="w-full justify-start gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs transition-colors"
           >
             <PlusCircle className="w-4 h-4" />
@@ -198,13 +318,32 @@ export default function AIPage() {
             {isVietnamese ? "Lịch sử trò chuyện" : "Chat history"}
           </div>
           <div className="space-y-1">
-            {mockAIChatHistory.map((chat) => (
+            {isLoadingHistory && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                {isVietnamese ? "Đang tải..." : "Loading..."}
+              </p>
+            )}
+            {!isLoadingHistory && conversations.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">
+                {isVietnamese ? "Chưa có cuộc trò chuyện." : "No conversations yet."}
+              </p>
+            )}
+            {conversations.map((chat) => (
               <button
                 key={chat.id}
+                type="button"
+                disabled={isTyping}
+                aria-current={activeConversationId === chat.id ? "page" : undefined}
+                onClick={() => void selectConversation(chat.id)}
                 className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
               >
                 <MessageSquare className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-                <div className="flex-1 truncate font-medium">{chat.title}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{chat.title}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {chat.messages?.[0]?.content ?? ""}
+                  </div>
+                </div>
               </button>
             ))}
           </div>
