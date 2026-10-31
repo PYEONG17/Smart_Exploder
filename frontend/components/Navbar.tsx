@@ -20,6 +20,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Trophy,
+  Cpu,
 } from "lucide-react";
 import {
   Sheet,
@@ -311,7 +312,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {(user?.role === "TEACHER" || user?.role === "ADMIN") && (
+            {user?.role === "TEACHER" && (
               <Link
                 href="/teacher"
                 className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
@@ -525,7 +526,7 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {(user?.role === "TEACHER" || user?.role === "ADMIN") && (
+                {user?.role === "TEACHER" && (
                   <Link
                     href="/teacher"
                     onClick={() => setOpen(false)}

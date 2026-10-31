@@ -40,6 +40,7 @@ const labAttachmentExtensions: Record<string, string> = {
   ...videoExtensions,
   ...documentExtensions,
   ...model3DExtensions,
+  "text/html": ".html",
 };
 
 function ensureUserUploadDirectory(req: Request): string {
@@ -68,17 +69,35 @@ function createMediaUpload(
         }
       },
       filename: (_req, file, callback) => {
-        callback(null, `${randomUUID()}${allowedTypes[file.mimetype] ?? ""}`);
+        const isHtmlFile = [".html", ".htm"].includes(
+          path.extname(file.originalname).toLowerCase(),
+        );
+        const isHtmlMimeType = [
+          "",
+          "text/html",
+          "application/octet-stream",
+        ].includes(file.mimetype);
+        const extension =
+          isHtmlFile && isHtmlMimeType
+            ? ".html"
+            : allowedTypes[file.mimetype] ?? "";
+        callback(null, `${randomUUID()}${extension}`);
       },
     }),
     fileFilter: (_req, file, callback) => {
-      if (!allowedTypes[file.mimetype]) {
+      const fileExtension = path.extname(file.originalname).toLowerCase();
+      const isHtmlFile = [".html", ".htm"].includes(fileExtension);
+      const isHtmlMimeType = ["", "text/html", "application/octet-stream"].includes(
+        file.mimetype,
+      );
+      if (!allowedTypes[file.mimetype] && !(isHtmlFile && isHtmlMimeType)) {
         callback(new AppError("Unsupported media file type", 400));
         return;
       }
       if (
         allowedTypes[file.mimetype] === ".glb" &&
-        path.extname(file.originalname).toLowerCase() !== ".glb"
+        fileExtension !== ".glb" &&
+        !isHtmlFile
       ) {
         callback(new AppError("3D models must use the .glb file format", 400));
         return;
@@ -146,6 +165,72 @@ export function getCourseMediaUrl(
     ? new URL(configuredBaseUrl).origin
     : `${req.protocol}://${req.get("host")}`;
   return `${baseUrl}/uploads/course-media/${encodeURIComponent(userId)}/${encodeURIComponent(filename)}`;
+}
+
+function escapeXml(value: string): string {
+  return value.replace(/[<>&"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      "\"": "&quot;",
+      "'": "&apos;",
+    };
+    return entities[character] ?? character;
+  });
+}
+
+export async function createCustomLabThumbnail(
+  req: Request,
+  userId: string,
+  title: string,
+  subject: string,
+  grade: string,
+): Promise<string> {
+  const directory = ensureUserUploadDirectory(req);
+  const filename = `${randomUUID()}.svg`;
+  const subjectLabels: Record<string, string> = {
+    science: "KHOA HỌC TỰ NHIÊN",
+    physics: "VẬT LÝ",
+    chemistry: "HÓA HỌC",
+    biology: "SINH HỌC",
+  };
+  const titleCharacters = Array.from(title.trim());
+  const safeTitle = escapeXml(
+    titleCharacters.slice(0, 28).join("") +
+      (titleCharacters.length > 28 ? "…" : ""),
+  );
+  const subjectLabel = escapeXml(subjectLabels[subject] ?? "THÍ NGHIỆM");
+  const safeGrade = escapeXml(grade);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#312e81"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a5f3fc"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="40" fill="url(#background)"/>
+  <circle cx="1050" cy="90" r="220" fill="#ffffff" opacity=".08"/>
+  <circle cx="1080" cy="570" r="300" fill="#67e8f9" opacity=".12"/>
+  <rect x="76" y="76" width="1048" height="478" rx="32" fill="#ffffff" opacity=".08"/>
+  <g transform="translate(880 174)" fill="none" stroke="#e0f2fe" stroke-linecap="round" stroke-linejoin="round" stroke-width="20">
+    <path d="M75 0h110M100 0v135L23 293a35 35 0 0 0 31 51h152a35 35 0 0 0 31-51l-77-158V0"/>
+    <path d="M55 249h170" stroke="url(#glass)" stroke-width="52"/>
+    <circle cx="107" cy="240" r="9" fill="#fff" stroke="none"/>
+    <circle cx="171" cy="218" r="7" fill="#fff" stroke="none"/>
+  </g>
+  <text x="116" y="177" fill="#bfdbfe" font-family="Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="4">${subjectLabel}</text>
+  <text x="116" y="230" fill="#dbeafe" font-family="Arial, sans-serif" font-size="24" font-weight="600">LAB ẢO  ·  LỚP ${safeGrade}</text>
+  <text x="116" y="338" fill="#ffffff" font-family="Arial, sans-serif" font-size="54" font-weight="700">${safeTitle}</text>
+  <text x="116" y="405" fill="#dbeafe" font-family="Arial, sans-serif" font-size="26">Khám phá · Thực hành · Học tập</text>
+</svg>`;
+
+  await fs.promises.writeFile(path.join(directory, filename), svg, "utf8");
+  return getCourseMediaUrl(req, userId, filename);
 }
 
 // Best-effort removal of files previously saved by this server; external URLs are ignored.

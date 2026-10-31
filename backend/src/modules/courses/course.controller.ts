@@ -73,7 +73,7 @@ export const getMyCourses = async (req: Request, res: Response) => {
   try {
     if (!req.user) throw new AppError("Authentication required", 401);
     const courses = await prisma.course.findMany({
-      where: req.user.role === "ADMIN" ? {} : { createdById: req.user.id },
+      where: { createdById: req.user.id },
       include: { _count: { select: { lessons: true } } },
       orderBy: { updatedAt: "desc" },
     });
@@ -200,7 +200,7 @@ async function getManagedCourse(req: Request) {
     select: { id: true, createdById: true, thumbnail: true },
   });
   if (!course) throw new AppError("Course not found", 404);
-  if (req.user.role !== "ADMIN" && course.createdById !== req.user.id) {
+  if (course.createdById !== req.user.id) {
     throw new AppError("You can only manage your own courses", 403);
   }
   return course;
@@ -336,8 +336,8 @@ export const getCourseById = async (req: Request, res: Response) => {
     }
 
     const { _count, ...courseData } = course;
-    const canManageCourse = req.user?.role === "ADMIN" ||
-      (req.user?.role === "TEACHER" && course.createdById === req.user.id);
+    const canManageCourse =
+      req.user?.role === "TEACHER" && course.createdById === req.user.id;
     const visibleCourseData = canManageCourse
       ? courseData
       : {

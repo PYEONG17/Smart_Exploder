@@ -27,7 +27,7 @@ import { updateMyProfile, uploadAvatar, getRandomAvatar } from "@/lib/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getRoleConfig(role: "STUDENT" | "TEACHER" | "ADMIN") {
+function getRoleConfig(role: "STUDENT" | "TEACHER") {
   switch (role) {
     case "TEACHER":
       return {
@@ -36,14 +36,6 @@ function getRoleConfig(role: "STUDENT" | "TEACHER" | "ADMIN") {
         Icon: School,
         gradient: "from-purple-500 to-violet-600",
         badge: "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/20",
-      };
-    case "ADMIN":
-      return {
-        label: "Quản trị viên",
-        labelEn: "Admin",
-        Icon: Shield,
-        gradient: "from-rose-500 to-orange-500",
-        badge: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20",
       };
     default:
       return {

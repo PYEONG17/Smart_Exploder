@@ -13,7 +13,6 @@ datasource db {
 enum Role {
   STUDENT
   TEACHER
-  ADMIN
 }
 
 enum MembershipStatus {
@@ -41,6 +40,7 @@ model User {
   memberships  TenantMembership[]
   interactiveResponses InteractiveResponse[]
   videoWatchEvents VideoWatchEvent[]
+  labStudyEvents LabStudyEvent[]
   lessonQuestions LessonQuestion[] @relation("LessonQuestionAuthor")
   lessonAnswers LessonQuestion[] @relation("LessonQuestionAnswerer")
   studyFlashcards StudyFlashcard[]
@@ -65,6 +65,7 @@ model Tenant {
   memberships TenantMembership[]
   roles       TenantRole[]
   videoWatchEvents VideoWatchEvent[]
+  labStudyEvents LabStudyEvent[]
 
   @@map("tenants")
 }
@@ -266,8 +267,10 @@ model CustomLab {
   vocabulary    Json
   activities    Json
   attachments   Json     @default("[]")
+  thumbnailUrl  String?
   createdById   String
   createdBy     User     @relation("CustomLabCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  studyEvents   LabStudyEvent[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -358,6 +361,28 @@ model VideoWatchEvent {
   @@index([videoId, createdAt])
   @@index([tenantId, createdAt])
   @@map("video_watch_events")
+}
+
+model LabStudyEvent {
+  id               String   @id @default(uuid())
+  clientEventId    String   @unique @map("client_event_id")
+  sessionId        String   @map("session_id")
+  positionMs       Int      @map("position_ms")
+  studiedMs        Int      @default(0) @map("studied_ms")
+  clientOccurredAt DateTime @map("client_occurred_at") @db.Timestamptz(3)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId           String   @map("user_id")
+  labId            String   @map("lab_id")
+  tenantId         String?  @db.Uuid @map("tenant_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab              CustomLab @relation(fields: [labId], references: [id], onDelete: Cascade)
+  tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([userId, sessionId, clientOccurredAt])
+  @@index([labId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("lab_study_events")
 }
 
 enum ActivityType {

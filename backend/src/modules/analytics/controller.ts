@@ -1,7 +1,11 @@
 import type { Request, Response } from "express";
 import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
-import { analyticsPeriodSchema, videoHeartbeatSchema } from "./schema.js";
+import {
+  analyticsPeriodSchema,
+  labHeartbeatSchema,
+  videoHeartbeatSchema,
+} from "./schema.js";
 import { analyticsService } from "./service.js";
 
 function currentUser(req: Request) {
@@ -22,6 +26,21 @@ export async function recordVideoHeartbeat(req: Request, res: Response) {
     parsed.data,
   );
   res.status(202).json(success(result, "Playback event recorded"));
+}
+
+export async function recordLabHeartbeat(req: Request, res: Response) {
+  const parsed = labHeartbeatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError("Invalid Lab study event", 400);
+  }
+  const user = currentUser(req);
+  const result = await analyticsService.recordLabHeartbeat(
+    user.id,
+    user.tenantId,
+    String(req.params.labId),
+    parsed.data,
+  );
+  res.status(202).json(success(result, "Lab study event recorded"));
 }
 
 export async function getMyLearningSummary(req: Request, res: Response) {

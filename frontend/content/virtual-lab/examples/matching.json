@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "type": "template",
+  "template": "matching",
+  "titleVi": "Ghép dụng cụ và công dụng",
+  "titleEn": "Match tools and uses",
+  "instructions": {
+    "vi": "Ghép mỗi dụng cụ với công dụng tương ứng.",
+    "en": "Match each tool to its use."
+  },
+  "items": [
+    { "id": "thermometer", "vi": "Nhiệt kế", "en": "Thermometer" },
+    { "id": "scale", "vi": "Cân", "en": "Balance" }
+  ],
+  "targets": [
+    { "id": "temperature", "vi": "Đo nhiệt độ", "en": "Measure temperature" },
+    { "id": "mass", "vi": "Đo khối lượng", "en": "Measure mass" }
+  ],
+  "correctMatches": {
+    "thermometer": "temperature",
+    "scale": "mass"
+  }
+}

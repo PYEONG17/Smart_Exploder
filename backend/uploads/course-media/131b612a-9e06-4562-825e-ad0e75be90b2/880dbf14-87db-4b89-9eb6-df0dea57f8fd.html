@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioLab: Thí Nghiệm Quang Hợp Của Lá | Leaf Photosynthesis Virtual Lab</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        bio: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Scrollbar & Range Sliders */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.5); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.8); }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 3px solid #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #059669;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-float { animation: floatSlow 3.5s ease-in-out infinite; }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.65; }
+            50% { opacity: 1; }
+        }
+        .animate-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        html:not(.dark) .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 selection:bg-emerald-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="leaf" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg sm:text-xl tracking-tight text-slate-900 dark:text-white" data-i18n="appTitle">
+                            Phòng Thí Nghiệm Quang Hợp Ảo
+                        </h1>
+                        <span class="hidden sm:inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                            BioLab v2.5
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        6CO₂ + 6H₂O <span class="text-amber-500">──(Ánh sáng / Diệp lục)──►</span> C₆H₁₂O₆ + 6O₂↑
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mode Tabs -->
+            <div class="flex items-center bg-slate-200/70 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-300/60 dark:border-slate-800">
+                <button id="tab-sim" onclick="switchTab('sim')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-emerald-600 text-white shadow">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    <span data-i18n="tabSim">1. Đếm Bọt Khí O₂ & Quang Hợp</span>
+                </button>
+                <button id="tab-starch" onclick="switchTab('starch')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                    <span data-i18n="tabStarch">2. Thử Tinh Bộ Bằng Iốt</span>
+                </button>
+                <button id="tab-cell" onclick="switchTab('cell')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="microscope" class="w-4 h-4"></i>
+                    <span data-i18n="tabCell">3. Giải Phẫu Lục Lạp</span>
+                </button>
+            </div>
+
+            <!-- Utilities: Lang & Theme -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleLanguage()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/20 border border-slate-300 dark:border-slate-700 transition">
+                    <i data-lucide="languages" class="w-4 h-4 text-emerald-500"></i>
+                    <span id="lang-label">VI / EN</span>
+                </button>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 transition" title="Đổi giao diện Sáng/Tối">
+                    <i data-lucide="sun" id="theme-icon" class="w-4 h-4 text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- ==========================================
+             VIEW 1: OXYGEN BUBBLE & ENVIRONMENTAL FACTORS
+             ========================================== -->
+        <section id="view-sim" class="space-y-6">
+            <!-- Top Row: Left Controls | Center Visual Tank | Right Live Analytics -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                <!-- LEFT COLUMN: Environmental Controls (4 cols) -->
+                <div class="lg:col-span-4 glass-panel rounded-2xl p-5 space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-5 h-5 text-emerald-500"></i>
+                            <h2 class="font-bold text-base" data-i18n="controlTitle">Điều Chỉnh Yếu Tố Môi Trường</h2>
+                        </div>
+                        <button onclick="resetParameters()" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span data-i18n="resetBtn">Mặc định</span>
+                        </button>
+                    </div>
+
+                    <!-- 1. Light Intensity Slider -->
+                    <div class="space-y-2 bg-slate-100/70 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="font-semibold flex items-center gap-1.5" for="slider-light">
+                                <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>
+                                <span data-i18n="lightIntensity">Cường độ ánh sáng</span>
+                            </label>
+                            <span id="val-light" class="font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded text-xs">60% (600 Lux)</span>
+                        </div>
+                        <input id="slider-light" type="range" min="0" max="100" value="60"
+                            oninput="onControlChange('light')"
+                            class="w-full bg-gradient-to-r from-slate-700 via-amber-500 to-yellow-300">
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span data-i18n="darkness">Bóng tối (0%)</span>
+                            <span data-i18n="saturationLight">Đèn cực đại (100%)</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Light Color / Wavelength Selector -->
+                    <div class="space-y-2 bg-slate-100/70 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-semibold flex items-center gap-1.5">
+                                <i data-lucide="palette" class="w-4 h-4 text-purple-400"></i>
+                                <span data-i18n="lightColor">Quang phổ ánh sáng (Bước sóng)</span>
+                            </span>
+                            <span id="val-wavelength" class="font-mono text-xs text-slate-400">400-700nm</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 pt-1">
+                            <button onclick="setLightColor('white')" id="color-white" class="color-btn active-color flex flex-col items-center p-2 rounded-lg border-2 border-emerald-500 bg-white/90 text-slate-900 text-xs font-semibold shadow-sm transition">
+                                <span class="w-4 h-4 rounded-full bg-gradient-to-tr from-amber-200 via-white to-sky-200 border border-slate-300 mb-1"></span>
+                                <span data-i18n="colorWhite">Trắng</span>
+                                <span class="text-[10px] opacity-75">100%</span>
+                            </button>
+                            <button onclick="setLightColor('red')" id="color-red" class="color-btn flex flex-col items-center p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-red-500/10 text-red-500 text-xs font-semibold transition">
+                                <span class="w-4 h-4 rounded-full bg-red-500 mb-1 shadow-sm shadow-red-500"></span>
+                                <span data-i18n="colorRed">Đỏ</span>
+                                <span class="text-[10px] opacity-75">660nm</span>
+                            </button>
+                            <button onclick="setLightColor('blue')" id="color-blue" class="color-btn flex flex-col items-center p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-blue-500/10 text-blue-400 text-xs font-semibold transition">
+                                <span class="w-4 h-4 rounded-full bg-blue-500 mb-1 shadow-sm shadow-blue-500"></span>
+                                <span data-i18n="colorBlue">Xanh lam</span>
+                                <span class="text-[10px] opacity-75">450nm</span>
+                            </button>
+                            <button onclick="setLightColor('green')" id="color-green" class="color-btn flex flex-col items-center p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-emerald-500/10 text-emerald-400 text-xs font-semibold transition">
+                                <span class="w-4 h-4 rounded-full bg-emerald-500 mb-1 shadow-sm shadow-emerald-500"></span>
+                                <span data-i18n="colorGreen">Xanh lục</span>
+                                <span class="text-[10px] opacity-75">530nm</span>
+                            </button>
+                        </div>
+                        <p id="color-hint" class="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1" data-i18n="colorHintWhite">
+                            Ánh sáng trắng chứa đầy đủ các tia đỏ và xanh tím giúp diệp lục hấp thụ tối ưu.
+                        </p>
+                    </div>
+
+                    <!-- 3. CO2 Concentration Slider -->
+                    <div class="space-y-2 bg-slate-100/70 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="font-semibold flex items-center gap-1.5" for="slider-co2">
+                                <i data-lucide="cloud" class="w-4 h-4 text-sky-400"></i>
+                                <span data-i18n="co2Conc">Nồng độ CO₂ (NaHCO₃)</span>
+                            </label>
+                            <span id="val-co2" class="font-mono font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded text-xs">0.10%</span>
+                        </div>
+                        <input id="slider-co2" type="range" min="0" max="100" value="50"
+                            oninput="onControlChange('co2')"
+                            class="w-full bg-gradient-to-r from-slate-700 via-sky-500 to-cyan-300">
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span data-i18n="co2Zero">Nước cất (0%)</span>
+                            <span data-i18n="co2Rich">Bão hòa (0.20%)</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Water Temperature Slider -->
+                    <div class="space-y-2 bg-slate-100/70 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="font-semibold flex items-center gap-1.5" for="slider-temp">
+                                <i data-lucide="thermometer" class="w-4 h-4 text-rose-400"></i>
+                                <span data-i18n="waterTemp">Nhiệt độ bình nước</span>
+                            </label>
+                            <span id="val-temp" class="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-xs">28 °C</span>
+                        </div>
+                        <input id="slider-temp" type="range" min="0" max="50" value="28"
+                            oninput="onControlChange('temp')"
+                            class="w-full bg-gradient-to-r from-blue-500 via-emerald-500 to-rose-600">
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span>0°C (Đóng băng)</span>
+                            <span class="text-emerald-400 font-medium">25-35°C (Tối ưu)</span>
+                            <span class="text-rose-400">&gt;42°C (Biến tính)</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Preset Scenarios -->
+                    <div class="pt-1">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2" data-i18n="presetsTitle">Kịch bản thí nghiệm mẫu:</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="applyPreset(90, 85, 30, 'white')" class="text-xs py-2 px-3 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 border border-emerald-500/30 font-medium transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                                <span data-i18n="presetOptimal">Quang hợp cực đại</span>
+                            </button>
+                            <button onclick="applyPreset(85, 80, 30, 'green')" class="text-xs py-2 px-3 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="eye-off" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span data-i18n="presetGreen">Chiếu tia Xanh lục</span>
+                            </button>
+                            <button onclick="applyPreset(85, 80, 47, 'white')" class="text-xs py-2 px-3 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 font-medium transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                                <span data-i18n="presetHeat">Sốc nhiệt (47°C)</span>
+                            </button>
+                            <button onclick="applyPreset(0, 60, 28, 'white')" class="text-xs py-2 px-3 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span data-i18n="presetDark">Trong bóng tối</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CENTER COLUMN: Interactive Aquarium Simulation Canvas (5 cols) -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden">
+                    <!-- Top Status Bar inside Canvas Card -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3 z-10">
+                        <div class="flex items-center gap-2">
+                            <span class="relative flex h-3 w-3">
+                                <span id="live-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="simTankHeader">
+                                Bình Thủy Sinh Rong Đuôi Chó (Elodea)
+                            </span>
+                        </div>
+
+                        <!-- Stopwatch Timer -->
+                        <div class="flex items-center gap-2 bg-slate-900/80 text-white px-3 py-1 rounded-full border border-slate-700 text-xs font-mono">
+                            <i data-lucide="timer" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span id="stopwatch-time">00:00</span>
+                            <span class="text-slate-400">|</span>
+                            <span class="text-sky-400 font-bold"><span id="total-bubbles-counted">0</span> O₂</span>
+                            <button onclick="resetStopwatch()" class="ml-1 text-slate-400 hover:text-white" title="Đặt lại bộ đếm">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- HTML5 Canvas Container -->
+                    <div class="relative w-full aspect-[4/4.3] rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner">
+                        <canvas id="aquariumCanvas" class="w-full h-full block"></canvas>
+
+                        <!-- Floating Enzyme Warning Banner -->
+                        <div id="denature-banner" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-rose-600/95 text-white px-4 py-2 rounded-xl shadow-lg border border-rose-400 flex items-center gap-2 text-xs font-bold animate-bounce whitespace-nowrap z-20">
+                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            <span data-i18n="enzymeAlert">CẢNH BÁO: Nhiệt độ > 40°C làm biến tính Enzyme Rubisco!</span>
+                        </div>
+
+                        <!-- Floating Gas Collection Tube Readout -->
+                        <div class="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-xl p-2.5 text-xs space-y-1 shadow-lg">
+                            <div class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="gasCollectedLabel">Khí O₂ thu được</div>
+                            <div class="font-mono font-bold text-sm text-sky-400 flex items-center gap-1">
+                                <span id="vol-o2">0.00</span> <span>mL</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div id="o2-bar-fill" class="bg-sky-400 h-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Bar: Record & Glowing Ember Splint Test -->
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button onclick="recordExperimentRow()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition active:scale-95">
+                            <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+                            <span data-i18n="recordBtn">Ghi Nhận Số Liệu Vào Bảng</span>
+                        </button>
+                        <button onclick="triggerSplintTest()" class="w-full py-2.5 px-4 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-500 dark:text-amber-400 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition active:scale-95">
+                            <i data-lucide="flame" class="w-4 h-4"></i>
+                            <span data-i18n="splintBtn">Thử Que Đóm Còn Tàn Đỏ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Live Metrics, Limiting Factor & Dynamic Graph (3 cols) -->
+                <div class="lg:col-span-3 space-y-4">
+                    <!-- Metric Cards -->
+                    <div class="glass-panel rounded-2xl p-4 space-y-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
+                            <span data-i18n="liveMetricsTitle">Thông Số Thời Gian Thực</span>
+                        </h3>
+
+                        <!-- O2 Bubble Rate -->
+                        <div class="bg-slate-100 dark:bg-slate-900/90 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="bubbleRateLabel">Tốc độ thoát bọt khí O₂</div>
+                                <div class="text-2xl font-extrabold font-mono text-emerald-500 mt-0.5">
+                                    <span id="metric-bpm">42</span>
+                                    <span class="text-xs font-normal text-slate-400" data-i18n="bpmUnit">bọt / phút</span>
+                                </div>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                <i data-lucide="sparkles" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <!-- Glucose Synthesis Rate -->
+                        <div class="bg-slate-100 dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400" data-i18n="glucoseRateLabel">Tổng hợp Glucose (C₆H₁₂O₆)</div>
+                                <div class="text-base font-bold font-mono text-amber-400 mt-0.5">
+                                    <span id="metric-glucose">7.0</span>
+                                    <span class="text-xs font-normal text-slate-400">µmol/m²/s</span>
+                                </div>
+                            </div>
+                            <i data-lucide="hexagon" class="w-6 h-6 text-amber-400 opacity-80"></i>
+                        </div>
+
+                        <!-- Limiting Factor Badge -->
+                        <div class="bg-slate-100 dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                            <div class="text-[11px] font-semibold uppercase text-slate-400 flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span data-i18n="limitingFactorLabel">Yếu tố giới hạn hiện tại:</span>
+                            </div>
+                            <div id="limiting-factor-text" class="text-xs font-bold text-amber-400">
+                                Cường độ ánh sáng & Nồng độ CO₂
+                            </div>
+                            <p id="limiting-factor-desc" class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                Tăng ánh sáng hoặc CO₂ sẽ giúp tăng tốc độ quang hợp.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Live Response Curve Graph -->
+                    <div class="glass-panel rounded-2xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-sky-400"></i>
+                                <span data-i18n="curveTitle">Đồ Thị Tương Quan</span>
+                            </h3>
+                            <select id="chart-axis-select" onchange="drawResponseChart()" class="text-[11px] bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 font-medium outline-none">
+                                <option value="light" data-i18n="axisLight">Trục X: Ánh sáng</option>
+                                <option value="co2" data-i18n="axisCO2">Trục X: Nồng độ CO₂</option>
+                                <option value="temp" data-i18n="axisTemp">Trục X: Nhiệt độ (°C)</option>
+                            </select>
+                        </div>
+                        <div class="w-full h-44 bg-slate-950/90 rounded-xl border border-slate-800 p-2">
+                            <canvas id="chartCanvas" class="w-full h-full block"></canvas>
+                        </div>
+                        <p class="text-[11px] text-slate-400 text-center" data-i18n="chartNote">
+                            Chấm tròn sáng biểu thị trạng thái hiện tại của thí nghiệm trên đường cong sinh lý.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Data Logger Table (Bảng ghi kết quả thí nghiệm) -->
+            <div class="glass-panel rounded-2xl p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="table-2" class="w-5 h-5 text-emerald-500"></i>
+                        <h3 class="font-bold text-base" data-i18n="tableTitle">Nhật Ký Số Liệu Thí Nghiệm (Data Logger)</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearTable()" class="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-medium transition flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span data-i18n="clearTableBtn">Xóa bảng</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase text-[11px]">
+                                <th class="py-2.5 px-3">#</th>
+                                <th class="py-2.5 px-3" data-i18n="thLight">Ánh sáng (Lux)</th>
+                                <th class="py-2.5 px-3" data-i18n="thSpectrum">Màu ánh sáng</th>
+                                <th class="py-2.5 px-3" data-i18n="thCO2">Nồng độ CO₂</th>
+                                <th class="py-2.5 px-3" data-i18n="thTemp">Nhiệt độ</th>
+                                <th class="py-2.5 px-3 text-emerald-500 font-bold" data-i18n="thBubbles">Số bọt O₂ / phút</th>
+                                <th class="py-2.5 px-3" data-i18n="thLimiting">Yếu tố giới hạn</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-log-body" class="divide-y divide-slate-200/60 dark:divide-slate-800/70 font-mono text-xs">
+                            <!-- Pre-populated baseline row -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VIEW 2: STARCH TEST WITH IODINE (THỬ TINH BỘT BẰNG IỐT)
+             ========================================== -->
+        <section id="view-starch" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Step-by-Step Protocol Guide (5 cols) -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-5 space-y-4">
+                    <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-500" data-i18n="starchSubtitle">Thí nghiệm kinh điển của Julius von Sachs</span>
+                        <h2 class="text-lg font-bold mt-0.5" data-i18n="starchTitle">Phát Hiện Tinh Bột Trong Lá Bằng Dung Dịch Iốt (Iodine)</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="starchGoal">
+                            Mục tiêu: Chứng minh tinh bột (C₆H₁₀O₅)ₙ là sản phẩm của quang hợp và chỉ được tạo thành khi có ánh sáng.
+                        </p>
+                    </div>
+
+                    <!-- Interactive Step Cards -->
+                    <div class="space-y-2.5" id="starch-steps-list">
+                        <!-- Step 1 -->
+                        <button onclick="setStarchStep(1)" id="step-btn-1" class="w-full text-left p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 transition flex items-start gap-3">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-500 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                            <div>
+                                <div class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="s1Title">Bịt băng đen một phần lá & Chiếu sáng</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="s1Desc">Sau khi để cây trong tối 48h cho hết tinh bột cũ, dùng băng giấy đen bịt kín phần giữa lá rồi đem chiếu sáng 4-6 giờ.</div>
+                            </div>
+                        </button>
+
+                        <!-- Step 2 -->
+                        <button onclick="setStarchStep(2)" id="step-btn-2" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition flex items-start gap-3">
+                            <span class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                            <div>
+                                <div class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="s2Title">Đun sôi lá trong nước (100°C)</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="s2Desc">Gỡ bỏ băng đen, nhúng lá vào cốc nước sôi khoảng 1 phút để phá vỡ màng tế bào và làm ngừng mọi phản ứng sinh hóa.</div>
+                            </div>
+                        </button>
+
+                        <!-- Step 3 -->
+                        <button onclick="setStarchStep(3)" id="step-btn-3" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition flex items-start gap-3">
+                            <span class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+                            <div>
+                                <div class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="s3Title">Đun cách thủy trong Cồn 90° (Tẩy diệp lục)</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="s3Desc">Cho lá vào ống nghiệm chứa cồn 90° đun cách thủy. Diệp lục tan vào cồn làm cồn có màu xanh lục, còn lá chuyển sang màu trắng vàng.</div>
+                            </div>
+                        </button>
+
+                        <!-- Step 4 -->
+                        <button onclick="setStarchStep(4)" id="step-btn-4" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition flex items-start gap-3">
+                            <span class="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">4</span>
+                            <div>
+                                <div class="font-bold text-sm text-slate-900 dark:text-white" data-i18n="s4Title">Nhỏ thuốc thử Iốt (Lugol / KI + I₂)</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="s4Desc">Rửa sạch lá trong nước ấm rồi đặt lên đĩa Petri, nhỏ vài giọt dung dịch Iốt và quan sát sự đổi màu đặc trưng!</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Interactive Workbench Canvas (7 cols) -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-5 flex flex-col justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold" id="starch-step-badge">
+                                BƯỚC 1 / 4
+                            </span>
+                            <h3 class="font-bold text-sm sm:text-base" id="starch-stage-title">Chiếu sáng lá có bịt băng giấy đen</h3>
+                        </div>
+                        <button onclick="setStarchStep(1)" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span data-i18n="restartStarch">Làm lại từ đầu</span>
+                        </button>
+                    </div>
+
+                    <!-- Interactive SVG / Canvas Stage for Starch Test -->
+                    <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+                        <canvas id="starchCanvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- Action Controls for Starch Lab -->
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 bg-slate-100 dark:bg-slate-900/90 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <p id="starch-observation" class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 flex-1">
+                            Phần lá không bị bịt nhận đầy đủ ánh sáng và tiến hành quang hợp tổng hợp tinh bột. Phần bị băng đen che khuất không nhận được photon ánh sáng.
+                        </p>
+                        <button id="starch-next-btn" onclick="advanceStarchStep()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 flex items-center gap-2 transition shrink-0">
+                            <span id="starch-next-label" data-i18n="nextStepBtn">Thực hiện Bước Tiếp Theo</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VIEW 3: CHLOROPLAST & MOLECULAR FLOW (GIẢI PHẪU LỤC LẠP)
+             ========================================== -->
+        <section id="view-cell" class="hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6">
+                <div class="max-w-3xl mb-6">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-500" data-i18n="cellSub">Cơ chế phân tử bên trong tế bào mô giậu</span>
+                    <h2 class="text-xl font-bold mt-1" data-i18n="cellTitle">Hai Pha Của Quá Trình Quang Hợp Tại Lục Lạp (Chloroplast)</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1" data-i18n="cellDesc">
+                        Quang hợp gồm 2 pha liên kết chặt chẽ: <strong>Pha sáng</strong> diễn ra tại màng Thylakoid (cần ánh sáng và H₂O để giải phóng O₂) và <strong>Pha tối (Chu trình Calvin)</strong> diễn ra tại chất nền Stroma (cố định CO₂ thành Glucose nhờ ATP và NADPH).
+                    </p>
+                </div>
+
+                <!-- Two Phase Diagram Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Light Dependent Reactions -->
+                    <div class="rounded-2xl p-5 bg-gradient-to-br from-amber-500/10 via-slate-900/60 to-emerald-500/10 border border-amber-500/30 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30" data-i18n="phase1Badge">
+                                PHA SÁNG (Light Reactions)
+                            </span>
+                            <span class="text-xs font-mono text-slate-400">Màng Thylakoid (Hạt Grana)</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 font-mono text-xs sm:text-sm text-center space-y-2">
+                            <div class="text-amber-300 font-bold">2H₂O + Ánh sáng ──► 4H⁺ + 4e⁻ + O₂↑</div>
+                            <div class="text-xs text-slate-400" data-i18n="photolysisNote">(Quang phân li nước tạo bọt khí Oxy thoát ra ngoài)</div>
+                        </div>
+                        <ul class="text-xs sm:text-sm space-y-2 text-slate-600 dark:text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                                <span data-i18n="p1Item1"><strong>Nguyên liệu:</strong> Năng lượng photon ánh sáng, phân tử nước (H₂O), ADP, NADP⁺.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                                <span data-i18n="p1Item2"><strong>Sản phẩm:</strong> Khí Oxy (O₂) giải phóng qua khí khổng, đồng thời tích lũy năng lượng hóa học trong <strong>ATP</strong> và <strong>NADPH</strong>.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Calvin Cycle -->
+                    <div class="rounded-2xl p-5 bg-gradient-to-br from-sky-500/10 via-slate-900/60 to-purple-500/10 border border-sky-500/30 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 text-xs font-bold border border-sky-500/30" data-i18n="phase2Badge">
+                                PHA TỐI - CHU TRÌNH CALVIN
+                            </span>
+                            <span class="text-xs font-mono text-slate-400">Chất nền Stroma</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 font-mono text-xs sm:text-sm text-center space-y-2">
+                            <div class="text-sky-300 font-bold">6CO₂ + 18ATP + 12NADPH ──► C₆H₁₂O₆ (Tinh bột)</div>
+                            <div class="text-xs text-slate-400" data-i18n="rubiscoNote">(Xúc tác bởi enzyme Rubisco - nhạy cảm với nhiệt độ cao)</div>
+                        </div>
+                        <ul class="text-xs sm:text-sm space-y-2 text-slate-600 dark:text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
+                                <span data-i18n="p2Item1"><strong>Nguyên liệu:</strong> Khí CO₂ khuếch tán qua khí khổng, cùng ATP và NADPH do pha sáng cung cấp.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
+                                <span data-i18n="p2Item2"><strong>Sản phẩm:</strong> Đường Glucose (C₆H₁₂O₆), sau đó trùng hợp thành <strong>Tinh bột</strong> (nhận biết bằng dung dịch Iốt chuyển màu xanh tím).</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Modal Notification for Glowing Splint Test (Không dùng alert) -->
+    <div id="splint-modal" class="fixed inset-0 z-50 hidden bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 border border-amber-500/40 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                        <i data-lucide="flame" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="font-bold text-base" data-i18n="splintModalTitle">Kiểm Nghiệm Khí Oxy Bằng Que Đóm</h4>
+                </div>
+                <button onclick="closeSplintModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p id="splint-modal-body" class="text-xs sm:text-sm text-slate-300 leading-relaxed"></p>
+            <div class="flex justify-end">
+                <button onclick="closeSplintModal()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+                    Đã hiểu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION SCRIPT -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. STATE & BILINGUAL TRANSLATION DICTIONARY
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'sim';
+
+        const state = {
+            light: 60,         // 0 - 100%
+            co2: 50,           // 0 - 100% (maps to 0.00% - 0.20%)
+            temp: 28,          // 0 - 50 °C
+            lightColor: 'white', // 'white' | 'red' | 'blue' | 'green'
+            bubblesPerMin: 42,
+            glucoseRate: 7.0,
+            limitingFactorKey: 'both',
+            collectedO2mL: 0,
+            totalBubblesCounted: 0,
+            elapsedSeconds: 0,
+            splintFlareTimer: 0,
+            starchStep: 1,
+            starchAnimProgress: 0
+        };
+
+        const colorEfficiency = {
+            white: { factor: 1.0, hex: '#fef08a', beamHex: 'rgba(254, 240, 138, 0.28)', wl: '400-700nm', nameVi: 'Trắng', nameEn: 'White' },
+            red:   { factor: 0.88, hex: '#ef4444', beamHex: 'rgba(239, 68, 68, 0.30)', wl: '660nm (Đỏ)', nameVi: 'Đỏ', nameEn: 'Red' },
+            blue:  { factor: 0.82, hex: '#3b82f6', beamHex: 'rgba(59, 130, 246, 0.30)', wl: '450nm (Lam)', nameVi: 'Xanh lam', nameEn: 'Blue' },
+            green: { factor: 0.14, hex: '#10b981', beamHex: 'rgba(16, 185, 129, 0.28)', wl: '530nm (Lục)', nameVi: 'Xanh lục', nameEn: 'Green' }
+        };
+
+        const i18n = {
+            vi: {
+                appTitle: 'Phòng Thí Nghiệm Quang Hợp Ảo',
+                tabSim: '1. Đếm Bọt Khí O₂ & Quang Hợp',
+                tabStarch: '2. Thử Tinh Bột Bằng Iốt',
+                tabCell: '3. Giải Phẫu Lục Lạp',
+                controlTitle: 'Điều Chỉnh Yếu Tố Môi Trường',
+                resetBtn: 'Mặc định',
+                lightIntensity: 'Cường độ ánh sáng',
+                darkness: 'Bóng tối (0%)',
+                saturationLight: 'Đèn cực đại (100%)',
+                lightColor: 'Quang phổ ánh sáng (Bước sóng)',
+                colorWhite: 'Trắng',
+                colorRed: 'Đỏ',
+                colorBlue: 'Xanh lam',
+                colorGreen: 'Xanh lục',
+                co2Conc: 'Nồng độ CO₂ (NaHCO₃)',
+                co2Zero: 'Nước cất (0%)',
+                co2Rich: 'Bão hòa (0.20%)',
+                waterTemp: 'Nhiệt độ bình nước',
+                presetsTitle: 'Kịch bản thí nghiệm mẫu:',
+                presetOptimal: 'Quang hợp cực đại',
+                presetGreen: 'Chiếu tia Xanh lục',
+                presetHeat: 'Sốc nhiệt (47°C)',
+                presetDark: 'Trong bóng tối',
+                simTankHeader: 'Bình Thủy Sinh Rong Đuôi Chó (Elodea)',
+                enzymeAlert: 'CẢNH BÁO: Nhiệt độ > 40°C làm biến tính Enzyme Rubisco!',
+                gasCollectedLabel: 'Khí O₂ thu được',
+                recordBtn: 'Ghi Nhận Số Liệu Vào Bảng',
+                splintBtn: 'Thử Que Đóm Còn Tàn Đỏ',
+                liveMetricsTitle: 'Thông Số Thời Gian Thực',
+                bubbleRateLabel: 'Tốc độ thoát bọt khí O₂',
+                bpmUnit: 'bọt / phút',
+                glucoseRateLabel: 'Tổng hợp Glucose (C₆H₁₂O₆)',
+                limitingFactorLabel: 'Yếu tố giới hạn hiện tại:',
+                curveTitle: 'Đồ Thị Tương Quan',
+                axisLight: 'Trục X: Ánh sáng',
+                axisCO2: 'Trục X: Nồng độ CO₂',
+                axisTemp: 'Trục X: Nhiệt độ (°C)',
+                chartNote: 'Chấm tròn sáng biểu thị trạng thái hiện tại của thí nghiệm trên đường cong sinh lý.',
+                tableTitle: 'Nhật Ký Số Liệu Thí Nghiệm (Data Logger)',
+                clearTableBtn: 'Xóa bảng',
+                thLight: 'Ánh sáng (Lux)',
+                thSpectrum: 'Màu ánh sáng',
+                thCO2: 'Nồng độ CO₂',
+                thTemp: 'Nhiệt độ',
+                thBubbles: 'Số bọt O₂ / phút',
+                thLimiting: 'Yếu tố giới hạn',
+                starchSubtitle: 'Thí nghiệm kinh điển của Julius von Sachs',
+                starchTitle: 'Phát Hiện Tinh Bột Trong Lá Bằng Dung Dịch Iốt (Iodine)',
+                starchGoal: 'Mục tiêu: Chứng minh tinh bột (C₆H₁₀O₅)ₙ là sản phẩm của quang hợp và chỉ được tạo thành khi có ánh sáng.',
+                s1Title: 'Bịt băng đen một phần lá & Chiếu sáng',
+                s1Desc: 'Sau khi để cây trong tối 48h cho hết tinh bột cũ, dùng băng giấy đen bịt kín phần giữa lá rồi đem chiếu sáng 4-6 giờ.',
+                s2Title: 'Đun sôi lá trong nước (100°C)',
+                s2Desc: 'Gỡ bỏ băng đen, nhúng lá vào cốc nước sôi khoảng 1 phút để phá vỡ màng tế bào và làm ngừng mọi phản ứng sinh hóa.',
+                s3Title: 'Đun cách thủy trong Cồn 90° (Tẩy diệp lục)',
+                s3Desc: 'Cho lá vào ống nghiệm chứa cồn 90° đun cách thủy. Diệp lục tan vào cồn làm cồn có màu xanh lục, còn lá chuyển sang màu trắng vàng.',
+                s4Title: 'Nhỏ thuốc thử Iốt (Lugol / KI + I₂)',
+                s4Desc: 'Rửa sạch lá trong nước ấm rồi đặt lên đĩa Petri, nhỏ vài giọt dung dịch Iốt và quan sát sự đổi màu đặc trưng!',
+                restartStarch: 'Làm lại từ đầu',
+                nextStepBtn: 'Thực hiện Bước Tiếp Theo',
+                splintModalTitle: 'Kiểm Nghiệm Khí Oxy Bằng Que Đóm'
+            },
+            en: {
+                appTitle: 'Virtual Leaf Photosynthesis Lab',
+                tabSim: '1. O₂ Bubble Rate & Factors',
+                tabStarch: '2. Iodine Starch Test',
+                tabCell: '3. Chloroplast Anatomy',
+                controlTitle: 'Environmental Controls',
+                resetBtn: 'Reset',
+                lightIntensity: 'Light Intensity',
+                darkness: 'Darkness (0%)',
+                saturationLight: 'Max Lamp (100%)',
+                lightColor: 'Light Spectrum (Wavelength)',
+                colorWhite: 'White',
+                colorRed: 'Red',
+                colorBlue: 'Blue',
+                colorGreen: 'Green',
+                co2Conc: 'CO₂ Concentration (NaHCO₃)',
+                co2Zero: 'Distilled (0%)',
+                co2Rich: 'Saturated (0.20%)',
+                waterTemp: 'Water Temperature',
+                presetsTitle: 'Quick Experiment Presets:',
+                presetOptimal: 'Maximum Rate',
+                presetGreen: 'Green Light Filter',
+                presetHeat: 'Heat Stress (47°C)',
+                presetDark: 'Total Darkness',
+                simTankHeader: 'Elodea Aquatic Photosynthesis Setup',
+                enzymeAlert: 'WARNING: Temp > 40°C denatures Rubisco Enzymes!',
+                gasCollectedLabel: 'Collected O₂ Gas',
+                recordBtn: 'Record Data to Logger',
+                splintBtn: 'Test with Glowing Splint',
+                liveMetricsTitle: 'Real-Time Bio Metrics',
+                bubbleRateLabel: 'O₂ Bubble Emission Rate',
+                bpmUnit: 'bubbles / min',
+                glucoseRateLabel: 'Glucose Synthesis Rate',
+                limitingFactorLabel: 'Current Limiting Factor:',
+                curveTitle: 'Response Curve',
+                axisLight: 'X-Axis: Light',
+                axisCO2: 'X-Axis: CO₂ Conc.',
+                axisTemp: 'X-Axis: Temp (°C)',
+                chartNote: 'The glowing dot marks the current operating state on the physiological curve.',
+                tableTitle: 'Experimental Data Logger',
+                clearTableBtn: 'Clear Table',
+                thLight: 'Light (Lux)',
+                thSpectrum: 'Spectrum',
+                thCO2: 'CO₂ Conc.',
+                thTemp: 'Temperature',
+                thBubbles: 'O₂ Bubbles / min',
+                thLimiting: 'Limiting Factor',
+                starchSubtitle: 'Classic Julius von Sachs Experiment',
+                starchTitle: 'Testing Leaves for Starch with Iodine Solution',
+                starchGoal: 'Objective: Prove that starch is synthesized in leaves only in the presence of light.',
+                s1Title: 'Mask Leaf with Black Tape & Illuminate',
+                s1Desc: 'After destarching in darkness for 48h, cover the middle section with black tape and expose to bright light.',
+                s2Title: 'Boil Leaf in Water (100°C)',
+                s2Desc: 'Remove tape and immerse leaf in boiling water for 1 min to break cell membranes and halt enzyme activity.',
+                s3Title: 'Boil in Ethanol Water-Bath (Decolorize)',
+                s3Desc: 'Heat leaf in 90% ethanol in a hot water bath. Chlorophyll dissolves into the alcohol, turning the leaf pale white.',
+                s4Title: 'Add Iodine Solution (KI + I₂)',
+                s4Desc: 'Rinse leaf in warm water, place in Petri dish, and add drops of Iodine to observe the blue-black starch reaction!',
+                restartStarch: 'Start Over',
+                nextStepBtn: 'Proceed to Next Step',
+                splintModalTitle: 'Glowing Wood Splint O₂ Test'
+            }
+        };
+
+        // ==========================================
+        // 2. PHOTOSYNTHESIS BIOPHYSICAL MODEL
+        // ==========================================
+        function computePhotosynthesisRate(lightVal, co2Val, tempVal, colorKey) {
+            // 1. Light Factor (Michaelis-Menten / Blackman saturation curve)
+            const effLight = lightVal * colorEfficiency[colorKey].factor;
+            const fLight = effLight <= 0 ? 0 : (effLight / (effLight + 28)) * 1.28;
+
+            // 2. CO2 Factor
+            const fCO2 = co2Val <= 0 ? 0 : (co2Val / (co2Val + 25)) * 1.25;
+
+            // 3. Temperature Factor (Asymmetric bell curve peaking around 30°C, sharp drop > 40°C due to denaturation)
+            let fTemp = 0;
+            if (tempVal <= 0 || tempVal >= 49) {
+                fTemp = 0;
+            } else if (tempVal <= 31) {
+                // Q10 exponential rise from 0 to 31
+                fTemp = Math.pow(tempVal / 31, 1.35);
+            } else {
+                // Rapid enzyme denaturation between 31 and 49
+                const over = (tempVal - 31) / (49 - 31);
+                fTemp = Math.max(0, 1 - Math.pow(over, 1.7));
+            }
+
+            // Combine via Blackman's Law of Limiting Factors (smooth minimum + enzyme multiplier)
+            const minLightCO2 = Math.min(fLight, fCO2);
+            const rawRate = minLightCO2 * fTemp * 85; // Max ~85 bubbles/min
+            return {
+                bpm: Math.round(rawRate),
+                glucose: (rawRate * 0.165).toFixed(1),
+                fLight,
+                fCO2,
+                fTemp
+            };
+        }
+
+        function updateSimulationModel() {
+            state.light = parseInt(document.getElementById('slider-light').value, 10);
+            state.co2 = parseInt(document.getElementById('slider-co2').value, 10);
+            state.temp = parseInt(document.getElementById('slider-temp').value, 10);
+
+            // Update UI Value Badges
+            document.getElementById('val-light').textContent = `${state.light}% (${state.light * 10} Lux)`;
+            document.getElementById('val-co2').textContent = `${(state.co2 * 0.002).toFixed(2)}%`;
+            document.getElementById('val-temp').textContent = `${state.temp} °C`;
+
+            // Color hint update
+            const hintEl = document.getElementById('color-hint');
+            if (currentLang === 'vi') {
+                const hintsVi = {
+                    white: 'Ánh sáng trắng chứa đầy đủ các tia đỏ và xanh tím giúp diệp lục hấp thụ tối ưu (100%).',
+                    red: 'Tia đỏ (660nm) được diệp lục a & b hấp thụ rất mạnh, hiệu suất quang hợp cao (~88%).',
+                    blue: 'Tia xanh lam (450nm) được diệp lục và carotenoid hấp thụ mạnh (~82%).',
+                    green: 'Lá cây phản xạ phần lớn tia xanh lục (530nm) nên hiệu suất quang hợp rất thấp (~14%)!'
+                };
+                hintEl.textContent = hintsVi[state.lightColor];
+            } else {
+                const hintsEn = {
+                    white: 'Full spectrum white light provides both red and blue wavelengths for optimal absorption (100%).',
+                    red: 'Red wavelength (660nm) is strongly absorbed by Chlorophyll a & b (~88% efficiency).',
+                    blue: 'Blue wavelength (450nm) is strongly absorbed by chlorophyll & carotenoids (~82% efficiency).',
+                    green: 'Chlorophyll reflects most green light (530nm), causing a sharp drop in photosynthesis (~14%)!'
+                };
+                hintEl.textContent = hintsEn[state.lightColor];
+            }
+
+            const result = computePhotosynthesisRate(state.light, state.co2, state.temp, state.lightColor);
+            state.bubblesPerMin = result.bpm;
+            state.glucoseRate = result.glucose;
+
+            document.getElementById('metric-bpm').textContent = state.bubblesPerMin;
+            document.getElementById('metric-glucose').textContent = state.glucoseRate;
+
+            // Enzyme Denaturation Warning
+            const denatureBanner = document.getElementById('denature-banner');
+            if (state.temp > 40) {
+                denatureBanner.classList.remove('hidden');
+            } else {
+                denatureBanner.classList.add('hidden');
+            }
+
+            // Determine Limiting Factor
+            const lfTitle = document.getElementById('limiting-factor-text');
+            const lfDesc = document.getElementById('limiting-factor-desc');
+
+            if (state.temp > 40) {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Nhiệt độ quá cao (Biến tính Enzyme)' : 'High Temp (Enzyme Denaturation)';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-rose-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Enzyme Rubisco bị phá hủy cấu trúc không gian ở nhiệt độ > 40°C khiến pha tối ngưng trệ.'
+                    : 'Rubisco enzyme loses its 3D active site above 40°C, halting the Calvin cycle.';
+            } else if (state.temp < 15) {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Nhiệt độ thấp (Động năng phân tử yếu)' : 'Low Water Temperature';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-sky-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Nhiệt độ thấp làm giảm tần số va chạm giữa enzyme và cơ chất CO₂.'
+                    : 'Cold temperature slows molecular collisions and enzymatic catalysis.';
+            } else if (state.lightColor === 'green' && state.light > 20) {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Bước sóng ánh sáng (Tia xanh lục)' : 'Light Wavelength (Green Reflected)';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-emerald-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Diệp lục phản xạ ánh sáng xanh lục nên hầu như không thu nhận được năng lượng photon.'
+                    : 'Chlorophyll reflects green wavelengths instead of absorbing them.';
+            } else if (result.fLight < result.fCO2 - 0.08) {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Cường độ ánh sáng (Pha sáng)' : 'Light Intensity';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-amber-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Thiếu photon ánh sáng để quang phân li nước và tạo ATP/NADPH.'
+                    : 'Insufficient photons to drive photolysis of water and ATP synthesis.';
+            } else if (result.fCO2 < result.fLight - 0.08) {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Nồng độ CO₂ (Pha tối)' : 'CO₂ Concentration';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-sky-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Thiếu nguồn nguyên liệu CO₂ cho chu trình Calvin tổng hợp chất hữu cơ.'
+                    : 'Insufficient dissolved CO₂ for carbon fixation in the Calvin cycle.';
+            } else {
+                state.limitingFactorKey = currentLang === 'vi' ? 'Đạt trạng thái cân bằng tối ưu' : 'Co-limited / Optimal Balance';
+                lfTitle.textContent = state.limitingFactorKey;
+                lfTitle.className = 'text-xs font-bold text-emerald-400';
+                lfDesc.textContent = currentLang === 'vi'
+                    ? 'Các yếu tố ánh sáng, CO₂ và nhiệt độ đang phối hợp rất tốt.'
+                    : 'Light, CO₂, and temperature are well balanced near saturation.';
+            }
+
+            drawResponseChart();
+        }
+
+        function onControlChange(changedAxis) {
+            // Automatically switch chart axis to match the slider the student is dragging
+            if (changedAxis) {
+                document.getElementById('chart-axis-select').value = changedAxis;
+            }
+            updateSimulationModel();
+        }
+
+        function setLightColor(colorKey) {
+            state.lightColor = colorKey;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('border-emerald-500', 'border-2', 'scale-105');
+                btn.classList.add('border-slate-300', 'dark:border-slate-700');
+            });
+            const activeBtn = document.getElementById(`color-${colorKey}`);
+            activeBtn.classList.remove('border-slate-300', 'dark:border-slate-700');
+            activeBtn.classList.add('border-emerald-500', 'border-2', 'scale-105');
+
+            document.getElementById('val-wavelength').textContent = colorEfficiency[colorKey].wl;
+            updateSimulationModel();
+        }
+
+        function applyPreset(l, c, t, col) {
+            document.getElementById('slider-light').value = l;
+            document.getElementById('slider-co2').value = c;
+            document.getElementById('slider-temp').value = t;
+            setLightColor(col);
+        }
+
+        function resetParameters() {
+            applyPreset(60, 50, 28, 'white');
+            resetStopwatch();
+        }
+
+        // ==========================================
+        // 3. AQUARIUM & BUBBLE SIMULATION CANVAS
+        // ==========================================
+        const aqCanvas = document.getElementById('aquariumCanvas');
+        const aqCtx = aqCanvas.getContext('2d');
+        let bubbles = [];
+        let lastBubbleSpawn = 0;
+
+        function resizeCanvases() {
+            const rect = aqCanvas.parentElement.getBoundingClientRect();
+            aqCanvas.width = rect.width * window.devicePixelRatio;
+            aqCanvas.height = rect.height * window.devicePixelRatio;
+            aqCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+
+            const chartEl = document.getElementById('chartCanvas');
+            if (chartEl && chartEl.parentElement) {
+                const cRect = chartEl.parentElement.getBoundingClientRect();
+                chartEl.width = cRect.width * window.devicePixelRatio;
+                chartEl.height = cRect.height * window.devicePixelRatio;
+                drawResponseChart();
+            }
+
+            const starchEl = document.getElementById('starchCanvas');
+            if (starchEl && starchEl.parentElement && activeTab === 'starch') {
+                const sRect = starchEl.parentElement.getBoundingClientRect();
+                starchEl.width = sRect.width * window.devicePixelRatio;
+                starchEl.height = sRect.height * window.devicePixelRatio;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        function spawnBubble(x, y) {
+            bubbles.push({
+                x: x + (Math.random() * 8 - 4),
+                y: y,
+                r: 2.8 + Math.random() * 2.4,
+                vy: 1.1 + Math.random() * 0.65,
+                wobbleOffset: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.04 + Math.random() * 0.03
+            });
+            state.totalBubblesCounted++;
+            state.collectedO2mL = Math.min(10.0, state.collectedO2mL + 0.04);
+            document.getElementById('total-bubbles-counted').textContent = state.totalBubblesCounted;
+            document.getElementById('vol-o2').textContent = state.collectedO2mL.toFixed(2);
+            document.getElementById('o2-bar-fill').style.width = `${(state.collectedO2mL / 10) * 100}%`;
+        }
+
+        function renderAquarium(timestamp) {
+            const w = aqCanvas.width / window.devicePixelRatio;
+            const h = aqCanvas.height / window.devicePixelRatio;
+            aqCtx.clearRect(0, 0, w, h);
+
+            // Background Lab Wall
+            const bgGrad = aqCtx.createLinearGradient(0, 0, 0, h);
+            bgGrad.addColorStop(0, '#090d16');
+            bgGrad.addColorStop(1, '#0f172a');
+            aqCtx.fillStyle = bgGrad;
+            aqCtx.fillRect(0, 0, w, h);
+
+            const colInfo = colorEfficiency[state.lightColor];
+            const lampX = 55;
+            const lampY = 65;
+
+            // 1. Draw Light Beam Cone if light > 0
+            if (state.light > 0) {
+                aqCtx.save();
+                const alpha = (state.light / 100) * 0.42;
+                const beamGrad = aqCtx.createLinearGradient(lampX, lampY, w * 0.78, h * 0.85);
+                beamGrad.addColorStop(0, colInfo.hex);
+                beamGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+                aqCtx.globalAlpha = alpha;
+                aqCtx.fillStyle = beamGrad;
+                aqCtx.beginPath();
+                aqCtx.moveTo(lampX + 12, lampY + 8);
+                aqCtx.lineTo(w * 0.92, h * 0.25);
+                aqCtx.lineTo(w * 0.85, h * 0.95);
+                aqCtx.lineTo(lampX + 35, h * 0.95);
+                aqCtx.closePath();
+                aqCtx.fill();
+                aqCtx.restore();
+            }
+
+            // 2. Draw Lab Lamp Fixture (Left Side)
+            aqCtx.save();
+            // Lamp stand
+            aqCtx.strokeStyle = '#475569';
+            aqCtx.lineWidth = 5;
+            aqCtx.beginPath();
+            aqCtx.moveTo(22, h - 20);
+            aqCtx.lineTo(22, 45);
+            aqCtx.lineTo(lampX, lampY);
+            aqCtx.stroke();
+
+            // Lamp hood
+            aqCtx.fillStyle = '#334155';
+            aqCtx.beginPath();
+            aqCtx.arc(lampX, lampY, 22, Math.PI * 0.75, Math.PI * 1.85);
+            aqCtx.lineTo(lampX + 20, lampY + 14);
+            aqCtx.closePath();
+            aqCtx.fill();
+
+            // Glowing Bulb
+            if (state.light > 0) {
+                aqCtx.shadowColor = colInfo.hex;
+                aqCtx.shadowBlur = 12 + (state.light * 0.25);
+                aqCtx.fillStyle = colInfo.hex;
+            } else {
+                aqCtx.fillStyle = '#475569';
+            }
+            aqCtx.beginPath();
+            aqCtx.arc(lampX + 6, lampY + 6, 10, 0, Math.PI * 2);
+            aqCtx.fill();
+            aqCtx.restore();
+
+            // 3. Draw Glass Beaker & Water
+            const beakerX = w * 0.30;
+            const beakerW = w * 0.56;
+            const beakerTop = h * 0.20;
+            const beakerBottom = h - 24;
+            const waterTop = beakerTop + 32;
+
+            // Water tint changes slightly with temp
+            let waterColorTop = 'rgba(14, 116, 144, 0.35)';
+            let waterColorBot = 'rgba(15, 23, 42, 0.75)';
+            if (state.temp > 40) {
+                waterColorTop = 'rgba(190, 18, 60, 0.28)';
+            } else if (state.temp < 12) {
+                waterColorTop = 'rgba(56, 189, 248, 0.38)';
+            }
+
+            const waterGrad = aqCtx.createLinearGradient(0, waterTop, 0, beakerBottom);
+            waterGrad.addColorStop(0, waterColorTop);
+            waterGrad.addColorStop(1, waterColorBot);
+            aqCtx.fillStyle = waterGrad;
+            aqCtx.beginPath();
+            aqCtx.roundRect(beakerX, waterTop, beakerW, beakerBottom - waterTop, [0, 0, 16, 16]);
+            aqCtx.fill();
+
+            // Dissolved CO2 micro-particles indicator
+            const co2Dots = Math.floor(state.co2 / 6);
+            aqCtx.fillStyle = 'rgba(186, 230, 253, 0.25)';
+            for (let i = 0; i < co2Dots; i++) {
+                const px = beakerX + 18 + ((i * 47 + Math.floor(timestamp * 0.015)) % (beakerW - 36));
+                const py = waterTop + 20 + ((i * 73) % (beakerBottom - waterTop - 35));
+                aqCtx.beginPath();
+                aqCtx.arc(px, py, 1.5, 0, Math.PI * 2);
+                aqCtx.fill();
+            }
+
+            // 4. Draw Inverted Funnel & Test Tube collecting O2
+            const centerX = beakerX + beakerW * 0.5;
+            const stemTopY = waterTop + 50;
+            const funnelBottomY = beakerBottom - 18;
+
+            // Inverted Test Tube over Funnel Stem
+            const tubeW = 34;
+            const tubeTopY = beakerTop - 8;
+            const tubeBottomY = waterTop + 95;
+
+            // Collected O2 Gas Pocket at top of inverted test tube
+            const gasHeight = (state.collectedO2mL / 10) * 55;
+            if (gasHeight > 1) {
+                aqCtx.fillStyle = 'rgba(125, 211, 252, 0.32)';
+                aqCtx.beginPath();
+                aqCtx.roundRect(centerX - tubeW / 2 + 2, tubeTopY + 2, tubeW - 4, gasHeight, [12, 12, 0, 0]);
+                aqCtx.fill();
+            }
+
+            // 5. Draw Aquatic Plant (Elodea / Rong đuôi chó) inside Funnel
+            const plantBaseY = funnelBottomY - 4;
+            const plantTopY = stemTopY + 42;
+            const sway = Math.sin(timestamp * 0.0025) * 3.5;
+
+            // Plant Stem
+            aqCtx.save();
+            const isHeatStressed = state.temp > 42;
+            const stemColor = isHeatStressed ? '#854d0e' : '#059669';
+            const leafColor = isHeatStressed ? '#a16207' : '#10b981';
+            const leafHighlight = isHeatStressed ? '#ca8a04' : '#34d399';
+
+            aqCtx.strokeStyle = stemColor;
+            aqCtx.lineWidth = 4.5;
+            aqCtx.lineCap = 'round';
+            aqCtx.beginPath();
+            aqCtx.moveTo(centerX, plantBaseY);
+            aqCtx.quadraticCurveTo(centerX + sway, (plantBaseY + plantTopY) / 2, centerX + sway * 0.6, plantTopY);
+            aqCtx.stroke();
+
+            // Whorls of Elodea Leaves along the stem
+            const numPairs = 8;
+            for (let i = 0; i < numPairs; i++) {
+                const t = i / (numPairs - 1);
+                const ly = plantBaseY - 12 - t * (plantBaseY - plantTopY - 18);
+                const lx = centerX + sway * Math.sin(t * Math.PI);
+                const leafLen = 28 - t * 10;
+
+                // Left & Right Leaves
+                [-1, 1].forEach(dir => {
+                    aqCtx.save();
+                    aqCtx.translate(lx, ly);
+                    aqCtx.rotate(dir * (0.45 - t * 0.12) + sway * 0.01);
+                    aqCtx.fillStyle = i % 2 === 0 ? leafColor : leafHighlight;
+                    aqCtx.beginPath();
+                    aqCtx.ellipse((dir * leafLen) / 2, -4, leafLen / 2, 4.5, dir * -0.25, 0, Math.PI * 2);
+                    aqCtx.fill();
+                    aqCtx.restore();
+                });
+            }
+            aqCtx.restore();
+
+            // 6. Spawn & Update O2 Bubbles from Cut Stem Tip
+            const cutStemX = centerX + sway * 0.6;
+            const cutStemY = plantTopY;
+
+            if (state.bubblesPerMin > 0) {
+                const intervalMs = 60000 / state.bubblesPerMin;
+                if (timestamp - lastBubbleSpawn > intervalMs) {
+                    spawnBubble(cutStemX, cutStemY);
+                    lastBubbleSpawn = timestamp;
+                }
+            }
+
+            // Render Rising O2 Bubbles
+            const gasLineY = tubeTopY + Math.max(8, gasHeight);
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                b.y -= b.vy;
+                b.x += Math.sin(timestamp * b.wobbleSpeed + b.wobbleOffset) * 0.45;
+
+                // Constrain inside funnel neck / test tube
+                const distFromCenter = b.x - centerX;
+                if (Math.abs(distFromCenter) > 11) {
+                    b.x -= distFromCenter * 0.15;
+                }
+
+                // Draw bubble
+                aqCtx.save();
+                aqCtx.strokeStyle = '#7dd3fc';
+                aqCtx.fillStyle = 'rgba(224, 242, 254, 0.55)';
+                aqCtx.lineWidth = 1.2;
+                aqCtx.beginPath();
+                aqCtx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                aqCtx.fill();
+                aqCtx.stroke();
+
+                // Tiny specular highlight
+                aqCtx.fillStyle = '#ffffff';
+                aqCtx.beginPath();
+                aqCtx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.28, 0, Math.PI * 2);
+                aqCtx.fill();
+                aqCtx.restore();
+
+                if (b.y <= gasLineY) {
+                    bubbles.splice(i, 1);
+                }
+            }
+
+            // 7. Glass Funnel & Inverted Tube Outlines (Drawn over plant for glass realism)
+            aqCtx.save();
+            aqCtx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+            aqCtx.lineWidth = 2;
+
+            // Funnel cone + stem
+            aqCtx.beginPath();
+            aqCtx.moveTo(centerX - 68, funnelBottomY);
+            aqCtx.lineTo(centerX - 10, stemTopY + 35);
+            aqCtx.lineTo(centerX - 10, stemTopY);
+            aqCtx.moveTo(centerX + 68, funnelBottomY);
+            aqCtx.lineTo(centerX + 10, stemTopY + 35);
+            aqCtx.lineTo(centerX + 10, stemTopY);
+            aqCtx.stroke();
+
+            // Inverted Test Tube Outline
+            aqCtx.strokeStyle = 'rgba(186, 230, 253, 0.75)';
+            aqCtx.lineWidth = 2.5;
+            aqCtx.beginPath();
+            aqCtx.roundRect(centerX - tubeW / 2, tubeTopY, tubeW, tubeBottomY - tubeTopY, [16, 16, 2, 2]);
+            aqCtx.stroke();
+
+            // Outer Beaker Outline
+            aqCtx.strokeStyle = 'rgba(203, 213, 225, 0.65)';
+            aqCtx.lineWidth = 3;
+            aqCtx.beginPath();
+            aqCtx.moveTo(beakerX, beakerTop);
+            aqCtx.lineTo(beakerX, beakerBottom - 14);
+            aqCtx.quadraticCurveTo(beakerX, beakerBottom, beakerX + 14, beakerBottom);
+            aqCtx.lineTo(beakerX + beakerW - 14, beakerBottom);
+            aqCtx.quadraticCurveTo(beakerX + beakerW, beakerBottom, beakerX + beakerW, beakerBottom - 14);
+            aqCtx.lineTo(beakerX + beakerW, beakerTop);
+            aqCtx.stroke();
+            aqCtx.restore();
+
+            // 8. Glowing Wood Splint Visual Animation if triggered
+            if (state.splintFlareTimer > 0) {
+                state.splintFlareTimer--;
+                aqCtx.save();
+                const splintX = centerX + 5;
+                const splintY = tubeTopY + 18;
+                // Stick
+                aqCtx.strokeStyle = '#92400e';
+                aqCtx.lineWidth = 4;
+                aqCtx.beginPath();
+                aqCtx.moveTo(splintX + 45, splintY - 35);
+                aqCtx.lineTo(splintX, splintY);
+                aqCtx.stroke();
+
+                // Bright Flame if O2 is sufficient
+                const hasO2 = state.collectedO2mL >= 0.25 || state.bubblesPerMin >= 20;
+                if (hasO2) {
+                    aqCtx.shadowColor = '#f59e0b';
+                    aqCtx.shadowBlur = 22;
+                    aqCtx.fillStyle = '#fde047';
+                    aqCtx.beginPath();
+                    aqCtx.arc(splintX, splintY, 9 + Math.sin(timestamp * 0.05) * 2.5, 0, Math.PI * 2);
+                    aqCtx.fill();
+                } else {
+                    // Dim red ember
+                    aqCtx.fillStyle = '#ef4444';
+                    aqCtx.beginPath();
+                    aqCtx.arc(splintX, splintY, 4, 0, Math.PI * 2);
+                    aqCtx.fill();
+                }
+                aqCtx.restore();
+            }
+
+            requestAnimationFrame(renderAquarium);
+        }
+
+        // ==========================================
+        // 4. REAL-TIME RESPONSE CURVE CHART
+        // ==========================================
+        function drawResponseChart() {
+            const canvas = document.getElementById('chartCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            ctx.save();
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+
+            const axisMode = document.getElementById('chart-axis-select').value;
+            const padL = 34, padR = 14, padT = 16, padB = 26;
+            const plotW = w - padL - padR;
+            const plotH = h - padT - padB;
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const gy = padT + (plotH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padL, gy);
+                ctx.lineTo(w - padR, gy);
+                ctx.stroke();
+            }
+
+            // Plot curve
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            const maxVal = axisMode === 'temp' ? 50 : 100;
+            for (let xVal = 0; xVal <= maxVal; xVal += 1) {
+                const l = axisMode === 'light' ? xVal : state.light;
+                const c = axisMode === 'co2' ? xVal : state.co2;
+                const t = axisMode === 'temp' ? xVal : state.temp;
+                const res = computePhotosynthesisRate(l, c, t, state.lightColor);
+
+                const px = padL + (xVal / maxVal) * plotW;
+                const py = padT + plotH - (res.bpm / 90) * plotH;
+                if (xVal === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // Plot Current Operating Dot
+            const curXVal = axisMode === 'light' ? state.light : (axisMode === 'co2' ? state.co2 : state.temp);
+            const dotX = padL + (curXVal / maxVal) * plotW;
+            const dotY = padT + plotH - (state.bubblesPerMin / 90) * plotH;
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.shadowColor = '#fbbf24';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Axis Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.fillText('O₂/m', 4, padT + 6);
+            ctx.fillText('0', padL - 10, padT + plotH);
+
+            const xLabel = axisMode === 'light' ? 'Lux (%)' : (axisMode === 'co2' ? 'CO₂ (%)' : 'Temp (°C)');
+            ctx.fillText(xLabel, w - padR - 48, h - 6);
+
+            ctx.restore();
+        }
+
+        // ==========================================
+        // 5. DATA LOGGER & STOPWATCH & SPLINT TEST
+        // ==========================================
+        let logCounter = 0;
+
+        function recordExperimentRow() {
+            logCounter++;
+            const tbody = document.getElementById('data-log-body');
+            const colInfo = colorEfficiency[state.lightColor];
+            const colorName = currentLang === 'vi' ? colInfo.nameVi : colInfo.nameEn;
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-emerald-500/5 transition';
+            tr.innerHTML = `
+                <td class="py-2.5 px-3 font-bold text-slate-400">#${logCounter}</td>
+                <td class="py-2.5 px-3">${state.light * 10} Lux (${state.light}%)</td>
+                <td class="py-2.5 px-3">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold" style="background:${colInfo.beamHex}; color:${colInfo.hex}">
+                        ${colorName}
+                    </span>
+                </td>
+                <td class="py-2.5 px-3">${(state.co2 * 0.002).toFixed(2)}%</td>
+                <td class="py-2.5 px-3 ${state.temp > 40 ? 'text-rose-400 font-bold' : ''}">${state.temp} °C</td>
+                <td class="py-2.5 px-3 font-bold text-emerald-400 text-sm">${state.bubblesPerMin}</td>
+                <td class="py-2.5 px-3 text-slate-500 dark:text-slate-300 font-sans text-xs">${state.limitingFactorKey}</td>
+            `;
+            tbody.prepend(tr);
+        }
+
+        function clearTable() {
+            document.getElementById('data-log-body').innerHTML = '';
+            logCounter = 0;
+        }
+
+        function resetStopwatch() {
+            state.elapsedSeconds = 0;
+            state.totalBubblesCounted = 0;
+            state.collectedO2mL = 0;
+            document.getElementById('stopwatch-time').textContent = '00:00';
+            document.getElementById('total-bubbles-counted').textContent = '0';
+            document.getElementById('vol-o2').textContent = '0.00';
+            document.getElementById('o2-bar-fill').style.width = '0%';
+        }
+
+        setInterval(() => {
+            if (activeTab === 'sim') {
+                state.elapsedSeconds++;
+                const mins = String(Math.floor(state.elapsedSeconds / 60)).padStart(2, '0');
+                const secs = String(state.elapsedSeconds % 60).padStart(2, '0');
+                document.getElementById('stopwatch-time').textContent = `${mins}:${secs}`;
+            }
+        }, 1000);
+
+        function triggerSplintTest() {
+            state.splintFlareTimer = 150;
+            const modal = document.getElementById('splint-modal');
+            const body = document.getElementById('splint-modal-body');
+            const hasO2 = state.collectedO2mL >= 0.25 || state.bubblesPerMin >= 20;
+
+            if (currentLang === 'vi') {
+                body.innerHTML = hasO2
+                    ? `Khi đưa que đóm còn tàn đỏ vào miệng ống nghiệm thu khí, <strong>que đóm bùng cháy sáng rực trở lại!</strong><br><br>Hiện tượng này chứng minh chất khí do cành rong đuôi chó giải phóng trong quá trình quang hợp chính là <strong>khí Oxy (O₂)</strong>.`
+                    : `Hiện tại lượng khí thu được trong ống nghiệm quá ít (hoặc tốc độ quang hợp bằng 0). Tàn đóm đỏ không bùng cháy. Hãy tăng cường độ ánh sáng và nồng độ CO₂ rồi thử lại!`;
+            } else {
+                body.innerHTML = hasO2
+                    ? `When the glowing wood splint is inserted into the gas collection tube, <strong>it relights into a bright flame!</strong><br><br>This confirms that the gas bubbles emitted by the aquatic plant during photosynthesis are pure <strong>Oxygen (O₂)</strong>.`
+                    : `Insufficient gas collected due to very low photosynthesis rate. The glowing splint does not relight. Increase Light and CO₂ levels first!`;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeSplintModal() {
+            document.getElementById('splint-modal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 6. STARCH TEST INTERACTIVE MINI-LAB (IODINE TEST)
+        // ==========================================
+        const starchDescriptions = {
+            vi: {
+                1: {
+                    title: 'Bước 1: Bịt băng giấy đen & Chiếu sáng',
+                    obs: 'Phần hai đầu lá nhận ánh sáng bình thường nên tổng hợp được Tinh bột. Phần giữa bị băng giấy đen che kín không nhận được ánh sáng nên không thể quang hợp.',
+                    btn: 'Chuyển sang Bước 2: Đun sôi lá trong nước'
+                },
+                2: {
+                    title: 'Bước 2: Đun sôi lá trong nước (100°C)',
+                    obs: 'Nước sôi làm chết tế bào, phá vỡ tính thấm của màng sinh chất và làm bất hoạt các enzyme, giúp cồn và thuốc thử Iốt dễ dàng thấm vào mô lá ở các bước sau.',
+                    btn: 'Chuyển sang Bước 3: Tẩy diệp lục bằng Cồn 90°'
+                },
+                3: {
+                    title: 'Bước 3: Đun cách thủy trong Cồn 90° (Tẩy sắc tố)',
+                    obs: 'Sắc tố diệp lục (Chlorophyll) không tan trong nước nhưng tan rất mạnh trong cồn nóng. Dung dịch cồn chuyển sang màu xanh lục đậm, còn phiến lá trở nên trắng nhạt.',
+                    btn: 'Chuyển sang Bước 4: Nhỏ dung dịch Iốt (Lugol)'
+                },
+                4: {
+                    title: 'Bước 4: Kết quả thử Tinh bột bằng dung dịch Iốt (I₂)',
+                    obs: 'KẾT LUẬN: Hai đầu lá (được chiếu sáng) chuyển sang màu XANH TÍM ĐẶC TRƯNG do tinh bột tác dụng với Iốt. Phần giữa lá (bị bịt băng đen) giữ màu vàng nâu của Iốt vì không có tinh bột!',
+                    btn: 'Làm lại thí nghiệm từ Bước 1'
+                }
+            },
+            en: {
+                1: {
+                    title: 'Step 1: Mask Leaf with Black Tape & Illuminate',
+                    obs: 'Uncovered leaf zones absorb photons and synthesize Starch via photosynthesis. The center strip masked with black tape receives no light.',
+                    btn: 'Next Step 2: Boil Leaf in Water (100°C)'
+                },
+                2: {
+                    title: 'Step 2: Boil Leaf in Water (100°C)',
+                    obs: 'Boiling water kills cytoplasmic membranes and denatures enzymes, making the leaf permeable to ethanol and iodine solution.',
+                    btn: 'Next Step 3: Boil in Ethanol Water-Bath'
+                },
+                3: {
+                    title: 'Step 3: Decolorize Leaf in Hot Ethanol (90°)',
+                    obs: 'Chlorophyll dissolves out of the leaf into the hot alcohol bath (turning the alcohol green) and leaving the leaf pale yellowish-white.',
+                    btn: 'Next Step 4: Add Iodine Drops'
+                },
+                4: {
+                    title: 'Step 4: Iodine Starch Test Result (Blue-Black)',
+                    obs: 'CONCLUSION: Uncovered parts turn DARK BLUE-VIOLET (starch + iodine complex), while the shaded center strip remains pale yellow-brown! Light is essential for photosynthesis.',
+                    btn: 'Restart Starch Experiment'
+                }
+            }
+        };
+
+        function setStarchStep(stepNum) {
+            state.starchStep = stepNum;
+            state.starchAnimProgress = 0;
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                if (i === stepNum) {
+                    btn.className = 'w-full text-left p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 transition flex items-start gap-3';
+                } else {
+                    btn.className = 'w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 transition flex items-start gap-3';
+                }
+            }
+
+            const info = starchDescriptions[currentLang][stepNum];
+            document.getElementById('starch-step-badge').textContent = currentLang === 'vi' ? `BƯỚC ${stepNum} / 4` : `STEP ${stepNum} / 4`;
+            document.getElementById('starch-stage-title').textContent = info.title;
+            document.getElementById('starch-observation').textContent = info.obs;
+            document.getElementById('starch-next-label').textContent = info.btn;
+        }
+
+        function advanceStarchStep() {
+            const next = state.starchStep < 4 ? state.starchStep + 1 : 1;
+            setStarchStep(next);
+        }
+
+        function drawLeafShape(ctx, cx, cy, scale, baseFill, centerFill, showTape) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(scale, scale);
+
+            // Base Leaf Path
+            ctx.beginPath();
+            ctx.moveTo(-110, 0);
+            ctx.bezierCurveTo(-60, -68, 50, -68, 115, 0);
+            ctx.bezierCurveTo(50, 68, -60, 68, -110, 0);
+            ctx.closePath();
+            ctx.fillStyle = baseFill;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.5)';
+            ctx.stroke();
+
+            // Center Band (if different color, e.g., Step 4 Iodine result)
+            if (centerFill) {
+                ctx.save();
+                ctx.clip();
+                ctx.fillStyle = centerFill;
+                ctx.fillRect(-32, -75, 64, 150);
+                ctx.restore();
+            }
+
+            // Leaf Veins
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-125, 0);
+            ctx.lineTo(110, 0);
+            [-60, -20, 20, 60].forEach(vx => {
+                ctx.moveTo(vx, 0);
+                ctx.lineTo(vx + 22, -32);
+                ctx.moveTo(vx, 0);
+                ctx.lineTo(vx + 22, 32);
+            });
+            ctx.stroke();
+
+            // Black Masking Tape Strip (Step 1)
+            if (showTape) {
+                ctx.fillStyle = '#0f172a';
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.fillRect(-32, -62, 64, 124);
+                ctx.strokeRect(-32, -62, 64, 124);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(currentLang === 'vi' ? 'BĂNG ĐEN' : 'BLACK TAPE', 0, 4);
+            }
+
+            ctx.restore();
+        }
+
+        function renderStarchCanvas(timestamp) {
+            if (activeTab === 'starch') {
+                const canvas = document.getElementById('starchCanvas');
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width / window.devicePixelRatio;
+                const h = canvas.height / window.devicePixelRatio;
+                ctx.save();
+                ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+                ctx.clearRect(0, 0, w, h);
+
+                state.starchAnimProgress = Math.min(1, state.starchAnimProgress + 0.012);
+                const p = state.starchAnimProgress;
+
+                // Stage Background
+                const bg = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, w * 0.7);
+                bg.addColorStop(0, '#1e293b');
+                bg.addColorStop(1, '#090d16');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+
+                if (state.starchStep === 1) {
+                    // Sunlight rays hitting leaf with black tape
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(250, 204, 21, 0.16)';
+                    ctx.beginPath();
+                    ctx.arc(80, 60, 42 + Math.sin(timestamp * 0.005) * 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#facc15';
+                    ctx.beginPath();
+                    ctx.arc(80, 60, 26, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
+                    drawLeafShape(ctx, w / 2, h / 2 + 15, 1.25, '#10b981', null, true);
+                } else if (state.starchStep === 2) {
+                    // Boiling water beaker
+                    const bx = w / 2 - 110, by = h / 2 - 70, bw = 220, bh = 155;
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+                    ctx.fillRect(bx, by + 25, bw, bh - 25);
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(bx, by, bw, bh);
+
+                    // Flame under beaker
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.arc(w / 2, by + bh + 18, 16 + Math.sin(timestamp * 0.02) * 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    drawLeafShape(ctx, w / 2, by + 95, 0.75, '#059669', null, false);
+
+                    // Steam & Boiling bubbles
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    for (let i = 0; i < 8; i++) {
+                        const bxPos = bx + 30 + ((i * 23) % (bw - 60));
+                        const byPos = by + bh - 10 - (((timestamp * 0.08) + i * 19) % (bh - 40));
+                        ctx.beginPath();
+                        ctx.arc(bxPos, byPos, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (state.starchStep === 3) {
+                    // Water bath + Ethanol tube turning green, leaf turning pale yellow-white
+                    const bx = w / 2 - 110, by = h / 2 - 75, bw = 220, bh = 165;
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+                    ctx.fillRect(bx, by + 30, bw, bh - 30);
+                    ctx.strokeStyle = '#94a3b8';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(bx, by, bw, bh);
+
+                    // Inner Alcohol Tube turning emerald green as chlorophyll dissolves
+                    const greenAlpha = 0.15 + p * 0.65;
+                    ctx.fillStyle = `rgba(16, 185, 129, ${greenAlpha})`;
+                    ctx.beginPath();
+                    ctx.roundRect(w / 2 - 65, by + 10, 130, bh - 25, [0, 0, 24, 24]);
+                    ctx.fill();
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Leaf transitioning from green to pale cream
+                    const leafFill = p < 0.5 ? '#34d399' : '#fef3c7';
+                    drawLeafShape(ctx, w / 2, by + 90, 0.55, leafFill, null, false);
+
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = 'bold 12px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(currentLang === 'vi' ? 'Cồn 90° hòa tan Diệp lục (Xanh lục)' : '90% Ethanol dissolves Chlorophyll', w / 2, by - 10);
+                } else if (state.starchStep === 4) {
+                    // Petri dish + Iodine dropper + Blue-violet reaction on outer parts
+                    ctx.fillStyle = 'rgba(226, 232, 240, 0.12)';
+                    ctx.strokeStyle = '#64748b';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.ellipse(w / 2, h / 2 + 20, 175, 85, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Color transition after Iodine drops hit
+                    const outerStarchColor = p > 0.35 ? '#1e1b4b' : '#fef3c7'; // Dark blue-violet
+                    const centerNoStarchColor = p > 0.35 ? '#d97706' : '#fef3c7'; // Pale amber/yellow-brown of iodine
+                    drawLeafShape(ctx, w / 2, h / 2 + 20, 1.15, outerStarchColor, centerNoStarchColor, false);
+
+                    // Dropper pipette above
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(w / 2 - 8, 18, 16, 38);
+                    if (p < 0.4) {
+                        ctx.beginPath();
+                        ctx.arc(w / 2, 60 + p * 140, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Annotations on Step 4
+                    if (p > 0.4) {
+                        ctx.fillStyle = '#a5b4fc';
+                        ctx.font = 'bold 12px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(currentLang === 'vi' ? 'Có ánh sáng → Có Tinh bột (Xanh tím)' : 'Exposed → Starch present (Blue-Black)', w / 2 - 115, h / 2 - 55);
+                        ctx.fillStyle = '#fcd34d';
+                        ctx.fillText(currentLang === 'vi' ? 'Bị che tối → Không có Tinh bột (Vàng nâu)' : 'Shaded → No Starch (Yellow-Brown)', w / 2 + 105, h / 2 - 55);
+                    }
+                }
+
+                ctx.restore();
+            }
+            requestAnimationFrame(renderStarchCanvas);
+        }
+
+        // ==========================================
+        // 7. TAB NAVIGATION, THEME & BILINGUAL SWITCH
+        // ==========================================
+        function switchTab(tab) {
+            activeTab = tab;
+            ['sim', 'starch', 'cell'].forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    view.classList.remove('hidden');
+                    btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-emerald-600 text-white shadow';
+                } else {
+                    view.classList.add('hidden');
+                    btn.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+                }
+            });
+            setTimeout(resizeCanvases, 30);
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            const dict = i18n[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.textContent = dict[key];
+            });
+            updateSimulationModel();
+            setStarchStep(state.starchStep);
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            const icon = document.getElementById('theme-icon');
+            icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 8. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            resizeCanvases();
+            updateSimulationModel();
+            recordExperimentRow(); // Record initial baseline run
+            setStarchStep(1);
+            requestAnimationFrame(renderAquarium);
+            requestAnimationFrame(renderStarchCanvas);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title description">
+  <title id="title">Plant structure</title>
+  <desc id="description">A simple illustration of a flowering plant with leaves, stem, flower, and roots.</desc>
+  <rect width="640" height="480" rx="24" fill="#effdf4"/>
+  <path d="M70 350h500" stroke="#9a6b45" stroke-width="8" stroke-linecap="round"/>
+  <path d="M320 350V150" stroke="#25834a" stroke-width="14" stroke-linecap="round"/>
+  <path d="M318 245c-75-84-142-41-123 10 18 47 76 48 123-10Z" fill="#68c779" stroke="#25834a" stroke-width="6"/>
+  <path d="M322 205c64-83 132-45 116 6-16 51-72 53-116-6Z" fill="#83d98b" stroke="#25834a" stroke-width="6"/>
+  <path d="M320 350c-10 42-23 59-46 83m48-83c9 42 21 59 42 83m-43-68-61 58m63-47 60 49" fill="none" stroke="#a56c43" stroke-width="8" stroke-linecap="round"/>
+  <path d="M320 150c-35-32-37-72 0-91 37 19 35 59 0 91Z" fill="#f3c84b" stroke="#db8e26" stroke-width="6"/>
+  <circle cx="320" cy="142" r="15" fill="#9d5a28"/>
+  <path d="M320 245v105" stroke="#3b9a54" stroke-width="4" stroke-linecap="round"/>
+</svg>

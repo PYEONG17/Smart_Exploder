@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "type": "template",
+  "template": "image-quiz",
+  "titleVi": "Nhận biết bộ phận của cây",
+  "titleEn": "Identify a plant part",
+  "imageUrl": "/virtual-lab/examples/plant-structure.svg",
+  "question": {
+    "vi": "Bộ phận nào thường hấp thụ nước và muối khoáng từ đất?",
+    "en": "Which part usually absorbs water and minerals from the soil?"
+  },
+  "options": [
+    { "id": "leaf", "vi": "Lá", "en": "Leaf" },
+    { "id": "root", "vi": "Rễ", "en": "Root" },
+    { "id": "flower", "vi": "Hoa", "en": "Flower" }
+  ],
+  "correctIndex": 1,
+  "explanation": {
+    "vi": "Rễ giúp cây hút nước và muối khoáng từ đất.",
+    "en": "Roots absorb water and minerals from the soil."
+  }
+}

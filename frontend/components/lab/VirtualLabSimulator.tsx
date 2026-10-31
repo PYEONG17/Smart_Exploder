@@ -1387,7 +1387,7 @@ export function VirtualLabSimulator({
     (model) => model.experimentId === currentExp.id,
   );
   const canManageLabModels =
-    user?.role === "TEACHER" || user?.role === "ADMIN";
+    user?.role === "TEACHER";
 
   useEffect(() => {
     let active = true;
@@ -2960,24 +2960,24 @@ export function VirtualLabSimulator({
             </p>
           </div>
 
-          <section className="rounded-3xl border border-sky-200/70 bg-sky-50/70 p-4 shadow-xs dark:border-sky-900/60 dark:bg-sky-950/20">
-            <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
+          <section className="rounded-3xl border border-sky-200/70 bg-sky-50/70 p-5 shadow-xs dark:border-sky-900/60 dark:bg-sky-950/20">
+            <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
               {labDisplayMode === "en"
                 ? currentExp.titleEn
                 : currentExp.title}
             </h2>
             {labDisplayMode === "both" ? (
-              <p className="mt-1 text-xs font-semibold text-sky-800 dark:text-sky-200">
+              <p className="mt-1 text-sm font-semibold text-sky-800 dark:text-sky-200">
                 {currentExp.titleEn}
               </p>
             ) : null}
-            <p className="mt-2 text-xs leading-relaxed text-neutral-700 dark:text-neutral-300">
+            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300">
               {labDisplayMode === "en"
                 ? currentExp.summaryEn
                 : currentExp.summary}
             </p>
             {labDisplayMode === "both" ? (
-              <p className="mt-1 text-xs leading-relaxed text-sky-800 dark:text-sky-200">
+              <p className="mt-1 text-sm sm:text-[15px] leading-relaxed text-sky-800 dark:text-sky-200">
                 {currentExp.summaryEn}
               </p>
             ) : null}
@@ -3057,17 +3057,17 @@ export function VirtualLabSimulator({
             </section>
           )}
 
-          <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
-              <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+          <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-neutral-100 dark:border-neutral-800">
+              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h4 className="text-base sm:text-lg font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
                 {labDisplayMode === "en"
                   ? "Procedure / Lab steps"
                   : "Các bước tiến hành (Chuẩn KNTT)"}
               </h4>
             </div>
 
-            <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
+            <p className="text-sm sm:text-base text-blue-600 dark:text-blue-400 font-semibold leading-relaxed">
               <LabTranslatableText
                 key={`${currentExp.id}-textbook-reference`}
                 text={currentExp.textbookRef}
@@ -3075,24 +3075,27 @@ export function VirtualLabSimulator({
                 translation={labTranslations["textbook-reference"]}
               />
             </p>
-            <p className="text-[10px] text-amber-700 dark:text-amber-300">
+            <p className="text-xs sm:text-[13px] text-amber-700 dark:text-amber-300 leading-normal">
               {labDisplayMode === "en"
                 ? "The original is the reference. AI translation is for reading support; confirm safety instructions with your teacher."
                 : "Bản gốc là nội dung tham chiếu. Bản dịch AI chỉ hỗ trợ đọc hiểu; hãy xác nhận hướng dẫn an toàn với giáo viên."}
             </p>
 
-            <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-300">
+            <ul className="space-y-4 text-[15px] sm:text-base text-neutral-800 dark:text-neutral-100 leading-relaxed font-normal">
               {currentExp.steps.map((step, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                <li key={idx} className="flex items-start gap-3.5">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/80 text-blue-600 dark:text-blue-300 text-xs sm:text-sm font-bold mt-0.5 shadow-2xs">
                     {idx + 1}
                   </span>
-                  <LabTranslatableText
-                    key={`${currentExp.id}-step-${idx}`}
-                    text={step}
-                    displayMode={labDisplayMode}
-                    translation={labTranslations[`step-${idx}`]}
-                  />
+                  <div className="flex-1">
+                    <LabTranslatableText
+                      key={`${currentExp.id}-step-${idx}`}
+                      text={step}
+                      displayMode={labDisplayMode}
+                      translation={labTranslations[`step-${idx}`]}
+                      className="leading-relaxed text-[15px] sm:text-base"
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -8960,21 +8963,22 @@ export function VirtualLabSimulator({
           </div>
 
           {/* Equipment */}
-          <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 p-5 shadow-xs space-y-3">
-            <div className="flex items-center gap-2 border-b border-neutral-100 pb-2 dark:border-neutral-800">
-              <Box className="h-4 w-4 text-indigo-500" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+          <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 p-5 shadow-xs space-y-3.5">
+            <div className="flex items-center gap-2.5 border-b border-neutral-100 pb-2.5 dark:border-neutral-800">
+              <Box className="h-5 w-5 text-indigo-500" />
+              <h4 className="text-sm sm:text-base font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
                 {labDisplayMode === "en" ? "Equipment" : "Dụng cụ thí nghiệm"}
               </h4>
             </div>
-            <ul className="space-y-2 text-xs text-neutral-600 dark:text-neutral-300">
+            <ul className="space-y-2.5 text-sm sm:text-[15px] text-neutral-700 dark:text-neutral-200 leading-relaxed">
               {currentExp.apparatus.map((item, idx) => (
-                <li key={`${currentExp.id}-apparatus-${idx}`} className="flex items-start gap-2">
-                  <span className="text-indigo-500">•</span>
+                <li key={`${currentExp.id}-apparatus-${idx}`} className="flex items-start gap-2.5">
+                  <span className="text-indigo-500 font-bold">•</span>
                   <LabTranslatableText
                     text={item}
                     displayMode={labDisplayMode}
                     translation={labTranslations[`apparatus-${idx}`]}
+                    className="leading-relaxed"
                   />
                 </li>
               ))}

@@ -158,7 +158,7 @@ export const createLesson = async (req: Request, res: Response) => {
     select: { id: true, createdById: true },
   });
   if (!course) throw new AppError("Course not found", 404);
-  if (req.user.role !== "ADMIN" && course.createdById !== req.user.id) {
+  if (course.createdById !== req.user.id) {
     throw new AppError("You can only add lessons to your own courses", 403);
   }
 
@@ -198,7 +198,7 @@ async function getManagedLessonForRequest(req: Request) {
     },
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
-  if (req.user.role !== "ADMIN" && lesson.course.createdById !== req.user.id) {
+  if (lesson.course.createdById !== req.user.id) {
     throw new AppError("You can only manage lessons in your own courses", 403);
   }
   return lesson;

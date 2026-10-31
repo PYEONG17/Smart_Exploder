@@ -13,7 +13,7 @@ type OwnedLesson = { course: { createdById: string | null } };
 function assertCanManage(req: Request, lesson: OwnedLesson | null) {
   if (!req.user) throw new AppError("Authentication required", 401);
   if (!lesson) throw new AppError("Content not found", 404);
-  if (req.user.role !== "ADMIN" && lesson.course.createdById !== req.user.id) {
+  if (lesson.course.createdById !== req.user.id) {
     throw new AppError("You can only manage content in your own courses", 403);
   }
 }

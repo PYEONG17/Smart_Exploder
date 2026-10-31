@@ -9,7 +9,7 @@ router.get("/", listLabModels);
 router.post(
   "/:experimentId",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   lab3DModelUpload,
   saveLabModel,
 );

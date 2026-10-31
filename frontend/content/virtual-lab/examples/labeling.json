@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "type": "template",
+  "template": "labeling",
+  "titleVi": "Các bộ phận của cây",
+  "titleEn": "Parts of a plant",
+  "instructions": {
+    "vi": "Chọn tên bộ phận tương ứng với từng vị trí trên hình.",
+    "en": "Choose the plant part for each marker."
+  },
+  "imageUrl": "/virtual-lab/examples/plant-structure.svg",
+  "labels": [
+    { "id": "leaf", "vi": "Lá", "en": "Leaf", "x": 50, "y": 22 },
+    { "id": "flower", "vi": "Hoa", "en": "Flower", "x": 50, "y": 10 },
+    { "id": "stem", "vi": "Thân", "en": "Stem", "x": 50, "y": 54 },
+    { "id": "root", "vi": "Rễ", "en": "Root", "x": 50, "y": 86 }
+  ]
+}

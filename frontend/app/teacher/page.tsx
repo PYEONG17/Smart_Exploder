@@ -24,7 +24,7 @@ import type { Course } from "@/types";
 import { useLang } from "@/contexts/LanguageContext";
 import { motion } from "motion/react";
 
-const teacherRoles = ["TEACHER", "ADMIN"] as const;
+const teacherRoles = ["TEACHER"] as const;
 
 export default function TeacherDashboardPage() {
   const { isLoading: isAuthLoading } = useAuthGuard({
@@ -49,7 +49,7 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     if (isAuthLoading) return;
-    if (!token || (user?.role !== "TEACHER" && user?.role !== "ADMIN")) {
+    if (!token || user?.role !== "TEACHER") {
       return;
     }
     fetchMyCourses(token)
@@ -98,7 +98,7 @@ export default function TeacherDashboardPage() {
 
   if (
     isAuthLoading ||
-    (isLoading && !!token && (user?.role === "TEACHER" || user?.role === "ADMIN"))
+    (isLoading && !!token && user?.role === "TEACHER")
   ) {
     return (
       <div className="min-h-screen bg-background pt-24 text-center text-muted-foreground">
@@ -107,7 +107,7 @@ export default function TeacherDashboardPage() {
     );
   }
 
-  if (user?.role !== "TEACHER" && user?.role !== "ADMIN") {
+  if (user?.role !== "TEACHER") {
     return (
       <div className="min-h-screen bg-background pt-24 text-center text-muted-foreground">
         Tài khoản này không có quyền giáo viên.

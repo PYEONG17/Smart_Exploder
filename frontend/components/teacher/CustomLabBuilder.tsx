@@ -4,143 +4,22 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, FileUp, Plus, Sparkles, Trash2, Volume2 } from "lucide-react";
 import Link from "next/link";
-import { createCustomLab, translateLabText } from "@/lib/api";
+import {
+  createCustomLab,
+  fetchCustomLab,
+  translateLabText,
+  updateCustomLab,
+} from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import type {
   BilingualText,
   CustomLabActivity,
   CustomLabInput,
-  VirtualLabOutput,
-  VirtualLabParameter,
+  CustomLabRecord,
 } from "@/types/custom-lab";
-import {
-  LAB_FORMULA_RESERVED_IDENTIFIERS,
-  validateLabFormula,
-} from "@/lib/lab-formula";
 
 const blankPair = (): BilingualText => ({ vi: "", en: "" });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-function isVirtualLabParameter(value: unknown): value is VirtualLabParameter {
-  return isRecord(value)
-    && typeof value.id === "string"
-    && /^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(value.id)
-    && typeof value.labelVi === "string"
-    && value.labelVi.trim().length > 0
-    && typeof value.labelEn === "string"
-    && value.labelEn.trim().length > 0
-    && typeof value.unitVi === "string"
-    && typeof value.unitEn === "string"
-    && typeof value.min === "number"
-    && Number.isFinite(value.min)
-    && typeof value.max === "number"
-    && Number.isFinite(value.max)
-    && typeof value.step === "number"
-    && Number.isFinite(value.step)
-    && typeof value.initialValue === "number"
-    && Number.isFinite(value.initialValue);
-}
-
-function isVirtualLabOutput(value: unknown): value is VirtualLabOutput {
-  return isRecord(value)
-    && typeof value.id === "string"
-    && /^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(value.id)
-    && typeof value.labelVi === "string"
-    && value.labelVi.trim().length > 0
-    && typeof value.labelEn === "string"
-    && value.labelEn.trim().length > 0
-    && typeof value.unitVi === "string"
-    && typeof value.unitEn === "string"
-    && typeof value.formula === "string"
-    && value.formula.trim().length > 0
-    && value.formula.length <= 200;
-}
-
-function parseEngineActivity(value: string): CustomLabActivity {
-  const parsed: unknown = JSON.parse(value);
-  if (!isRecord(parsed)) throw new Error("Cấu hình phải là một đối tượng JSON.");
-  const base = {
-    titleVi: typeof parsed.titleVi === "string" ? parsed.titleVi : "",
-    titleEn: typeof parsed.titleEn === "string" ? parsed.titleEn : "",
-    descriptionVi: typeof parsed.descriptionVi === "string" ? parsed.descriptionVi : "",
-    descriptionEn: typeof parsed.descriptionEn === "string" ? parsed.descriptionEn : "",
-  };
-  if (parsed.type === "simulation") {
-    if (!Array.isArray(parsed.parameters) || !parsed.parameters.every(isVirtualLabParameter)) {
-      throw new Error("Danh sách parameters chưa đúng cấu trúc.");
-    }
-    if (parsed.parameters.length < 1 || parsed.parameters.length > 12) {
-      throw new Error("Cấu hình cần từ 1 đến 12 biến điều khiển.");
-    }
-    if (!Array.isArray(parsed.outputs) || !parsed.outputs.every(isVirtualLabOutput)) {
-      throw new Error("Danh sách outputs chưa đúng cấu trúc.");
-    }
-    if (parsed.outputs.length < 1 || parsed.outputs.length > 12) {
-      throw new Error("Cấu hình cần từ 1 đến 12 kết quả.");
-    }
-    const parameters = parsed.parameters;
-    const outputs = parsed.outputs;
-    const parameterIds = parameters.map((item) => item.id);
-    if (parameterIds.some((id) => LAB_FORMULA_RESERVED_IDENTIFIERS.has(id))) {
-      throw new Error("Một id biến trùng với tên hàm hoặc hằng số dành riêng.");
-    }
-    if (new Set(parameterIds).size !== parameterIds.length) {
-      throw new Error("Mỗi biến điều khiển phải có id riêng.");
-    }
-    if (parameters.some((item) =>
-      item.max <= item.min || item.step <= 0 || item.initialValue < item.min || item.initialValue > item.max
-    )) {
-      throw new Error("Kiểm tra min, max, step và initialValue của các biến.");
-    }
-    if (new Set(outputs.map((item) => item.id)).size !== outputs.length) {
-      throw new Error("Mỗi kết quả phải có id riêng.");
-    }
-    if (outputs.some((item) => parameterIds.includes(item.id))) {
-      throw new Error("id kết quả không được trùng với id biến điều khiển.");
-    }
-    if (outputs.some((item) => LAB_FORMULA_RESERVED_IDENTIFIERS.has(item.id))) {
-      throw new Error("Một id kết quả trùng với tên hàm hoặc hằng số dành riêng.");
-    }
-    for (const output of outputs) {
-      const formulaError = validateLabFormula(output.formula, parameterIds);
-      if (formulaError) throw new Error(`${output.id}: ${formulaError}`);
-    }
-    return { ...base, type: "simulation", parameters, outputs };
-  }
-  if (
-    parsed.type === "external"
-    && (parsed.provider === "phet" || parsed.provider === "geogebra")
-    && typeof parsed.url === "string"
-  ) {
-    if (!parsed.url.trim()) {
-      throw new Error(parsed.provider === "geogebra"
-        ? "Hãy dán URL nhúng (src) từ mô phỏng GeoGebra."
-        : "Hãy nhập URL mô phỏng PhET.");
-    }
-    let url: URL;
-    try {
-      url = new URL(parsed.url);
-    } catch {
-      throw new Error("Đường dẫn mô phỏng bên ngoài không hợp lệ.");
-    }
-    const allowedHosts = ["phet.colorado.edu", "phet.colorado.org", "geogebra.org", "www.geogebra.org"];
-    const isPhetHost = ["phet.colorado.edu", "phet.colorado.org"].includes(url.hostname.toLowerCase());
-    const isGeoGebraHost = ["geogebra.org", "www.geogebra.org"].includes(url.hostname.toLowerCase());
-    if (
-      url.protocol !== "https:"
-      || !allowedHosts.includes(url.hostname.toLowerCase())
-      || (parsed.provider === "phet" && !isPhetHost)
-      || (parsed.provider === "geogebra" && !isGeoGebraHost)
-    ) {
-      throw new Error("Chỉ chấp nhận liên kết HTTPS chính thức từ PhET hoặc GeoGebra.");
-    }
-    return { ...base, type: "external", provider: parsed.provider, url: url.toString() };
-  }
-  throw new Error("type phải là simulation hoặc external.");
-}
 
 function PairFields({
   label,
@@ -614,7 +493,7 @@ const initialForm: CustomLabInput = {
   summaryEn: "",
   safetyNotice: "",
   safetyNoticeEn: "",
-  equipment: [blankPair()],
+  equipment: [],
   steps: [{ ...blankPair(), safety: false }],
   vocabulary: [],
   activities: [],
@@ -628,6 +507,7 @@ function getAttachmentError(file: File): string {
     pdf: 50, docx: 50, pptx: 50, txt: 50,
     mp4: 500, webm: 500, mov: 500, avi: 500,
     glb: 100,
+    html: 10, htm: 10,
   };
   const maxSize = limits[extension];
   if (!maxSize) return "Định dạng tệp chưa được hỗ trợ.";
@@ -637,32 +517,54 @@ function getAttachmentError(file: File): string {
   return "";
 }
 
-export function CustomLabBuilder() {
+export function CustomLabBuilder({ labId }: { labId?: string }) {
   const router = useRouter();
   const { token } = useAuth();
   const { isLoading } = useAuthGuard({
-    allowedRoles: ["TEACHER", "ADMIN"],
+    allowedRoles: ["TEACHER"],
     forbiddenRedirectTo: "/assignments",
   });
   const [form, setForm] = useState<CustomLabInput>(initialForm);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingLab, setIsLoadingLab] = useState(Boolean(labId));
+  const [hasLoadedLab, setHasLoadedLab] = useState(!labId);
   const [error, setError] = useState("");
-  const [engineJson, setEngineJson] = useState(JSON.stringify({
-    type: "simulation",
-    titleVi: "Mô phỏng định luật Ôm",
-    titleEn: "Ohm's law simulation",
-    descriptionVi: "Thay đổi điện áp và điện trở để quan sát cường độ dòng điện.",
-    descriptionEn: "Adjust voltage and resistance to observe electric current.",
-    parameters: [
-      { id: "U", labelVi: "Hiệu điện thế", labelEn: "Voltage", unitVi: "V", unitEn: "V", min: 1, max: 24, step: 1, initialValue: 12 },
-      { id: "R", labelVi: "Điện trở", labelEn: "Resistance", unitVi: "Ω", unitEn: "Ω", min: 1, max: 50, step: 1, initialValue: 10 },
-    ],
-    outputs: [
-      { id: "I", labelVi: "Cường độ dòng điện", labelEn: "Current", unitVi: "A", unitEn: "A", formula: "U / R" },
-    ],
-  }, null, 2));
-  const [engineJsonError, setEngineJsonError] = useState("");
+  useEffect(() => {
+    if (!labId) return;
+    let active = true;
+    fetchCustomLab(labId)
+      .then((lab: CustomLabRecord) => {
+        if (!active) return;
+        setForm({
+          title: lab.title,
+          titleEn: lab.titleEn,
+          subject: lab.subject,
+          grade: lab.grade as CustomLabInput["grade"],
+          summary: lab.summary,
+          summaryEn: lab.summaryEn,
+          safetyNotice: lab.safetyNotice || "",
+          safetyNoticeEn: lab.safetyNoticeEn || "",
+          equipment: lab.equipment ?? [],
+          steps: lab.steps,
+          vocabulary: lab.vocabulary,
+          activities: lab.activities,
+          attachments: lab.attachments ?? [],
+        });
+        setHasLoadedLab(true);
+      })
+      .catch((loadError: unknown) => {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : "Không thể tải bài Lab để chỉnh sửa.");
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingLab(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [labId]);
 
   const setPair = (key: "title" | "summary", value: BilingualText) => {
     setForm((current) => ({
@@ -681,8 +583,16 @@ export function CustomLabBuilder() {
     setIsSaving(true);
     setError("");
     try {
-      const created = await createCustomLab(token, form, selectedFiles);
-      router.push(`/lab/custom/${created.id}`);
+      const input = {
+        ...form,
+        equipment: form.equipment
+          .filter((item) => item.vi.trim() || item.en.trim())
+          .map((item) => ({ vi: item.vi.trim(), en: item.en.trim() })),
+      };
+      const saved = labId
+        ? await updateCustomLab(token, labId, input, selectedFiles)
+        : await createCustomLab(token, input, selectedFiles);
+      router.push(`/lab/custom/${saved.id}`);
     } catch (createError) {
       setError(
         createError instanceof Error
@@ -697,6 +607,19 @@ export function CustomLabBuilder() {
   if (isLoading) {
     return <p className="py-24 text-center text-muted-foreground">Đang kiểm tra quyền truy cập...</p>;
   }
+  if (isLoadingLab) {
+    return <p className="py-24 text-center text-muted-foreground">Đang tải bài Lab...</p>;
+  }
+  if (labId && !hasLoadedLab) {
+    return (
+      <main className="min-h-screen px-4 pt-32 text-center">
+        <p role="alert" className="text-sm text-destructive">{error}</p>
+        <Link href="/lab" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
+          Quay lại phòng Lab
+        </Link>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background px-4 pb-16 pt-24">
@@ -708,9 +631,11 @@ export function CustomLabBuilder() {
         <header className="mb-8">
           <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            Tạo Lab không cần code
+            {labId ? "Chỉnh sửa Lab" : "Tạo Lab không cần code"}
           </p>
-          <h1 className="text-3xl font-black tracking-tight">Lab Builder</h1>
+          <h1 className="text-3xl font-black tracking-tight">
+            {labId ? "Chỉnh sửa Lab" : "Lab Builder"}
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Tạo bài thí nghiệm bằng các mẫu tương tác có sẵn. Nhập nội dung tiếng Việt hoặc tiếng Anh rồi dịch sang ngôn ngữ còn lại khi cần.
           </p>
@@ -763,7 +688,7 @@ export function CustomLabBuilder() {
                   }
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
-                  {["6", "7", "8", "9"].map((grade) => (
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((grade) => (
                     <option key={grade} value={grade}>Lớp {grade}</option>
                   ))}
                 </select>
@@ -787,23 +712,26 @@ export function CustomLabBuilder() {
             <div>
               <h2 className="text-lg font-bold">2. Tệp minh họa và học liệu</h2>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Tải ảnh, PDF, video hoặc mô hình GLB từ thiết bị. Học sinh sẽ xem tệp trong bài Lab.
-                Hỗ trợ JPG/PNG/WebP (15 MB), PDF/DOCX/PPTX/TXT (50 MB), video (500 MB), GLB (100 MB), tối đa 10 tệp.
+                Tải học liệu hoặc file HTML để hiển thị bài Lab tương tác ngay trong trang.
+                HTML được chạy trong iframe sandbox. Hỗ trợ JPG/PNG/WebP (15 MB), PDF/DOCX/PPTX/TXT (50 MB), HTML (10 MB), video (500 MB), GLB (100 MB), tối đa 10 tệp.
+              </p>
+              <p className="text-xs font-medium text-primary">
+                Ảnh đại diện Lab sẽ được tạo tự động khi lưu bài.
               </p>
             </div>
             <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 p-5 text-center hover:bg-muted/40">
               <FileUp className="h-6 w-6 text-primary" />
               <span className="text-sm font-semibold">Chọn tệp từ thiết bị</span>
-              <span className="text-xs text-muted-foreground">Ảnh, PDF, tài liệu, video và mô hình .glb</span>
+              <span className="text-xs text-muted-foreground">Ảnh, PDF, tài liệu, video, mô hình .glb và bài Lab .html</span>
               <input
                 type="file"
                 multiple
-                accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.pptx,.txt,.mp4,.webm,.mov,.avi,.glb"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.pptx,.txt,.mp4,.webm,.mov,.avi,.glb,.html,.htm"
                 className="sr-only"
                 disabled={isSaving}
                 onChange={(event) => {
                   const incoming = Array.from(event.currentTarget.files ?? []);
-                  const remaining = Math.max(0, 10 - selectedFiles.length);
+                  const remaining = Math.max(0, 10 - selectedFiles.length - form.attachments.length);
                   const accepted: File[] = [];
                   let validationMessage = "";
                   for (const file of incoming) {
@@ -824,6 +752,29 @@ export function CustomLabBuilder() {
                 }}
               />
             </label>
+            {form.attachments.length ? (
+              <ul className="space-y-2">
+                {form.attachments.map((attachment, index) => (
+                  <li key={`${attachment.url}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-xs">
+                    <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate font-medium text-primary hover:underline">
+                      {attachment.name}
+                    </a>
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => setForm((current) => ({
+                        ...current,
+                        attachments: current.attachments.filter((_, attachmentIndex) => attachmentIndex !== index),
+                      }))}
+                      className="shrink-0 rounded px-2 py-1 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                      aria-label={`Xóa tệp ${attachment.name}`}
+                    >
+                      Xóa
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {selectedFiles.length ? (
               <ul className="space-y-2">
                 {selectedFiles.map((file, index) => (
@@ -999,78 +950,9 @@ export function CustomLabBuilder() {
           </section>
 
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
-            <div>
-              <h2 className="text-lg font-bold">6. Mô phỏng từ cấu hình JSON</h2>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Khai báo thanh điều chỉnh, biến và công thức. Engine tự tính kết quả; hỗ trợ +, -, *, /, ^, ngoặc và hàm sin, cos, tan, sqrt, abs, log, exp, min, max, round.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Với PhET, dùng URL của trang mô phỏng; với GeoGebra, dán URL nhúng (src) từ mục Chia sẻ.
-              </p>
-            </div>
-            <textarea
-              aria-label="Cấu hình Virtual Lab JSON"
-              value={engineJson}
-              onChange={(event) => {
-                setEngineJson(event.target.value);
-                setEngineJsonError("");
-              }}
-              rows={18}
-              spellCheck={false}
-              className="w-full rounded-xl border border-border bg-background p-3 font-mono text-xs leading-relaxed"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    const activity = parseEngineActivity(engineJson);
-                    setForm((current) => ({ ...current, activities: [...current.activities, activity] }));
-                    setEngineJsonError("");
-                  } catch (parseError) {
-                    setEngineJsonError(parseError instanceof Error ? parseError.message : "Cấu hình không hợp lệ.");
-                  }
-                }}
-                className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-              >
-                Thêm cấu hình vào bài Lab
-              </button>
-              <label className="flex items-center gap-2 text-xs font-semibold">
-                Hoặc nhúng
-                <select
-                  aria-label="Nhúng mô phỏng từ"
-                  defaultValue="phet"
-                  onChange={(event) => {
-                    const provider = event.target.value as "phet" | "geogebra";
-                    const url = provider === "phet"
-                      ? "https://phet.colorado.edu/sims/html/ohms-law/latest/ohms-law_all.html?locale=en"
-                      : "";
-                    setEngineJson(JSON.stringify({
-                      type: "external",
-                      provider,
-                      titleVi: provider === "phet" ? "Thí nghiệm PhET" : "Thí nghiệm GeoGebra",
-                      titleEn: provider === "phet" ? "PhET simulation" : "GeoGebra simulation",
-                      descriptionVi: "",
-                      descriptionEn: "",
-                      url,
-                    }, null, 2));
-                    setEngineJsonError("");
-                  }}
-                  className="rounded-lg border border-border bg-background px-2 py-1.5"
-                >
-                  <option value="phet">PhET</option>
-                  <option value="geogebra">GeoGebra</option>
-                </select>
-                bằng JSON
-              </label>
-            </div>
-            {engineJsonError ? <p role="alert" className="text-xs text-destructive">{engineJsonError}</p> : null}
-          </section>
-
-          <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold">7. Hoạt động và câu hỏi củng cố</h2>
+                <h2 className="text-lg font-bold">6. Hoạt động và câu hỏi củng cố</h2>
                 <p className="text-xs text-muted-foreground">Chọn khối tương tác có sẵn và nhập nội dung; không cần lập trình.</p>
               </div>
               <select
@@ -1126,7 +1008,7 @@ export function CustomLabBuilder() {
                 ? selectedFiles.length
                   ? "Đang tải tệp và lưu Lab..."
                   : "Đang lưu Lab..."
-                : "Tạo bài Lab"}
+                : labId ? "Lưu thay đổi" : "Tạo bài Lab"}
               {!isSaving ? <ArrowRight className="h-4 w-4" /> : null}
             </button>
           </div>

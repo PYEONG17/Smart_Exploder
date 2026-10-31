@@ -39,7 +39,6 @@ export async function createLessonQuiz(req: Request, res: Response) {
   const data = await learningService.createLessonQuiz(
     String(req.params.lessonId),
     authenticatedUserId(req),
-    authenticatedRole(req),
     input,
   );
   res.status(201).json(success(data, "Lesson quiz created"));
@@ -50,7 +49,6 @@ export async function createLessonVideo(req: Request, res: Response) {
   const data = await learningService.createLessonVideo(
     String(req.params.lessonId),
     authenticatedUserId(req),
-    authenticatedRole(req),
     input,
   );
   res.status(201).json(success(data, "Lesson video created"));
@@ -89,7 +87,6 @@ export async function getInteractiveVideoAnalytics(
   const data = await learningService.getInteractiveVideoAnalytics(
     String(req.params.videoId),
     authenticatedUserId(req),
-    authenticatedRole(req),
   );
   res.json(success(data));
 }

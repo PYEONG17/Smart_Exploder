@@ -31,7 +31,7 @@ export async function authorizeLessonVideoUpload(
     select: { course: { select: { createdById: true } } },
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
-  if (req.user.role !== "ADMIN" && lesson.course.createdById !== req.user.id) {
+  if (lesson.course.createdById !== req.user.id) {
     throw new AppError("You can only upload content to your own courses", 403);
   }
   next();

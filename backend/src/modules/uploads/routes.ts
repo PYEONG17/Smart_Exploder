@@ -16,7 +16,7 @@ import {
 
 const router = Router();
 
-router.use(requireAuth, requireRole("TEACHER", "ADMIN"));
+router.use(requireAuth, requireRole("TEACHER"));
 router.post("/thumbnail", courseThumbnailUpload, uploadCourseThumbnail);
 router.post(
   "/lessons/:lessonId/video",

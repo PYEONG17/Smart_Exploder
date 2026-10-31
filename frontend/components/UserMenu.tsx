@@ -12,7 +12,6 @@ import {
   ChevronDown,
   GraduationCap,
   School,
-  ShieldCheck,
   Settings,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,14 +38,6 @@ function getRoleConfig(role: AuthUser["role"]) {
         icon: School,
         gradient: "from-purple-500 to-violet-600",
         badge: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
-      };
-    case "ADMIN":
-      return {
-        label: "Quản trị viên",
-        labelEn: "Admin",
-        icon: ShieldCheck,
-        gradient: "from-rose-500 to-orange-500",
-        badge: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
       };
     default:
       return {
@@ -156,7 +147,7 @@ export default function UserMenu() {
       icon: User,
       href: "/profile",
     },
-    ...(user.role === "TEACHER" || user.role === "ADMIN"
+    ...(user.role === "TEACHER"
       ? [
           {
             label: locale === "vi" ? "Studio Giáo viên" : "Teacher Studio",

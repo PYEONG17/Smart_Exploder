@@ -178,7 +178,7 @@ export default function QuizHubPage() {
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
 
   // ── Teacher Assignment Creation State ────────────────────────────
-  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
+  const isTeacher = user?.role === "TEACHER";
   const [teacherCourses, setTeacherCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedLessonId, setSelectedLessonId] = useState("");

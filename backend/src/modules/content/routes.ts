@@ -12,7 +12,7 @@ import {
 } from "./controller.js";
 
 const router = Router();
-const teacherOnly = [requireAuth, requireRole("TEACHER", "ADMIN")];
+const teacherOnly = [requireAuth, requireRole("TEACHER")];
 
 router.delete("/videos/:id", ...teacherOnly, deleteVideo);
 router.patch("/videos/:id", ...teacherOnly, updateVideoMetadata);

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "type": "simulation",
+  "template": "solar-system",
+  "domain": "science",
+  "titleVi": "Quỹ đạo hành tinh",
+  "titleEn": "Planetary orbit",
+  "descriptionVi": "Khảo sát mối liên hệ giữa bán kính quỹ đạo và chu kì.",
+  "descriptionEn": "Explore how orbital radius relates to orbital period.",
+  "parameters": [
+    {
+      "id": "radius",
+      "labelVi": "Bán kính quỹ đạo",
+      "labelEn": "Orbital radius",
+      "unitVi": "AU",
+      "unitEn": "AU",
+      "min": 0.4,
+      "max": 5.2,
+      "step": 0.1,
+      "initialValue": 1
+    }
+  ],
+  "outputs": [
+    {
+      "id": "period",
+      "labelVi": "Chu kì quỹ đạo xấp xỉ",
+      "labelEn": "Approximate orbital period",
+      "unitVi": "năm",
+      "unitEn": "years",
+      "formula": "sqrt(radius ^ 3)"
+    }
+  ]
+}

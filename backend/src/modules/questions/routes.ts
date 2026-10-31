@@ -17,7 +17,7 @@ router.post(
 );
 router.patch(
   "/questions/:questionId/answer",
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   answerLessonQuestion,
 );
 

@@ -12,12 +12,12 @@ import {
 
 const router = Router();
 
-router.get("/mine", requireAuth, requireRole("TEACHER", "ADMIN"), getMyCourses);
-router.post("/", requireAuth, requireRole("TEACHER", "ADMIN"), createCourse);
+router.get("/mine", requireAuth, requireRole("TEACHER"), getMyCourses);
+router.post("/", requireAuth, requireRole("TEACHER"), createCourse);
 router.get("/", getAllCourses);
 router.get("/:id", optionalAuth, getCourseById);
-router.put("/:id/lessons/order", requireAuth, requireRole("TEACHER", "ADMIN"), reorderCourseLessons);
-router.patch("/:id", requireAuth, requireRole("TEACHER", "ADMIN"), updateCourse);
-router.delete("/:id", requireAuth, requireRole("TEACHER", "ADMIN"), deleteCourse);
+router.put("/:id/lessons/order", requireAuth, requireRole("TEACHER"), reorderCourseLessons);
+router.patch("/:id", requireAuth, requireRole("TEACHER"), updateCourse);
+router.delete("/:id", requireAuth, requireRole("TEACHER"), deleteCourse);
 
 export default router;

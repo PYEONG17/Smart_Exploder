@@ -19,12 +19,12 @@ const router = Router();
 router.use(requireAuth);
 router.post(
   "/lessons/:lessonId/quizzes",
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   createLessonQuiz,
 );
 router.post(
   "/lessons/:lessonId/videos",
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   createLessonVideo,
 );
 router.post(
@@ -34,12 +34,12 @@ router.post(
 );
 router.post(
   "/videos/:videoId/activities/:activityId/responses",
-  requireRole("STUDENT", "TEACHER", "ADMIN"),
+  requireRole("STUDENT", "TEACHER"),
   submitInteractiveEventResponse,
 );
 router.get(
   "/videos/:videoId/activities/analytics",
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   getInteractiveVideoAnalytics,
 );
 router.get("/quizzes", requireRole("STUDENT"), listAvailableQuizzes);

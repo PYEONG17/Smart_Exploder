@@ -16,7 +16,7 @@ router.get("/filters", getExploreFilters);
 router.post(
   "/seed",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   triggerSeedMaterials,
 );
 router.get("/", listExploreMaterials);
@@ -24,19 +24,19 @@ router.get("/:id", getExploreMaterialById);
 router.post(
   "/",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   createExploreMaterial,
 );
 router.put(
   "/:id",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   updateExploreMaterial,
 );
 router.delete(
   "/:id",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   deleteExploreMaterial,
 );
 

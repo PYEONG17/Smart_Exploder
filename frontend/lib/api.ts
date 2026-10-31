@@ -22,7 +22,7 @@ export async function translateLabText(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: ["Bearer", token].join(" ") } : {}),
     },
     body: JSON.stringify({
       ...input,
@@ -117,6 +117,53 @@ export async function createCustomLab(
     throw new Error([json.message || "Failed to create lab", errors].filter(Boolean).join(": "));
   }
   return json.data as CustomLabRecord;
+}
+
+export async function updateCustomLab(
+  token: string,
+  id: string,
+  input: CustomLabInput,
+  files: File[] = [],
+): Promise<CustomLabRecord> {
+  const headers = new Headers({ Authorization: `Bearer ${token}` });
+  let body: BodyInit;
+  if (files.length) {
+    const formData = new FormData();
+    formData.append("input", JSON.stringify(input));
+    files.forEach((file) => formData.append("files", file));
+    body = formData;
+  } else {
+    headers.set("Content-Type", "application/json");
+    body = JSON.stringify(input);
+  }
+  const res = await fetch(`${API_URL}/labs/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers,
+    body,
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success || !json.data) {
+    const errors = Array.isArray(json.errors)
+      ? json.errors
+          .map((issue: { path?: string; message?: string }) =>
+            [issue.path, issue.message].filter(Boolean).join(": "),
+          )
+          .join("; ")
+      : "";
+    throw new Error([json.message || "Failed to update lab", errors].filter(Boolean).join(": "));
+  }
+  return json.data as CustomLabRecord;
+}
+
+export async function deleteCustomLab(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/labs/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to delete lab");
+  }
 }
 
 export type LessonWithCourse = Lesson & {
@@ -499,8 +546,13 @@ export type LearningAnalyticsSummary = {
   period: "7d" | "30d" | "90d";
   metrics: {
     watchSeconds: number;
+    labStudySeconds: number;
+    totalStudySeconds: number;
     activeDays: number;
     activeSessions: number;
+    videosWatched: number;
+    labsStudied: number;
+    labSessions: number;
     quizAttempts: number;
     averageQuizPercentage: number | null;
     engagementScore: number;
@@ -519,6 +571,27 @@ export type LearningAnalyticsSummary = {
     date: string;
     watchSeconds: number;
     activeSessions: number;
+    labStudySeconds: number;
+    activeLabSessions: number;
+  }[];
+  videos: {
+    id: string;
+    title: string;
+    titleEn: string | null;
+    lessonTitle: string;
+    lessonTitleEn: string | null;
+    watchedSeconds: number;
+    lastWatchedAt: string;
+  }[];
+  labs: {
+    id: string;
+    title: string;
+    titleEn: string;
+    subject: string;
+    grade: string;
+    studiedSeconds: number;
+    sessions: number;
+    lastStudiedAt: string;
   }[];
   topicMastery: { available: boolean; reason: string };
   riskSignals: { available: boolean; reason: string };
@@ -558,7 +631,7 @@ export async function recordVideoWatchHeartbeat(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: ["Bearer", token].join(" "),
       },
       body: JSON.stringify(input),
     },
@@ -566,6 +639,35 @@ export async function recordVideoWatchHeartbeat(
   const json = await res.json();
   if (!res.ok || !json.success) {
     throw new Error(json.message || "Failed to record video watch time");
+  }
+}
+
+export async function recordLabStudyHeartbeat(
+  token: string,
+  labId: string,
+  input: {
+    clientEventId: string;
+    sessionId: string;
+    positionMs: number;
+    occurredAt: string;
+  },
+  keepalive = false,
+): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/analytics/labs/${encodeURIComponent(labId)}/heartbeat`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: ["Bearer", token].join(" "),
+      },
+      body: JSON.stringify(input),
+      keepalive,
+    },
+  );
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to record Lab study time");
   }
 }
 
@@ -1097,7 +1199,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "STUDENT" | "TEACHER" | "ADMIN";
+  role: "STUDENT" | "TEACHER";
   avatar: string | null;
   bio: string | null;
   createdAt: string;

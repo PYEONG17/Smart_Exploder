@@ -44,7 +44,6 @@ function asStringArray(value: unknown): string[] {
 async function getManagedLesson(
   lessonId: string,
   userId: string,
-  role: "STUDENT" | "TEACHER" | "ADMIN",
 ) {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
@@ -54,7 +53,7 @@ async function getManagedLesson(
     },
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
-  if (role !== "ADMIN" && lesson.course.createdById !== userId) {
+  if (lesson.course.createdById !== userId) {
     throw new AppError("You can only edit content in your own courses", 403);
   }
   return lesson;
@@ -88,10 +87,9 @@ export const learningService = {
   async createLessonQuiz(
     lessonId: string,
     userId: string,
-    role: "STUDENT" | "TEACHER" | "ADMIN",
     input: CreateLessonQuizInput,
   ) {
-    await getManagedLesson(lessonId, userId, role);
+    await getManagedLesson(lessonId, userId);
     const title = input.title
       ? input.sourceLanguage
         ? await toBilingualText(input.title, input.sourceLanguage)
@@ -120,10 +118,9 @@ export const learningService = {
   async createLessonVideo(
     lessonId: string,
     userId: string,
-    role: "STUDENT" | "TEACHER" | "ADMIN",
     input: CreateLessonVideoInput,
   ) {
-    await getManagedLesson(lessonId, userId, role);
+    await getManagedLesson(lessonId, userId);
     const title = input.title
       ? input.sourceLanguage
         ? await toBilingualText(input.title, input.sourceLanguage)
@@ -205,7 +202,7 @@ export const learningService = {
     input: SubmitInteractiveEventInput,
     role: string = "STUDENT",
   ) {
-    // Teachers/admins previewing their own lesson get graded feedback but nothing is stored.
+    // Teachers previewing their own lesson get graded feedback but nothing is stored.
     const isPreview = role !== "STUDENT";
     const priorResponse = isPreview ? null : await prisma.interactiveResponse.findUnique({
       where: {
@@ -241,7 +238,6 @@ export const learningService = {
     if (!isPreview) await assertLessonUnlocked(userId, activity.video.lessonId);
     if (
       isPreview &&
-      role !== "ADMIN" &&
       activity.video.lesson.course.createdById !== userId
     ) {
       throw new AppError("You can only preview your own courses", 403);
@@ -516,7 +512,7 @@ export const learningService = {
     }
   },
 
-  async getInteractiveVideoAnalytics(videoId: string, userId: string, role: string) {
+  async getInteractiveVideoAnalytics(videoId: string, userId: string) {
     const video = await prisma.video.findUnique({
       where: { id: videoId },
       select: {
@@ -529,7 +525,7 @@ export const learningService = {
       },
     });
     if (!video) throw new AppError("Video not found", 404);
-    if (role !== "ADMIN" && video.lesson.course.createdById !== userId) {
+    if (video.lesson.course.createdById !== userId) {
       throw new AppError("You can only view analytics for your own courses", 403);
     }
 

@@ -143,6 +143,9 @@ importers:
       input-otp:
         specifier: ^1.5.0
         version: 1.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      konva:
+        specifier: ^10.9.0
+        version: 10.9.0
       lucide:
         specifier: ^1.32.0
         version: 1.32.0
@@ -173,6 +176,9 @@ importers:
       react-icons:
         specifier: ^5.7.0
         version: 5.7.0(react@19.2.8)
+      react-konva:
+        specifier: ^19.3.2
+        version: 19.3.2(@types/react@19.2.18)(konva@10.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@7.2.0)
@@ -2755,6 +2761,11 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@types/react-reconciler@0.34.0':
+    resolution: {integrity: sha512-zVDzX0Fk1XgDP2IutTpSrxd57jwOHlX3rlPrFz68Sc+06tpgOFRlqSUK2ZiqQeQXqnIfUb2cfJQUupXBKy498w==}
+    peerDependencies:
+      '@types/react': '*'
+
   '@types/react@19.2.18':
     resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
 
@@ -4699,6 +4710,11 @@ packages:
     peerDependencies:
       react: ^19.0.0
 
+  its-fine@2.1.1:
+    resolution: {integrity: sha512-C5ZoVkeqSt0Aje0tzESO+iT/EQpNFNL39GkP7mCACtoZUFD6GcyerFCr6kp0ZtiII4W9HoYkY48Soy5xE/uHKw==}
+    peerDependencies:
+      react: ^19.0.0
+
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
@@ -4783,6 +4799,17 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  konva@10.9.0:
+    resolution: {integrity: sha512-3NOOlcbimFDp4+/DfXGTBkfn3cn3VP1BESPySQ6ayCzgMA9JSMGJNNxeIKw5jpHL6SAl6gHsrv10DUEjNRL0Qg==}
+    peerDependencies:
+      canvas: ^3.0.0
+      skia-canvas: ^3.0.0
+    peerDependenciesMeta:
+      canvas:
+        optional: true
+      skia-canvas:
+        optional: true
 
   kysely@0.29.5:
     resolution: {integrity: sha512-ooa+eSbBNPTo3MycPEuW5jdrxQdQwdtB3LC3h43FiXQbIry5tR0C5lDG7eealK0E4D7XjrnOP5DIUg/LyjRMYQ==}
@@ -5646,6 +5673,13 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
+  react-konva@19.3.2:
+    resolution: {integrity: sha512-Uv0xlWoRSCByHinqs/03SFL8E28fYbe59sQ+2EJpwa1O4Zlz0+T+8DaKwlma9C2rkYwYj6j8eHD41F5oJafagg==}
+    peerDependencies:
+      konva: ^8.0.1 || ^7.2.5 || ^9.0.0 || ^10.0.0
+      react: ^19.3.0
+      react-dom: ^19.3.0
+
   react-markdown@10.1.0:
     resolution: {integrity: sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ==}
     peerDependencies:
@@ -5657,6 +5691,12 @@ packages:
     engines: {node: '>=0.10.0'}
     peerDependencies:
       react: ^19.2.0
+
+  react-reconciler@0.34.0:
+    resolution: {integrity: sha512-eVibvB1fc9j5Qf1KRkiM3GzRPBdjg2P6G6QV2f3P6Eb3OGMxRBhdg2rrUwjbV5JrQaJj8nOa8uajmmJA5tJWjQ==}
+    engines: {node: '>=0.10.0'}
+    peerDependencies:
+      react: ^19.3.0
 
   react-redux@9.3.0:
     resolution: {integrity: sha512-KQopgqFo/p/fgmAs5qz6p5RWaNAzq40WAu7fJIXnQpYxFPbJYtsJPWvGeF2rOBaY/kEuV77AVsX8TsQzKm+A/g==}
@@ -5858,6 +5898,9 @@ packages:
 
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -9240,6 +9283,10 @@ snapshots:
     dependencies:
       '@types/react': 19.2.18
 
+  '@types/react-reconciler@0.34.0(@types/react@19.2.18)':
+    dependencies:
+      '@types/react': 19.2.18
+
   '@types/react@19.2.18':
     dependencies:
       csstype: 3.2.3
@@ -11294,6 +11341,13 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
+  its-fine@2.1.1(@types/react@19.2.18)(react@19.2.8):
+    dependencies:
+      '@types/react-reconciler': 0.28.9(@types/react@19.2.18)
+      react: 19.2.8
+    transitivePeerDependencies:
+      - '@types/react'
+
   jiti@2.7.0: {}
 
   jju@1.4.0: {}
@@ -11363,6 +11417,8 @@ snapshots:
   kleur@3.0.3: {}
 
   kleur@4.1.5: {}
+
+  konva@10.9.0: {}
 
   kysely@0.29.5: {}
 
@@ -12497,6 +12553,18 @@ snapshots:
 
   react-is@16.13.1: {}
 
+  react-konva@19.3.2(@types/react@19.2.18)(konva@10.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      '@types/react-reconciler': 0.34.0(@types/react@19.2.18)
+      its-fine: 2.1.1(@types/react@19.2.18)(react@19.2.8)
+      konva: 10.9.0
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      react-reconciler: 0.34.0(react@19.2.8)
+      scheduler: 0.28.0
+    transitivePeerDependencies:
+      - '@types/react'
+
   react-markdown@10.1.0(@types/react@19.2.18)(react@19.2.8)(supports-color@7.2.0):
     dependencies:
       '@types/hast': 3.0.5
@@ -12519,6 +12587,11 @@ snapshots:
     dependencies:
       react: 19.2.8
       scheduler: 0.27.0
+
+  react-reconciler@0.34.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      scheduler: 0.28.0
 
   react-redux@9.3.0(@types/react@19.2.18)(react@19.2.8)(redux@5.0.1):
     dependencies:
@@ -12781,6 +12854,8 @@ snapshots:
   safer-buffer@2.1.2: {}
 
   scheduler@0.27.0: {}
+
+  scheduler@0.28.0: {}
 
   semver@6.3.1: {}
 

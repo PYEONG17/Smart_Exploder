@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "type": "simulation",
+  "template": "ohm-law",
+  "domain": "electricity",
+  "titleVi": "Định luật Ôm",
+  "titleEn": "Ohm's law",
+  "descriptionVi": "Thay đổi hiệu điện thế và điện trở để quan sát cường độ dòng điện.",
+  "descriptionEn": "Adjust voltage and resistance to observe electric current.",
+  "parameters": [
+    {
+      "id": "voltage",
+      "labelVi": "Hiệu điện thế",
+      "labelEn": "Voltage",
+      "unitVi": "V",
+      "unitEn": "V",
+      "min": 1,
+      "max": 24,
+      "step": 1,
+      "initialValue": 12
+    },
+    {
+      "id": "resistance",
+      "labelVi": "Điện trở",
+      "labelEn": "Resistance",
+      "unitVi": "Ω",
+      "unitEn": "Ω",
+      "min": 1,
+      "max": 50,
+      "step": 1,
+      "initialValue": 10
+    }
+  ],
+  "outputs": [
+    {
+      "id": "current",
+      "labelVi": "Cường độ dòng điện",
+      "labelEn": "Electric current",
+      "unitVi": "A",
+      "unitEn": "A",
+      "formula": "voltage / resistance"
+    }
+  ]
+}

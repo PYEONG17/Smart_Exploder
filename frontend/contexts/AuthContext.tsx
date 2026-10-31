@@ -15,7 +15,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "STUDENT" | "TEACHER" | "ADMIN";
+  role: "STUDENT" | "TEACHER";
   avatar: string | null;
   bio: string | null;
   createdAt: string;

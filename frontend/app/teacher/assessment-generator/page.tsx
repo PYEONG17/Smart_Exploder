@@ -15,7 +15,7 @@ import {
 
 export default function AssessmentGeneratorPage() {
   const { isLoading: isAuthLoading } = useAuthGuard({
-    allowedRoles: ["TEACHER", "ADMIN"],
+    allowedRoles: ["TEACHER"],
     forbiddenRedirectTo: "/assignments",
   });
   const { token } = useAuth();

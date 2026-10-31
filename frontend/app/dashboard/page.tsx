@@ -10,6 +10,7 @@ import {
   Target,
   Calendar,
   Sparkles,
+  Beaker,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -35,6 +36,17 @@ import {
 } from "@/lib/api";
 
 const studentRoles = ["STUDENT"] as const;
+
+function formatStudyDuration(seconds: number, locale: string) {
+  if (seconds < 60) return `${seconds} ${locale === "vi" ? "giây" : "sec"}`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} ${locale === "vi" ? "phút" : "min"}`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return locale === "vi"
+    ? `${hours} giờ ${remainingMinutes} phút`
+    : `${hours} hr ${remainingMinutes} min`;
+}
 
 export default function DashboardPage() {
   const { t, locale } = useLang();
@@ -298,15 +310,38 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="premium-card p-4">
                 <p className="text-xs font-medium text-muted-foreground">
-                  {locale === "vi" ? "Thời gian xem" : "Watch time"}
+                  {locale === "vi" ? "Thời gian xem video" : "Video watch time"}
                 </p>
                 <p className="mt-2 text-2xl font-black">
                   {analytics
-                    ? `${Math.floor(analytics.metrics.watchSeconds / 60)}`
+                    ? formatStudyDuration(analytics.metrics.watchSeconds, locale)
                     : "—"}
-                  <span className="ml-1 text-xs font-semibold text-muted-foreground">
-                    {locale === "vi" ? "phút" : "min"}
-                  </span>
+                </p>
+              </div>
+              <div className="premium-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {locale === "vi" ? "Thời gian học Lab" : "Lab study time"}
+                </p>
+                <p className="mt-2 text-2xl font-black">
+                  {analytics
+                    ? formatStudyDuration(analytics.metrics.labStudySeconds, locale)
+                    : "—"}
+                </p>
+              </div>
+              <div className="premium-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {locale === "vi" ? "Video đã xem" : "Videos watched"}
+                </p>
+                <p className="mt-2 text-2xl font-black">
+                  {analytics?.metrics.videosWatched ?? "—"}
+                </p>
+              </div>
+              <div className="premium-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {locale === "vi" ? "Lab đã học" : "Labs studied"}
+                </p>
+                <p className="mt-2 text-2xl font-black">
+                  {analytics?.metrics.labsStudied ?? "—"}
                 </p>
               </div>
               <div className="premium-card p-4">
@@ -405,7 +440,7 @@ export default function DashboardPage() {
             <div className="premium-card p-5">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <h3 className="font-bold">
-                  {locale === "vi" ? "Thời gian xem mỗi ngày" : "Daily watch time"}
+                  {locale === "vi" ? "Thời gian học mỗi ngày" : "Daily learning time"}
                 </h3>
                 <span className="text-xs text-muted-foreground">
                   {locale === "vi" ? "phút" : "minutes"}
@@ -414,9 +449,10 @@ export default function DashboardPage() {
               {analytics ? (
                 <div className="flex h-32 items-end justify-between gap-2">
                   {analytics.daily.map((day) => {
+                    const totalSeconds = day.watchSeconds + day.labStudySeconds;
                     const maxSeconds = Math.max(
                       1,
-                      ...analytics.daily.map((item) => item.watchSeconds),
+                      ...analytics.daily.map((item) => item.watchSeconds + item.labStudySeconds),
                     );
                     const date = new Date(`${day.date}T00:00:00Z`);
                     const label = new Intl.DateTimeFormat(
@@ -424,21 +460,30 @@ export default function DashboardPage() {
                       { weekday: "short", timeZone: "UTC" },
                     ).format(date);
                     const height =
-                      day.watchSeconds === 0
+                      totalSeconds === 0
                         ? 4
-                        : Math.max(8, (day.watchSeconds / maxSeconds) * 100);
+                        : Math.max(8, (totalSeconds / maxSeconds) * 100);
                     return (
                       <div
                         key={day.date}
                         className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
-                        title={`${label}: ${Math.round(day.watchSeconds / 60)} min`}
+                        title={`${label}: ${Math.round(totalSeconds / 60)} min (video ${Math.round(day.watchSeconds / 60)} min, Lab ${Math.round(day.labStudySeconds / 60)} min)`}
                       >
                         <div className="flex h-24 w-full items-end justify-center rounded-lg bg-muted/50">
                           <div
-                            className="w-2/3 rounded-t-md bg-gradient-to-t from-blue-600 to-cyan-400 transition-all"
+                            className="flex w-2/3 flex-col-reverse overflow-hidden rounded-t-md transition-all"
                             style={{ height: `${height}%` }}
-                            aria-label={`${Math.round(day.watchSeconds / 60)} minutes`}
-                          />
+                            aria-label={`${Math.round(totalSeconds / 60)} minutes`}
+                          >
+                            <div
+                              className="w-full bg-gradient-to-r from-blue-600 to-cyan-400"
+                              style={{ height: `${totalSeconds ? (day.watchSeconds / totalSeconds) * 100 : 0}%` }}
+                            />
+                            <div
+                              className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-400"
+                              style={{ height: `${totalSeconds ? (day.labStudySeconds / totalSeconds) * 100 : 0}%` }}
+                            />
+                          </div>
                         </div>
                         <span className="truncate text-[10px] text-muted-foreground">
                           {label}
@@ -450,11 +495,85 @@ export default function DashboardPage() {
               ) : (
                 <p className="py-10 text-center text-sm text-muted-foreground">
                   {locale === "vi"
-                    ? "Biểu đồ sẽ hiện sau khi có dữ liệu xem video."
-                    : "The chart appears when video watch data is available."}
+                    ? "Biểu đồ sẽ hiện sau khi có dữ liệu xem video hoặc học Lab."
+                      : "The chart appears when video or Lab study data is available."}
                 </p>
               )}
+              <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+                  {locale === "vi" ? "Video" : "Video"}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-violet-500" />
+                  Lab
+                </span>
+              </div>
             </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <section className="premium-card p-5">
+              <h3 className="mb-3 flex items-center gap-2 font-bold">
+                <PlayCircle className="h-4 w-4 text-blue-500" />
+                {locale === "vi" ? "Video đã xem gần đây" : "Recently watched videos"}
+              </h3>
+              {analytics?.videos.length ? (
+                <ul className="space-y-2">
+                  {analytics.videos.slice(0, 5).map((video) => (
+                    <li key={video.id} className="rounded-lg bg-muted/40 p-3">
+                      <p className="text-sm font-semibold">
+                        {locale === "vi" ? video.title : video.titleEn || video.title}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {locale === "vi" ? video.lessonTitle : video.lessonTitleEn || video.lessonTitle}
+                        {" · "}
+                        {formatStudyDuration(video.watchedSeconds, locale)} {locale === "vi" ? "đã xem" : "watched"}
+                        {" · "}
+                        {new Date(video.lastWatchedAt).toLocaleDateString(locale === "vi" ? "vi-VN" : "en-US")}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {locale === "vi" ? "Video đã xem sẽ xuất hiện tại đây." : "Watched videos will appear here."}
+                </p>
+              )}
+            </section>
+            <section className="premium-card p-5">
+              <h3 className="mb-3 flex items-center gap-2 font-bold">
+                <Beaker className="h-4 w-4 text-violet-500" />
+                {locale === "vi" ? "Thí nghiệm Lab đã học" : "Labs you have studied"}
+              </h3>
+              {analytics?.labs.length ? (
+                <ul className="space-y-2">
+                  {analytics.labs.slice(0, 5).map((lab) => (
+                    <li key={lab.id}>
+                      <Link
+                        href={`/lab/custom/${encodeURIComponent(lab.id)}`}
+                        className="block rounded-lg bg-muted/40 p-3 transition hover:bg-muted"
+                      >
+                        <p className="text-sm font-semibold">
+                          {locale === "vi" ? lab.title : lab.titleEn || lab.title}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {lab.subject} · {locale === "vi" ? "Lớp" : "Grade"} {lab.grade}
+                          {" · "}
+                          {formatStudyDuration(lab.studiedSeconds, locale)} {locale === "vi" ? "đã học" : "studied"}
+                          {" · "}
+                          {new Date(lab.lastStudiedAt).toLocaleDateString(locale === "vi" ? "vi-VN" : "en-US")}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {locale === "vi" ? "Lab đã học sẽ xuất hiện tại đây." : "Studied Labs will appear here."}
+                </p>
+              )}
+            </section>
           </div>
 
           {analytics &&

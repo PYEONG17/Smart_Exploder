@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "type": "template",
+  "template": "timeline",
+  "titleVi": "Vòng đời của cây đậu",
+  "titleEn": "Life cycle of a bean plant",
+  "events": [
+    {
+      "id": "seed",
+      "date": "Ngày 1",
+      "title": { "vi": "Hạt đậu", "en": "Seed" },
+      "description": { "vi": "Hạt hút nước và bắt đầu nảy mầm.", "en": "The seed absorbs water and begins to germinate." }
+    },
+    {
+      "id": "sprout",
+      "date": "Ngày 4",
+      "title": { "vi": "Nảy mầm", "en": "Germination" },
+      "description": { "vi": "Rễ mầm và chồi non xuất hiện.", "en": "A young root and shoot emerge." }
+    },
+    {
+      "id": "plant",
+      "date": "Ngày 14",
+      "title": { "vi": "Cây non", "en": "Seedling" },
+      "description": { "vi": "Cây phát triển thân và lá.", "en": "The plant grows a stem and leaves." }
+    }
+  ]
+}

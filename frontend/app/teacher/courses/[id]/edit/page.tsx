@@ -215,7 +215,7 @@ export default function CourseEditStudioPage({
   params: Promise<{ id: string }>;
 }) {
   const { isLoading: isAuthLoading } = useAuthGuard({
-    allowedRoles: ["TEACHER", "ADMIN"],
+    allowedRoles: ["TEACHER"],
     forbiddenRedirectTo: "/assignments",
   });
   const { id } = use(params);

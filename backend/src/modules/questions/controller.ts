@@ -106,7 +106,6 @@ export async function answerLessonQuestion(req: Request, res: Response) {
   });
   if (!existing) throw new AppError("Question not found", 404);
   if (
-    req.user.role !== "ADMIN" &&
     existing.lesson.course.createdById !== req.user.id
   ) {
     throw new AppError("You can only answer questions in your own courses", 403);

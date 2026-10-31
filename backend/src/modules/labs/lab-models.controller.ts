@@ -68,11 +68,10 @@ export async function saveLabModel(req: Request, res: Response) {
   }
   if (
     existing &&
-    existing.uploadedById !== req.user.id &&
-    req.user.role !== "ADMIN"
+    existing.uploadedById !== req.user.id
   ) {
     await unlink(req.file.path);
-    throw new AppError("Only the uploader or an admin can replace this model", 403);
+    throw new AppError("Only the uploader can replace this model", 403);
   }
 
   const url = getCourseMediaUrl(req, req.user.id, req.file.filename);

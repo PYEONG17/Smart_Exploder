@@ -66,7 +66,7 @@ async function getOwnedCourse(req: Request, courseId: string) {
     },
   });
   if (!course) throw new AppError("Course not found", 404);
-  if (req.user.role !== "ADMIN" && course.createdById !== req.user.id) {
+  if (course.createdById !== req.user.id) {
     throw new AppError("You can only use AI on your own courses", 403);
   }
   return course;
@@ -91,7 +91,7 @@ async function getOwnedLesson(req: Request) {
     },
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
-  if (req.user.role !== "ADMIN" && lesson.course.createdById !== req.user.id) {
+  if (lesson.course.createdById !== req.user.id) {
     throw new AppError("You can only use AI on your own lessons", 403);
   }
   return lesson;

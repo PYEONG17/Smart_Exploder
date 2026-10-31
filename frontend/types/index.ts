@@ -1,4 +1,4 @@
-export type Role = "STUDENT" | "TEACHER" | "ADMIN";
+export type Role = "STUDENT" | "TEACHER";
 
 export type SubjectType = "math" | "science";
 

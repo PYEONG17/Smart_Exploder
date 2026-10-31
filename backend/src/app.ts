@@ -27,6 +27,20 @@ import {
 dotenv.config();
 
 const app = express();
+const uploadedHtmlContentSecurityPolicy = [
+  "sandbox allow-scripts",
+  "default-src 'self' https: data: blob:",
+  "script-src 'self' https: 'unsafe-inline' blob:",
+  "style-src 'self' https: 'unsafe-inline'",
+  "img-src 'self' https: data: blob:",
+  "font-src 'self' https: data:",
+  "media-src 'self' https: data: blob:",
+  "connect-src https:",
+  "frame-src https:",
+  "form-action 'none'",
+  "base-uri 'none'",
+  "object-src 'none'",
+].join("; ");
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
@@ -35,7 +49,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── Static files: serve uploaded avatars ──────────────────────────────────────
 // Files in backend/uploads/ are accessible at /uploads/
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use(
+  "/uploads",
+  express.static(path.resolve("uploads"), {
+    setHeaders(res, filePath) {
+      if (/\.html?$/i.test(filePath)) {
+        res.setHeader("Content-Security-Policy", uploadedHtmlContentSecurityPolicy);
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      }
+    },
+  }),
+);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {

@@ -29,8 +29,8 @@ export async function uploadAvatar(req: Request, res: Response) {
 
   const targetId = String(req.params.id);
 
-  // Only own user or admin can change avatar
-  if (req.user.id !== targetId && req.user.role !== "ADMIN") {
+  // Only the account owner can change their avatar.
+  if (req.user.id !== targetId) {
     throw new AppError("Forbidden: you can only change your own avatar", 403);
   }
 
@@ -51,8 +51,8 @@ export async function randomAvatar(req: Request, res: Response) {
 
   const targetId = String(req.params.id);
 
-  // Only own user or admin
-  if (req.user.id !== targetId && req.user.role !== "ADMIN") {
+  // Only the account owner can change their avatar.
+  if (req.user.id !== targetId) {
     throw new AppError("Forbidden: you can only change your own avatar", 403);
   }
 

@@ -31,7 +31,7 @@ import {
   type LectureDraft,
 } from "@/components/teacher/LectureBuilder";
 
-const teacherRoles = ["TEACHER", "ADMIN"] as const;
+const teacherRoles = ["TEACHER"] as const;
 
 export default function CreateCoursePage() {
   const { isLoading: isAuthLoading } = useAuthGuard({
@@ -201,7 +201,7 @@ export default function CreateCoursePage() {
 
     setLoading(true);
     try {
-      if (!token || (user?.role !== "TEACHER" && user?.role !== "ADMIN")) {
+      if (!token || user?.role !== "TEACHER") {
         throw new Error(
           "Bạn cần đăng nhập bằng tài khoản giáo viên để tạo khóa học.",
         );

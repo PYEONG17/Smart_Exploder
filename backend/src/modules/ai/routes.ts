@@ -84,7 +84,7 @@ const limitStudioRequests = createUserRateLimiter(
   6,
   "Bạn đã dùng AI quá nhiều lần liên tiếp. Vui lòng thử lại sau một phút.",
 );
-const teacherAi = [requireAuth, requireRole("TEACHER", "ADMIN"), limitStudioRequests];
+const teacherAi = [requireAuth, requireRole("TEACHER"), limitStudioRequests];
 
 router.post("/chat", requireAuth, limitChatRequests, chatWithGemini);
 router.post("/lesson-tutor", optionalAuth, limitLessonTutorRequests, lessonTutorChat);
@@ -126,7 +126,7 @@ router.post("/studio/lessons/:lessonId/resources", ...teacherAi, findLessonResou
 router.post(
   "/assessments/generate",
   requireAuth,
-  requireRole("TEACHER", "ADMIN"),
+  requireRole("TEACHER"),
   limitAssessmentRequests,
   generateAssessmentWithGemini,
 );

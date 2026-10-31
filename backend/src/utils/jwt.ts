@@ -31,10 +31,15 @@ export function verifyAccessToken(token: string): JwtPayload {
     if (typeof decoded === "string" || !decoded.sub || !decoded.email || !decoded.role) {
       throw new AppError("Invalid token", 401);
     }
+    const role =
+      decoded.role === "ADMIN" ? "TEACHER" : decoded.role;
+    if (role !== "STUDENT" && role !== "TEACHER") {
+      throw new AppError("Invalid token", 401);
+    }
     return {
       sub: decoded.sub,
       email: decoded.email as string,
-      role: decoded.role as Role,
+      role,
       tenantId: typeof decoded.tenantId === "string" ? decoded.tenantId : undefined,
       membershipId:
         typeof decoded.membershipId === "string" ? decoded.membershipId : undefined,

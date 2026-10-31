@@ -39,8 +39,21 @@ export function errorHandler(
       .json(failure("Database is unavailable. Start PostgreSQL and try again."));
   }
 
-  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-    return res.status(409).json(failure("A record with this value already exists"));
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2002") {
+      return res.status(409).json(failure("A record with this value already exists"));
+    }
+
+    if (err.code === "P2021" || err.code === "P2022") {
+      console.error("Database schema is missing a table or column required by the request:", {
+        code: err.code,
+        modelName: err.meta?.modelName,
+        column: err.meta?.column,
+      });
+      return res
+        .status(503)
+        .json(failure("Database schema is out of date. Apply the pending migrations and try again."));
+    }
   }
 
   console.error(err);

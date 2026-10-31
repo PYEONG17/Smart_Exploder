@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "type": "template",
+  "template": "drag-drop",
+  "titleVi": "Phân loại vật liệu",
+  "titleEn": "Sort the materials",
+  "instructions": {
+    "vi": "Kéo mỗi vật liệu vào nhóm phù hợp.",
+    "en": "Drag each material into the correct group."
+  },
+  "items": [
+    { "id": "copper", "vi": "Đồng", "en": "Copper" },
+    { "id": "plastic", "vi": "Nhựa", "en": "Plastic" },
+    { "id": "iron", "vi": "Sắt", "en": "Iron" },
+    { "id": "rubber", "vi": "Cao su", "en": "Rubber" }
+  ],
+  "targets": [
+    { "id": "conductor", "vi": "Vật dẫn điện", "en": "Conductor" },
+    { "id": "insulator", "vi": "Vật cách điện", "en": "Insulator" }
+  ],
+  "correctMatches": {
+    "copper": "conductor",
+    "plastic": "insulator",
+    "iron": "conductor",
+    "rubber": "insulator"
+  }
+}
