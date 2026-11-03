@@ -11,6 +11,7 @@ import {
   Globe,
   ChevronDown,
   Box,
+  Compass,
   PenTool,
   BookOpen,
   Bot,
@@ -20,7 +21,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   Trophy,
-  Cpu,
 } from "lucide-react";
 import {
   Sheet,
@@ -79,47 +79,47 @@ export default function Navbar() {
 
   const productsList = [
     {
-      icon: Box,
-      titleVi: "Kho học liệu số 3D/XR",
-      titleEn: "3D/XR Learning Repository",
-      descVi: "Kho học liệu số 3D/XR chuẩn GDPT 2018, thí nghiệm ảo & Sandbox",
-      descEn: "Explore K-9 spatial 3D interactive models & Virtual Labs",
+      icon: Compass,
+      titleVi: "Khám phá học liệu",
+      titleEn: "Explore resources",
+      descVi: "Tìm học liệu theo lớp, môn học, loại nội dung và bộ sách.",
+      descEn: "Browse learning resources by grade, subject, content type, and textbook.",
       href: "/explore",
-      badgeVi: "Bóc tách 360°",
-      badgeEn: "360° Dissect",
+      badgeVi: "Thư viện học liệu",
+      badgeEn: "Resource library",
       accent: "text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 border-blue-200/60 dark:border-blue-800/60",
     },
     {
       icon: PenTool,
-      titleVi: "Bảng trắng tương tác",
-      titleEn: "Interactive Whiteboard",
-      descVi: "Ghi chú, vẽ hình học và giải bài tập trên bảng số",
-      descEn: "Digital canvas for live notes and geometry",
+      titleVi: "Bảng trắng số",
+      titleEn: "Digital whiteboard",
+      descVi: "Mở bảng trắng để viết, vẽ và minh họa nội dung học tập.",
+      descEn: "Write, draw, and illustrate learning content on a digital canvas.",
       href: "/whiteboard",
-      badgeVi: "Canvas số",
-      badgeEn: "Digital Canvas",
+      badgeVi: "Công cụ học tập",
+      badgeEn: "Study tool",
       accent: "text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/60",
     },
     {
       icon: Bot,
-      titleVi: "Trợ lý Nora AI",
-      titleEn: "Nora AI STEM Tutor",
-      descVi: "Gia sư AI 24/7 giải thích từng bước Toán & Khoa học",
-      descEn: "24/7 bilingual STEM tutor and step-by-step solver",
+      titleVi: "Trợ lý AI học tập",
+      titleEn: "AI study assistant",
+      descVi: "Đặt câu hỏi về Toán và STEM. Cần đăng nhập để sử dụng.",
+      descEn: "Ask Math and STEM questions. Sign-in is required.",
       href: "/ai",
-      badgeVi: "AI 24/7",
-      badgeEn: "AI 24/7",
+      badgeVi: "Yêu cầu đăng nhập",
+      badgeEn: "Sign-in required",
       accent: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950/60 dark:text-cyan-400 border-cyan-200/60 dark:border-cyan-800/60",
     },
     {
       icon: FlaskConical,
       titleVi: "Thí nghiệm mô phỏng",
       titleEn: "Virtual Simulation Lab",
-      descVi: "Thí nghiệm ảo Vật lý, Hóa học, Sinh học an toàn và trực quan",
-      descEn: "Safe virtual physics, chemistry & biology simulations",
+      descVi: "Thực hành các thí nghiệm mô phỏng Vật lý, Hóa học và Sinh học.",
+      descEn: "Explore virtual Physics, Chemistry, and Biology experiments.",
       href: "/lab",
-      badgeVi: "Phòng Lab ảo",
-      badgeEn: "Virtual Lab",
+      badgeVi: "23 thí nghiệm",
+      badgeEn: "23 experiments",
       accent: "text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400 border-purple-200/60 dark:border-purple-800/60",
     },
   ];
@@ -156,7 +156,7 @@ export default function Navbar() {
                 Smart<span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">Explorer</span>
               </span>
               <span className="hidden sm:inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800/60 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                K-9 STEM
+                STEM
               </span>
             </div>
           </Link>
@@ -200,7 +200,7 @@ export default function Navbar() {
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
                         <Sparkles className="w-3 h-3" />
-                        {locale === "vi" ? "Chuẩn GDPT 2018" : "K-9 Standard"}
+                        {locale === "vi" ? "Nội dung trên nền tảng" : "Available on the platform"}
                       </span>
                     </div>
 
@@ -238,14 +238,14 @@ export default function Navbar() {
 
                     <div className="mt-3 border-t border-neutral-100 dark:border-slate-800 pt-3 px-3 flex items-center justify-between text-xs">
                       <span className="text-neutral-500 dark:text-slate-400">
-                        {locale === "vi" ? "Trải nghiệm đầy đủ công cụ trực quan" : "Experience full interactive canvas"}
+                        {locale === "vi" ? "Mở các công cụ hiện có trên website" : "Open tools available on the website"}
                       </span>
                       <Link
                         href="/explore"
                         onClick={() => setProductsOpen(false)}
                         className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        <span>{locale === "vi" ? "Mở Kho Học Liệu Số 3D/XR" : "Open 3D/XR Library"}</span>
+                        <span>{locale === "vi" ? "Mở thư viện học liệu" : "Open resource library"}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -254,7 +254,7 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Kho học liệu số 3D/XR (YooBook style) */}
+            {/* Learning resources */}
             <Link
               href="/explore"
               className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap flex items-center gap-1.5 ${
@@ -263,16 +263,7 @@ export default function Navbar() {
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
-              <span>{locale === "vi" ? "Kho học liệu 3D/XR" : "3D/XR Library"}</span>
-              <span
-                className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
-                  pathname.startsWith("/explore")
-                    ? "bg-white/20 text-white"
-                    : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                }`}
-              >
-                XR
-              </span>
+              <span>{locale === "vi" ? "Khám phá học liệu" : "Explore resources"}</span>
             </Link>
 
             {/* Main Links */}
@@ -284,7 +275,7 @@ export default function Navbar() {
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
-              {locale === "vi" ? "Kho học liệu" : "Courses Library"}
+              {locale === "vi" ? "Khóa học" : "Courses"}
             </Link>
 
             <Link
@@ -295,7 +286,7 @@ export default function Navbar() {
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
-              {locale === "vi" ? "Thẻ" : "Quiz Flash Card"}
+              {locale === "vi" ? "Ôn tập" : "Practice"}
             </Link>
 
             {/* Role  */}

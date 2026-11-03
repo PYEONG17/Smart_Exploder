@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Khám Phá Mô Hình Hệ Tiêu Hóa (Human Digestive System Lab)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 60%, #fed7aa 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #ea580c;
+            box-shadow: 0 18px 40px -12px rgba(234, 88, 12, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ea580c;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-rose-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-orange-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-orange-600 flex items-center justify-center shadow border-2 border-orange-200 shrink-0 text-2xl font-black">
+                    🍔
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Giải Phẫu Sinh Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Hành trình thức ăn qua các cơ quan tiêu hóa
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Mô Phỏng Hành Trình Tiêu Hóa Thức Ăn Người
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-orange-700 hover:bg-orange-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-orange-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-orange-50 px-3.5 py-2 border-b-2 border-orange-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-orange-600 text-white border-2 border-orange-700">
+                <span>🍎</span>
+                <span data-i18n="tab1">1. Mô Phỏng Hành Trình 4 Bước</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200">
+                <span>🔬</span>
+                <span data-i18n="tab2">2. Cơ Học vs Hóa Học & Cơ Quan</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Quy Trình & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-orange-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: MÔ PHỎNG HỆ TIÊU HÓA & 4 BƯỚC LAB
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Digestive Anatomical Canvas Chamber -->
+                    <div class="bg-slate-950 rounded-2xl border-3 border-orange-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    ĐANG DỪNG
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-orange-200 truncate" data-i18n="statusReady">
+                                    Bấm Ăn Thức Ăn hoặc chọn các bước thí nghiệm
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block cursor-pointer"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <button onclick="feedFood()" id="btn-feed" class="btn-kid px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="utensils" class="w-3.5 h-3.5"></i>
+                                    <span id="feed-text" data-i18n="feedBtn">Nhai Thức Ăn</span>
+                                </button>
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự động 4 bước</span>
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-300">
+                                <span data-i18n="digestStage">Giai đoạn:</span> <strong id="digest-stage-val" class="text-amber-400">Miệng (Mouth)</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Food Controls + Organ Inspector + 4 Steps -->
+                    <div class="bg-gradient-to-br from-orange-50 to-amber-50/60 rounded-2xl p-3 border-2 border-orange-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <!-- Header & Tools -->
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-orange-900 bg-orange-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🎛️ Bảng Tùy Chỉnh Thức Ăn & Cơ Quan
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Đặt lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Controls -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-orange-100 space-y-2 mb-2">
+
+                                <!-- Select Organ to Inspect -->
+                                <div>
+                                    <label class="text-[11px] font-black text-slate-700 block mb-1" data-i18n="selectOrganLabel">Chọn cơ quan tiêu hóa để quan sát:</label>
+                                    <select id="select-organ" onchange="onOrganSelectChange()" class="w-full bg-orange-50 border-2 border-orange-300 text-orange-950 font-black text-xs rounded-lg p-1.5 cursor-pointer outline-none">
+                                        <option value="mouth">👄 Khoang Miệng & Răng (Tiêu hóa cơ học + Amylase)</option>
+                                        <option value="esophagus">🥖 Thực Quản (Nhu động co bóp đẩy thức ăn)</option>
+                                        <option value="stomach" selected>🥣 Dạ Dày (Co bóp nhào trộn + Axit HCl & Pepsin)</option>
+                                        <option value="liver">🥭 Gan & Tụi (Tiết Mật & Enzyme Tụy phân giải)</option>
+                                        <option value="small_intestine">🌀 Ruột Non (Hấp thụ Dinh Dưỡng qua Nhung Mao)</option>
+                                        <option value="large_intestine">💩 Ruột Già (Hấp thụ Nước & Tạo Phân)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Digestion Speed Slider -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-1">
+                                        <span class="flex items-center gap-1 text-orange-700">
+                                            <span>⏱️</span> <span data-i18n="speedLabel">Tốc độ tiêu hóa (Nhu động):</span>
+                                        </span>
+                                        <span id="speed-display" class="bg-orange-100 text-orange-950 px-2 py-0.5 rounded-md font-black text-xs">1.0x</span>
+                                    </div>
+                                    <input type="range" id="slider-speed" min="0.2" max="3" step="0.2" value="1" oninput="onParamChange()" class="w-full accent-orange-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Organ Info & pH Dashboard -->
+                                <div class="bg-slate-900 text-white p-2 rounded-lg text-center flex items-center justify-around font-black text-[11px] border border-orange-300">
+                                    <div class="text-rose-300">pH: <span id="val-ph">2.0 (Axit)</span></div>
+                                    <div class="text-slate-400">|</div>
+                                    <div class="text-amber-300">Enzyme: <span id="val-enzyme">Pepsin</span></div>
+                                    <div class="text-slate-400">|</div>
+                                    <div class="text-emerald-400">Thời gian: <span id="val-time">2 - 4 Giờ</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-orange-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Tiêu Hóa Thức Ăn (Bấm 1 → 4):
+                            </div>
+
+                            <!-- 4 Step Buttons -->
+                            <div class="space-y-1">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-4 h-4 rounded-md bg-orange-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step1Text">1. Nhai nhỏ ở Miệng & Nuốt qua Thực quản.</span>
+                                    <span id="step-badge-1" class="text-[10px] font-black text-amber-800">👉 Thử ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step2Text">2. Nhào trộn tại Dạ Dày với Axit HCl & Pepsin.</span>
+                                    <span id="step-badge-2" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step3Text">3. Phân giải & Hấp thụ dinh dưỡng ở Ruột Non.</span>
+                                    <span id="step-badge-3" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step4Text">4. Hấp thụ nước tại Ruột Già & Bài tiết chất thải.</span>
+                                    <span id="step-badge-4" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2 rounded-xl border-2 border-orange-300 shadow-sm mt-1">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-orange-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Bấm <strong>Nhai Thức Ăn</strong> hoặc chọn <strong>Bước 1</strong> để xem thức ăn di chuyển qua hệ tiêu hóa!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Stage Strip -->
+                <div class="bg-orange-50/90 rounded-2xl p-2 border-2 border-orange-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Giai Đoạn Tiêu Hóa Trong Cơ Thể
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-orange-900 bg-orange-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết luận: Tiêu hóa biến đổi thức ăn thành chất dinh dưỡng cho cơ thể
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: COMPARE MECHANICAL VS CHEMICAL
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-orange-50 to-amber-50 p-3 rounded-2xl border-2 border-orange-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-orange-800 bg-orange-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích sinh học
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-0.5" data-i18n="cmpTitle">
+                            So sánh các quá trình tiêu hóa cơ học, hóa học & vi sinh vật
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5">
+                    <!-- Mechanical Digestion -->
+                    <div class="bg-white rounded-2xl p-2.5 border-3 border-orange-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-orange-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU A (Cơ học)</span>
+                                <span class="text-[10px] font-bold text-slate-500">Miệng & Dạ dày</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenATitle">Tiêu hóa Cơ Học (Nhai, Co Bóp)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasA" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-orange-900 bg-orange-50 p-1.5 rounded-lg leading-tight" data-i18n="scenARes">
+                            🦷 <strong>Cắt nhỏ & Nhào trộn:</strong> Răng xé nhỏ thức ăn, cơ dạ dày co bóp giúp tăng diện tích tiếp xúc với enzyme.
+                        </p>
+                    </div>
+
+                    <!-- Chemical Digestion -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">MẪU B (Hóa học)</span>
+                                <span class="text-[10px] font-bold text-slate-500">Enzyme tiêu hóa</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenBTitle">Tiêu hóa Hóa Học (Enzyme)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasB" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-amber-900 bg-amber-50 p-1.5 rounded-lg leading-tight" data-i18n="scenBRes">
+                            🧪 <strong>Phân giải đại phân tử:</strong> Amylase, Pepsin & Lipase cắt tinh bột, protein, lipid thành dưỡng chất đơn giản.
+                        </p>
+                    </div>
+
+                    <!-- Villi Absorption -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-emerald-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU C (Hấp thụ)</span>
+                                <span class="text-[10px] font-bold text-slate-500">Nhung mao ruột</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenCTitle">Hấp Thụ Tại Ruột Non</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasC" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-emerald-900 bg-emerald-50 p-1.5 rounded-lg leading-tight" data-i18n="scenCRes">
+                            🌀 <strong>Diện tích khổng lồ:</strong> Hàng triệu nhung mao ruột đưa đường glucose, axit amin vào mạch máu nuôi cơ thể.
+                        </p>
+                    </div>
+
+                    <!-- Acid Reflux / Gastritis -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-rose-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU D (Trào ngược)</span>
+                                <span class="text-[10px] font-bold text-slate-500">Rối loạn axit</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenDTitle">Trào Ngược & Đau Dạ Dày</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-rose-900 bg-rose-50 p-1.5 rounded-lg leading-tight" data-i18n="scenDRes">
+                            🔥 <strong>Axit HCl trào ngược:</strong> Dư thừa axit dâng lên thực quản gây ợ chua, viêm loét niêm mạc dạ dày.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: SUMMARY & QUIZ
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-3.5 border-2 border-orange-300 space-y-2.5">
+                        <div class="flex items-center gap-2 border-b border-orange-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-orange-800">Phiếu Lý Thuyết Trọng Tâm</span>
+                                <h3 class="text-base font-black text-orange-950">Quy Trình Tiêu Hóa Thức Ăn Cơ Thể</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-orange-200 space-y-0.5">
+                            <div class="text-xs font-black text-orange-800">👄 1. Khoang Miệng & Thực Quản:</div>
+                            <p class="text-xs font-bold text-slate-700">Răng nhai xé thức ăn (cơ học), Enzyme Amylase phân giải một phần tinh bột chín thành đường đôi. Sóng nhu động thực quản đẩy viên thức ăn xuống dạ dày.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-orange-200 space-y-0.5">
+                            <div class="text-xs font-black text-orange-800">🥣 2. Dạ Dày - Nhào Trộn Axit:</div>
+                            <p class="text-xs font-bold text-slate-700">Co bóp mạnh, tiết Axit HCl (pH ~ 2) diệt vi khuẩn và kích hoạt Pepsin phân giải chuỗi protein thành chuỗi peptide ngắn hơn.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-orange-200 space-y-0.5">
+                            <div class="text-xs font-black text-orange-800">🌀 3. Ruột Non & Ruột Già:</div>
+                            <ul class="text-xs font-bold text-slate-700 space-y-0.5 list-disc list-inside">
+                                <li><strong>Ruột non:</strong> Nhận dịch mật & dịch tụy, hoàn tất tiêu hóa & hấp thụ dinh dưỡng vào máu.</li>
+                                <li><strong>Ruột già:</strong> Hấp thụ lại nước, lên men chất xơ và cô đặc chất thải thành phân.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-100 p-2.5 rounded-xl border-2 border-amber-300">
+                            <div class="text-xs font-black text-amber-900">💡 Mẹo bảo vệ hệ tiêu hóa</div>
+                            <p class="text-xs font-bold text-amber-950 mt-0.5">
+                                "Nhai kỹ no lâu" - Nhai kỹ giúp thức ăn trộn đều Enzyme Amylase và giảm áp lực co bóp cho dạ dày!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Thử Thách Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🍔</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-1.5"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.28), 240);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            selectedOrgan: 'stomach',
+            digestSpeed: 1.0,
+            foodProgress: 0,      // 0 to 1.0 along digestion path
+            isDigesting: false,
+            step: 0               // 0: Init, 1: Mouth/Esophagus, 2: Stomach, 3: Small Intestine, 4: Large Intestine
+        };
+
+        const organData = {
+            mouth: { nameVi: 'Khoang Miệng', nameEn: 'Mouth', ph: '6.8 (Trung tính)', enzyme: 'Amylase Nước Bọt', time: '5 - 10 Giây' },
+            esophagus: { nameVi: 'Thực Quản', nameEn: 'Esophagus', ph: '7.0', enzyme: 'Không có (Co bóp)', time: '3 - 5 Giây' },
+            stomach: { nameVi: 'Dạ Dày', nameEn: 'Stomach', ph: '1.5 - 2.0 (Axit)', enzyme: 'Pepsin, Lipase', time: '2 - 4 Giờ' },
+            liver: { nameVi: 'Gan & Tụy', nameEn: 'Liver & Pancreas', ph: '8.0 (Kiềm)', enzyme: 'Dịch Mật, Trypsin', time: 'Hỗ trợ ruột' },
+            small_intestine: { nameVi: 'Ruột Non', nameEn: 'Small Intestine', ph: '7.5 - 8.0', enzyme: 'Lactase, Maltase', time: '3 - 5 Giờ' },
+            large_intestine: { nameVi: 'Ruột Già', nameEn: 'Large Intestine', ph: '6.0 - 7.0', enzyme: 'Vi sinh vật lên men', time: '10 - 24 Giờ' }
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Nhai ở Miệng', shortEn: '1. Mouth Chewing', icon: '👄' },
+            2: { shortVi: '2. Nhào ở Dạ dày', shortEn: '2. Stomach Churn', icon: '🥣' },
+            3: { shortVi: '3. Hấp thụ Ruột non', shortEn: '3. Small Intestine', icon: '🌀' },
+            4: { shortVi: '4. Thải tiết Ruột già', shortEn: '4. Large Intestine', icon: '💩' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function feedFood() {
+            labState.isDigesting = true;
+            labState.foodProgress = 0;
+            playTone(450, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function onParamChange() {
+            labState.digestSpeed = parseFloat(document.getElementById('slider-speed').value);
+            playTone(300 + labState.digestSpeed * 100, 'sine', 0.05, 0.05);
+            updateLabUI();
+        }
+
+        function onOrganSelectChange() {
+            labState.selectedOrgan = document.getElementById('select-organ').value;
+            playTone(550, 'triangle', 0.1);
+            updateLabUI();
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+            labState.isDigesting = true;
+
+            if (targetStep === 1) {
+                labState.selectedOrgan = 'mouth';
+                labState.foodProgress = 0.05;
+                document.getElementById('select-organ').value = 'mouth';
+                playTone(500, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                labState.selectedOrgan = 'stomach';
+                labState.foodProgress = 0.35;
+                document.getElementById('select-organ').value = 'stomach';
+                playTone(650, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.selectedOrgan = 'small_intestine';
+                labState.foodProgress = 0.65;
+                document.getElementById('select-organ').value = 'small_intestine';
+                playTone(750, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                labState.selectedOrgan = 'large_intestine';
+                labState.foodProgress = 0.90;
+                document.getElementById('select-organ').value = 'large_intestine';
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2300);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 500);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.isDigesting = false;
+            labState.foodProgress = 0;
+            labState.selectedOrgan = 'stomach';
+            labState.digestSpeed = 1.0;
+            labState.step = 0;
+
+            document.getElementById('slider-speed').value = 1.0;
+            document.getElementById('select-organ').value = 'stomach';
+
+            playTone(320, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const orgInfo = organData[labState.selectedOrgan];
+
+            // Dashboard info
+            document.getElementById('speed-display').textContent = labState.digestSpeed.toFixed(1) + 'x';
+            document.getElementById('val-ph').textContent = orgInfo.ph;
+            document.getElementById('val-enzyme').textContent = orgInfo.enzyme;
+            document.getElementById('val-time').textContent = orgInfo.time;
+
+            document.getElementById('digest-stage-val').textContent = currentLang === 'vi' ? orgInfo.nameVi : orgInfo.nameEn;
+
+            // Top Status Badge
+            const badge = document.getElementById('status-step-badge');
+            const title = document.getElementById('status-step-title');
+            badge.className = 'bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+            badge.textContent = st === 0 ? (currentLang === 'vi' ? 'HỆ TIÊU HÓA' : 'DIGESTIVE SYSTEM') : `BƯỚC ${st}/4`;
+
+            const stepTitles = [
+                'Bấm chọn bất kỳ cơ quan nào để xem chi tiết độ pH và Enzyme!',
+                'Bước 1: Nhai kỹ thức ăn ở Miệng, tuyến nước bọt tiết Amylase, nuốt qua Thực quản',
+                'Bước 2: Dạ dày co bóp mạnh, axit HCl (pH 2) diệt khuẩn & Pepsin cắt chuỗi protein',
+                'Bước 3: Ruột non nhận dịch mật từ Gan & dịch Tụy, hấp thụ đường & axit amin vào máu',
+                'Bước 4: Ruột già tái hấp thụ nước, cô đặc chất bã tạo phân bài tiết ra ngoài'
+            ];
+            title.textContent = stepTitles[st];
+
+            // 4 Steps buttons UI state
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-4 h-4 rounded-md bg-orange-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-emerald-700';
+                    bdg.textContent = '✅';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-4 h-4 rounded-md bg-orange-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-80';
+                    icon.className = 'w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Result Description Text
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) {
+                obsEl.innerHTML = `Đang quan sát <strong>${orgInfo.nameVi}</strong>. Độ pH: <strong>${orgInfo.ph}</strong>, Enzyme chính: <strong>${orgInfo.enzyme}</strong>!`;
+            } else if (st === 1) {
+                obsEl.innerHTML = `Thức ăn được răng xé nhỏ, trộn đều nước bọt chứa <strong>Enzyme Amylase</strong> rồi theo sóng nhu động thực quản xuống dạ dày.`;
+            } else if (st === 2) {
+                obsEl.innerHTML = `Dạ dày co bóp <strong>axit HCl (pH ~ 2)</strong> kết hợp <strong>Pepsin</strong> phân giải chuỗi protein thành các đoạn ngắn hơn.`;
+            } else if (st === 3) {
+                obsEl.innerHTML = `⚡ <strong>Tại Ruột Non:</strong> Dịch mật emulsify chất béo, hàng triệu nhung mao ruột đưa glucose & axit amin trực tiếp vào mạch máu!`;
+            } else if (st === 4) {
+                obsEl.innerHTML = `🎉 <strong>Tái hấp thụ nước:</strong> Ruột già cô đặc phần xơ không tiêu hóa được thành phân và bài tiết ra ngoài cơ thể.`;
+            }
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-orange-100 text-orange-950 border-2 border-orange-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345 Digestive Anatomy View)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // Digestive Tract Coordinates Path for food animation
+        const digestionPath = [
+            { x: 180, y: 55 },   // Mouth
+            { x: 180, y: 110 },  // Esophagus
+            { x: 165, y: 155 },  // Stomach Top
+            { x: 180, y: 180 },  // Stomach Bottom
+            { x: 200, y: 215 },  // Small Intestine enter
+            { x: 175, y: 235 },  // Small Intestine loop 1
+            { x: 215, y: 245 },  // Small Intestine loop 2
+            { x: 150, y: 270 },  // Large Intestine Ascending
+            { x: 220, y: 205 },  // Transverse Colon
+            { x: 235, y: 275 },  // Descending Colon
+            { x: 195, y: 310 }   // Anus
+        ];
+
+        // Canvas click handler to pick organ
+        mainCanvas.addEventListener('click', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Simple hit tests for organ regions
+            if (mouseY < 75) {
+                labState.selectedOrgan = 'mouth';
+            } else if (mouseY >= 75 && mouseY < 130) {
+                labState.selectedOrgan = 'esophagus';
+            } else if (mouseX < 210 && mouseY >= 130 && mouseY < 195) {
+                labState.selectedOrgan = 'stomach';
+            } else if (mouseX >= 210 && mouseY >= 120 && mouseY < 170) {
+                labState.selectedOrgan = 'liver';
+            } else if (mouseY >= 195 && mouseY < 260) {
+                labState.selectedOrgan = 'small_intestine';
+            } else if (mouseY >= 260) {
+                labState.selectedOrgan = 'large_intestine';
+            }
+
+            document.getElementById('select-organ').value = labState.selectedOrgan;
+            updateLabUI();
+            playTone(600, 'triangle', 0.1);
+        });
+
+        function drawCalloutPill(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath(); c.arc(targetX, targetY, 3, 0, Math.PI * 2); c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 175, 24, 7);
+            c.fill(); c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 6, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Anatomical Chamber Background
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 465, 345);
+
+                // --- 1. DRAW DIGESTIVE ORGANS SCHEMATIC ---
+
+                // Mouth & Head Silhouette
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.arc(180, 50, 32, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Esophagus Tube
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.moveTo(180, 65);
+                ctx.lineTo(180, 130);
+                ctx.stroke();
+
+                // Stomach (J-shaped pouch)
+                ctx.fillStyle = (labState.selectedOrgan === 'stomach') ? '#f43f5e' : '#e11d48';
+                ctx.beginPath();
+                ctx.moveTo(180, 130);
+                ctx.bezierCurveTo(130, 135, 140, 190, 185, 190);
+                ctx.bezierCurveTo(210, 190, 200, 155, 180, 130);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = (labState.selectedOrgan === 'stomach') ? 3 : 1; ctx.stroke();
+
+                // Liver (Upper Right wedge)
+                ctx.fillStyle = (labState.selectedOrgan === 'liver') ? '#ea580c' : '#b45309';
+                ctx.beginPath();
+                ctx.moveTo(200, 130);
+                ctx.lineTo(250, 135);
+                ctx.lineTo(235, 165);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = (labState.selectedOrgan === 'liver') ? 3 : 1; ctx.stroke();
+
+                // Small Intestine (Folded loops in center)
+                ctx.strokeStyle = (labState.selectedOrgan === 'small_intestine') ? '#fbbf24' : '#d97706';
+                ctx.lineWidth = 14;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(185, 190);
+                ctx.lineTo(205, 215);
+                ctx.lineTo(170, 235);
+                ctx.lineTo(215, 245);
+                ctx.stroke();
+
+                // Large Intestine (Outer frame around small intestine)
+                ctx.strokeStyle = (labState.selectedOrgan === 'large_intestine') ? '#38bdf8' : '#0284c7';
+                ctx.lineWidth = 16;
+                ctx.beginPath();
+                ctx.moveTo(145, 275);
+                ctx.lineTo(145, 210);
+                ctx.lineTo(230, 210);
+                ctx.lineTo(230, 280);
+                ctx.stroke();
+
+                // Rectum / Anus
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 10;
+                ctx.beginPath();
+                ctx.moveTo(230, 280);
+                ctx.lineTo(195, 315);
+                ctx.stroke();
+
+                // --- 2. ANIMATED FOOD BOLUS MOVEMENT ---
+                if (labState.isDigesting) {
+                    labState.foodProgress += 0.003 * labState.digestSpeed;
+                    if (labState.foodProgress >= 1.0) {
+                        labState.foodProgress = 0;
+                    }
+                }
+
+                // Calculate current interpolated position along digestionPath
+                const totalSegs = digestionPath.length - 1;
+                const rawIdx = labState.foodProgress * totalSegs;
+                const segIdx = Math.floor(rawIdx);
+                const segT = rawIdx - segIdx;
+
+                if (segIdx < totalSegs) {
+                    const p1 = digestionPath[segIdx];
+                    const p2 = digestionPath[segIdx + 1];
+                    const fx = p1.x + (p2.x - p1.x) * segT;
+                    const fy = p1.y + (p2.y - p1.y) * segT;
+
+                    // Food color changes as it is digested: Red Apple/Meat -> Yellow Chyme -> Brown Waste
+                    let foodColor = '#ef4444';
+                    if (labState.foodProgress > 0.3) foodColor = '#f59e0b';
+                    if (labState.foodProgress > 0.75) foodColor = '#a16207';
+
+                    ctx.fillStyle = foodColor;
+                    ctx.beginPath();
+                    ctx.arc(fx, fy, 7.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+                }
+
+                // --- 3. CALLOUT OVERLAYS ---
+                const pillX = 280;
+                const sel = labState.selectedOrgan;
+                if (sel === 'mouth') {
+                    drawCalloutPill(ctx, 180, 50, pillX, 50, '👄 Miệng: Nhai & Amylase', '#ea580c');
+                } else if (sel === 'esophagus') {
+                    drawCalloutPill(ctx, 180, 100, pillX, 90, '🥖 Thực quản: Nhu động', '#f43f5e');
+                } else if (sel === 'stomach') {
+                    drawCalloutPill(ctx, 170, 160, pillX, 135, '🥣 Dạ dày: Axit HCl & Pepsin', '#e11d48');
+                } else if (sel === 'liver') {
+                    drawCalloutPill(ctx, 230, 145, pillX, 135, '🥭 Gan & Tụy: Tiết Mật', '#b45309');
+                } else if (sel === 'small_intestine') {
+                    drawCalloutPill(ctx, 190, 230, pillX, 200, '🌀 Ruột non: Hấp thụ dinh dưỡng', '#f59e0b');
+                } else if (sel === 'large_intestine') {
+                    drawCalloutPill(ctx, 230, 240, pillX, 240, '💩 Ruột già: Hấp thụ nước', '#0284c7');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: COMPARISON SLIDES
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', mode: 'mechanical' },
+                { id: 'cmpCanvasB', mode: 'chemical' },
+                { id: 'cmpCanvasC', mode: 'villi' },
+                { id: 'cmpCanvasD', mode: 'reflux' }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 144;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+
+                const cX = w / 2, cY = h / 2 - 5;
+
+                if (cfg.mode === 'mechanical') {
+                    // Teeth grinding food diagram
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fillRect(cX - 30, cY - 35, 60, 15); // Upper teeth
+                    ctx.fillRect(cX - 30, cY + 20, 60, 15); // Lower teeth
+
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath(); ctx.arc(cX, cY, 14, 0, Math.PI * 2); ctx.fill(); // Food
+                } else if (cfg.mode === 'chemical') {
+                    // Enzyme Scissors cutting protein chain
+                    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(25, cY); ctx.lineTo(w - 25, cY); ctx.stroke();
+
+                    // Scissors cuts
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = '900 12px Nunito'; ctx.textAlign = 'center';
+                    ctx.fillText('✂️ Enzyme Pepsin', cX, cY - 15);
+                } else if (cfg.mode === 'villi') {
+                    // Intestinal Villi finger-like projections
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    ctx.moveTo(15, h - 15);
+                    for (let x = 15; x <= w - 15; x += 25) {
+                        ctx.lineTo(x + 5, h - 65);
+                        ctx.lineTo(x + 15, h - 15);
+                    }
+                    ctx.fill();
+
+                    // Blood vessels inside villi
+                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(20, h - 15); ctx.lineTo(w - 20, h - 15); ctx.stroke();
+                } else if (cfg.mode === 'reflux') {
+                    // Acid rising up stomach
+                    ctx.fillStyle = '#e11d48'; ctx.fillRect(cX - 20, cY - 40, 40, 80);
+                    ctx.fillStyle = '#fef08a'; ctx.fillRect(cX - 15, cY - 20, 30, 50); // Acid bubbles
+
+                    ctx.fillStyle = '#ef4444'; ctx.font = '900 11px Nunito'; ctx.textAlign = 'center';
+                    ctx.fillText('🔥 Axit HCl Trào Ngược', cX, 22);
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '👄',
+                qVi: '1. Quá trình tiêu hóa hóa học bắt đầu đầu tiên tại cơ quan nào nhờ Enzyme Amylase?',
+                qEn: '1. Where does chemical digestion begin first due to Amylase Enzyme?',
+                optsVi: [
+                    'Khoang Miệng (biến đổi một phần tinh bột chín thành đường đôi).',
+                    'Dạ Dày.',
+                    'Ruột Non.',
+                    'Thực Quản.'
+                ],
+                optsEn: [
+                    'Mouth (breaking down cooked starch into disaccharides).',
+                    'Stomach.',
+                    'Small Intestine.',
+                    'Esophagus.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🥣',
+                qVi: '2. Độ pH trong Dạ Dày duy trì ở mức rất thấp (pH ~ 1.5 - 2.0) nhờ chất nào sau đây?',
+                qEn: '2. Which substance maintains very low pH (~1.5 - 2.0) in the stomach?',
+                optsVi: [
+                    'Axit Clohydric (HCl) giúp diệt khuẩn và kích hoạt Pepsin.',
+                    'Nước bọt.',
+                    'Dịch Mật.',
+                    'Enzyme Lipase.'
+                ],
+                optsEn: [
+                    'Hydrochloric Acid (HCl) to kill bacteria & activate Pepsin.',
+                    'Saliva.',
+                    'Bile juice.',
+                    'Lipase enzyme.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🌀',
+                qVi: '3. Cơ quan nào là nơi diễn ra sự hấp thụ chất dinh dưỡng chủ yếu cho cơ thể nhờ các nhung mao?',
+                qEn: '3. Which organ is the primary site for nutrient absorption into blood via villi?',
+                optsVi: [
+                    'Ruột Non (có diện tích bề mặt vô cùng lớn nhờ nhung mao).',
+                    'Dạ Dày.',
+                    'Ruột Già.',
+                    'Thực Quản.'
+                ],
+                optsEn: [
+                    'Small Intestine (vast surface area from intestinal villi).',
+                    'Stomach.',
+                    'Large Intestine.',
+                    'Esophagus.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '💩',
+                qVi: '4. Chức năng chính của Ruột Già trong hệ tiêu hóa là gì?',
+                qEn: '4. What is the main function of the Large Intestine in the digestive system?',
+                optsVi: [
+                    'Tái hấp thụ nước, khoáng chất và cô đặc chất thải thành phân.',
+                    'Phân giải protein thành axit amin.',
+                    'Tiết dịch mật để tiêu hóa chất béo.',
+                    'Nhai xé nhỏ thức ăn.'
+                ],
+                optsEn: [
+                    'Reabsorb water and minerals, compacting waste into feces.',
+                    'Break down proteins into amino acids.',
+                    'Secrete bile to digest lipids.',
+                    'Chew and grind food.'
+                ],
+                ans: 0
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2 rounded-xl bg-slate-50 hover:bg-orange-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-lg bg-orange-100 text-orange-800 flex items-center justify-center shrink-0 font-black">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã hiểu rất rõ về hệ tiêu hóa (+3 Điểm)!'
+                    : '🎉 Correct! You mastered human digestive biology (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1400);
+            } else {
+                playTone(220, 'sawtooth', 0.2);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi, hãy đọc lại phiếu tóm tắt bên trái nhé!'
+                    : '🤔 Not quite right, check the theory sheet on the left!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-orange-600 text-white border-2 border-orange-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Giải Phẫu Sinh Học',
+                    goalPill: '🎯 Mục tiêu: Hành trình thức ăn qua các cơ quan tiêu hóa',
+                    appTitle: 'Lab: Mô Phỏng Hành Trình Tiêu Hóa Thức Ăn Người',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Mô Phỏng Hành Trình 4 Bước',
+                    tab2: '2. Cơ Học vs Hóa Học & Cơ Quan',
+                    tab3: '3. Tóm Tắt Quy Trình & Đố Vui',
+                    autoObsBtn: 'Tự động 4 bước',
+                    toolsHeader: '🎛️ Bảng Tùy Chỉnh Thức Ăn & Cơ Quan',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Đặt lại',
+                    selectOrganLabel: 'Chọn cơ quan tiêu hóa để quan sát:',
+                    speedLabel: 'Tốc độ tiêu hóa (Nhu động):',
+                    stepsHeader: '📋 Các Bước Tiêu Hóa Thức Ăn (Bấm 1 → 4):',
+                    step1Text: '1. Nhai nhỏ ở Miệng & Nuốt qua Thực quản.',
+                    step2Text: '2. Nhào trộn tại Dạ Dày với Axit HCl & Pepsin.',
+                    step3Text: '3. Phân giải & Hấp thụ dinh dưỡng ở Ruột Non.',
+                    step4Text: '4. Hấp thụ nước tại Ruột Già & Bài tiết chất thải.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Sơ Đồ Các Giai Đoạn Tiêu Hóa Trong Cơ Thể',
+                    finalConclusionBadge: '✅ Kết luận: Tiêu hóa biến đổi thức ăn thành chất dinh dưỡng cho cơ thể',
+                    cmpSub: 'Phân tích sinh học',
+                    cmpTitle: 'So sánh các quá trình tiêu hóa cơ học, hóa học & vi sinh vật',
+                    scenATitle: 'Tiêu hóa Cơ Học (Nhai, Co Bóp)',
+                    scenARes: '🦷 <strong>Cắt nhỏ & Nhào trộn:</strong> Răng xé nhỏ thức ăn, cơ dạ dày co bóp giúp tăng diện tích tiếp xúc với enzyme.',
+                    scenBTitle: 'Tiêu hóa Hóa Học (Enzyme)',
+                    scenBRes: '🧪 <strong>Phân giải đại phân tử:</strong> Amylase, Pepsin & Lipase cắt tinh bột, protein, lipid thành dưỡng chất đơn giản.',
+                    scenCTitle: 'Hấp Thụ Tại Ruột Non',
+                    scenCRes: '🌀 <strong>Diện tích khổng lồ:</strong> Hàng triệu nhung mao ruột đưa đường glucose, axit amin vào mạch máu nuôi cơ thể.',
+                    scenDTitle: 'Trào Ngược & Đau Dạ Dày',
+                    scenDRes: '🔥 <strong>Axit HCl trào ngược:</strong> Dư thừa axit dâng lên thực quản gây ợ chua, viêm loét niêm mạc dạ dày.'
+                },
+                en: {
+                    labBadge: 'Anatomy Biology Lab',
+                    goalPill: '🎯 Goal: Food journey through human digestive organs',
+                    appTitle: 'Lab: Human Food Digestion System Simulation',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Digestion Journey',
+                    tab2: '2. Mechanical vs Chemical',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🎛️ Food & Organ Controls',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    selectOrganLabel: 'Select organ to inspect:',
+                    speedLabel: 'Peristalsis Digestion Speed:',
+                    stepsHeader: '📋 Digestion Steps (Click 1 → 4):',
+                    step1Text: '1. Chew in Mouth & Swallow down Esophagus.',
+                    step2Text: '2. Churn in Stomach with HCl Acid & Pepsin.',
+                    step3Text: '3. Breakdown & Absorb in Small Intestine.',
+                    step4Text: '4. Reabsorb Water in Large Intestine & Excrete.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Body Digestion Process Stages',
+                    finalConclusionBadge: '✅ Conclusion: Digestion converts food into body nutrients',
+                    cmpSub: 'Biological Analysis',
+                    cmpTitle: 'Comparing Mechanical, Chemical & Microbial Digestion',
+                    scenATitle: 'Mechanical Digestion (Chewing)',
+                    scenARes: '🦷 <strong>Grinding & Churning:</strong> Teeth chew food, stomach muscles mix it with enzymes.',
+                    scenBTitle: 'Chemical Digestion (Enzymes)',
+                    scenBRes: '🧪 <strong>Molecular Breakdown:</strong> Amylase, Pepsin & Lipase break polymers into simple nutrients.',
+                    scenCTitle: 'Small Intestine Villi Absorption',
+                    scenCRes: '🌀 <strong>Vast Surface Area:</strong> Millions of intestinal villi absorb glucose & amino acids into blood.',
+                    scenDTitle: 'Acid Reflux & Gastritis',
+                    scenDRes: '🔥 <strong>HCl Reflux:</strong> Excess acid surging up esophagus causes heartburn and inflammation.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

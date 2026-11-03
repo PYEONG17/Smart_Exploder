@@ -690,18 +690,6 @@ export type AvailableQuiz = {
   };
 };
 
-export type CreateLessonQuizInput = {
-  title?: string;
-  titleEn?: string;
-  sourceLanguage?: "vi" | "en";
-  questions: {
-    question: string;
-    questionEn?: string;
-    type: QuestionType;
-    answers: { content: string; contentEn?: string; isCorrect: boolean }[];
-  }[];
-};
-
 export type AssessmentDifficulty = "EASY" | "MEDIUM" | "HARD";
 export type GeneratedAssessmentInput = {
   grade: number;
@@ -817,10 +805,9 @@ export async function fetchAvailableQuizzes(
 async function postLessonContent<T>(
   token: string,
   lessonId: string,
-  resource: "quizzes" | "videos",
-  data: CreateLessonQuizInput | CreateLessonVideoInput,
+  data: CreateLessonVideoInput,
 ): Promise<T> {
-  const res = await fetch(`${API_URL}/lessons/${lessonId}/${resource}`, {
+  const res = await fetch(`${API_URL}/lessons/${lessonId}/videos`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -835,20 +822,12 @@ async function postLessonContent<T>(
   return json.data;
 }
 
-export function createLessonQuiz(
-  token: string,
-  lessonId: string,
-  data: CreateLessonQuizInput,
-) {
-  return postLessonContent(token, lessonId, "quizzes", data);
-}
-
 export function createLessonVideo(
   token: string,
   lessonId: string,
   data: CreateLessonVideoInput,
 ) {
-  return postLessonContent(token, lessonId, "videos", data);
+  return postLessonContent(token, lessonId, data);
 }
 
 export async function updateLessonVideoMetadata(
@@ -1736,14 +1715,26 @@ export async function fetchExploreMaterials(
 export async function createExploreMaterial(
   data: any,
   token?: string,
+  modelFile?: File,
 ): Promise<{ success: boolean; data: any; message: string }> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let body: BodyInit;
+  if (modelFile) {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
+    formData.append("file", modelFile);
+    body = formData;
+  } else {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(data);
+  }
 
   const res = await fetch(`${API_URL}/explore`, {
     method: "POST",
     headers,
-    body: JSON.stringify(data),
+    body,
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.success) {
@@ -1756,14 +1747,26 @@ export async function updateExploreMaterial(
   id: string,
   data: any,
   token?: string,
+  modelFile?: File,
 ): Promise<{ success: boolean; data: any; message: string }> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let body: BodyInit;
+  if (modelFile) {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
+    formData.append("file", modelFile);
+    body = formData;
+  } else {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(data);
+  }
 
   const res = await fetch(`${API_URL}/explore/${encodeURIComponent(id)}`, {
     method: "PUT",
     headers,
-    body: JSON.stringify(data),
+    body,
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.success) {

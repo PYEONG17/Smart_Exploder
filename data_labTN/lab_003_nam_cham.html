@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 003: Nam Châm Hút Vật Liệu (Magnet & Materials)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #e0f2fe 0%, #f0fdfa 60%, #fef9c3 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #0284c7;
+            box-shadow: 0 18px 40px -12px rgba(2, 132, 199, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+        
+        .magnet-bg { background-image: radial-gradient(circle at center, #0f172a 0%, #1e293b 100%); }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-frame">
+        <!-- HEADER -->
+        <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-blue-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow border-2 border-blue-200 shrink-0 text-2xl">
+                    🧲
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Môn Khoa Học & Tự Nhiên
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Tìm hiểu từ tính của vật liệu
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab 003: Nam Châm Hút Vật Liệu Gì?
+                    </h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-blue-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION -->
+        <nav class="bg-blue-50 px-3.5 py-2 border-b-2 border-blue-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-blue-600 text-white border-2 border-blue-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Thực Hành Khám Phá</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-blue-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Bảng Phân Loại</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-blue-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Ôn Tập Đố Vui</span>
+            </button>
+        </nav>
+
+        <main class="p-3 bg-gradient-to-b from-white to-blue-50/30">
+
+            <!-- TAB 1: THỰC HÀNH -->
+            <section id="view-lab" class="space-y-3">
+                <div class="lab-two-col">
+                    <!-- LEFT Canvas -->
+                    <div class="magnet-bg rounded-2xl border-3 border-blue-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 480px;">
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <span class="font-extrabold text-xs text-blue-200" data-i18n="canvasTitle">Mô Phỏng Tương Tác Từ Tính</span>
+                            <span id="magnet-status-badge" class="bg-slate-600 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">SẴN SÀNG</span>
+                        </div>
+                        <div class="relative w-full flex-1">
+                            <canvas id="magnetCanvas" width="465" height="435" class="w-full h-full block"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT Tools -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50/60 rounded-2xl p-3 border-2 border-blue-200 flex flex-col justify-between" style="height: 480px;">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-blue-900 bg-blue-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Chọn Vật Liệu Để Thử
+                                </span>
+                                <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                    <span data-i18n="resetBtn">Làm lại</span>
+                                </button>
+                            </div>
+
+                            <p class="text-xs font-bold text-slate-600 mb-2 leading-snug" data-i18n="toolInstruct">
+                                Bấm vào từng đồ vật bên dưới để đưa lại gần nam châm. Quan sát xem đồ vật nào bị hút lên, đồ vật nào bị rơi xuống nhé!
+                            </p>
+
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <!-- Iron -->
+                                <button onclick="testMaterial('iron')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-slate-300 p-2 rounded-xl text-left hover:bg-slate-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-slate-100 rounded-lg">📍</div>
+                                    <div>
+                                        <div class="text-xs font-black text-slate-800" data-i18n="matIron">Đinh Sắt</div>
+                                        <div class="text-[9px] font-bold text-slate-500 uppercase" data-i18n="matIronDesc">Kim Loại</div>
+                                    </div>
+                                </button>
+                                <!-- Steel -->
+                                <button onclick="testMaterial('steel')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-slate-300 p-2 rounded-xl text-left hover:bg-slate-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-slate-100 rounded-lg">📎</div>
+                                    <div>
+                                        <div class="text-xs font-black text-slate-800" data-i18n="matSteel">Ghim Thép</div>
+                                        <div class="text-[9px] font-bold text-slate-500 uppercase" data-i18n="matSteelDesc">Hợp Kim</div>
+                                    </div>
+                                </button>
+                                <!-- Copper -->
+                                <button onclick="testMaterial('copper')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-amber-200 p-2 rounded-xl text-left hover:bg-amber-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-amber-100 rounded-lg">🪙</div>
+                                    <div>
+                                        <div class="text-xs font-black text-amber-900" data-i18n="matCopper">Đồng Xu</div>
+                                        <div class="text-[9px] font-bold text-amber-600 uppercase" data-i18n="matCopperDesc">Kim Loại Đồng</div>
+                                    </div>
+                                </button>
+                                <!-- Plastic -->
+                                <button onclick="testMaterial('plastic')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-rose-200 p-2 rounded-xl text-left hover:bg-rose-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-rose-100 rounded-lg">🥄</div>
+                                    <div>
+                                        <div class="text-xs font-black text-rose-900" data-i18n="matPlastic">Thìa Nhựa</div>
+                                        <div class="text-[9px] font-bold text-rose-500 uppercase" data-i18n="matPlasticDesc">Nhựa (Plastic)</div>
+                                    </div>
+                                </button>
+                                <!-- Wood -->
+                                <button onclick="testMaterial('wood')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-orange-200 p-2 rounded-xl text-left hover:bg-orange-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-orange-100 rounded-lg">🪵</div>
+                                    <div>
+                                        <div class="text-xs font-black text-orange-900" data-i18n="matWood">Khối Gỗ</div>
+                                        <div class="text-[9px] font-bold text-orange-600 uppercase" data-i18n="matWoodDesc">Gỗ Tự Nhiên</div>
+                                    </div>
+                                </button>
+                                <!-- Rubber -->
+                                <button onclick="testMaterial('rubber')" class="mat-btn btn-kid flex items-center gap-2 bg-white border-2 border-sky-200 p-2 rounded-xl text-left hover:bg-sky-50">
+                                    <div class="text-2xl w-10 h-10 flex items-center justify-center bg-sky-100 rounded-lg">🟦</div>
+                                    <div>
+                                        <div class="text-xs font-black text-sky-900" data-i18n="matRubber">Cục Tẩy</div>
+                                        <div class="text-[9px] font-bold text-sky-600 uppercase" data-i18n="matRubberDesc">Cao Su</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Result Display Box -->
+                        <div id="result-box" class="bg-white p-3.5 rounded-xl border-2 border-dashed border-blue-300 shadow-sm transition-colors duration-300">
+                            <div class="text-[11px] font-black text-blue-700 uppercase flex items-center gap-1 mb-1">
+                                <span>🔍</span>
+                                <span data-i18n="resTitle">KẾT QUẢ QUAN SÁT:</span>
+                            </div>
+                            <p id="result-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy chọn một đồ vật bên trên để bắt đầu thử nghiệm.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: COMPARE -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border-2 border-blue-200">
+                    <span class="text-[11px] font-black uppercase text-blue-700 bg-blue-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                        Kiến Thức Trọng Tâm
+                    </span>
+                    <h2 class="text-base font-black text-slate-800 mt-2" data-i18n="cmpTitle">
+                        Nam châm chỉ hút được một số vật liệu nhất định (Từ tính)
+                    </h2>
+                    <p class="text-sm font-bold text-slate-600 mt-1" data-i18n="cmpDesc">
+                        Nam châm hút được các vật làm từ <strong>sắt, thép</strong>, niken, coban. Những vật liệu này gọi là vật liệu có từ tính. Nam châm <strong>không hút</strong> được nhựa, gỗ, cao su, đồng, nhôm, thủy tinh, giấy...
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 rounded-2xl p-4 border-2 border-emerald-300 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">✅</span>
+                            <h3 class="font-black text-emerald-900 text-sm uppercase" data-i18n="cmpAttract">VẬT BỊ NAM CHÂM HÚT</h3>
+                        </div>
+                        <ul class="space-y-2">
+                            <li class="flex items-center gap-3 bg-white p-2 rounded-xl border border-emerald-100">
+                                <span class="text-2xl bg-slate-100 p-2 rounded-lg">📍</span>
+                                <div>
+                                    <div class="font-black text-slate-800 text-xs" data-i18n="matIron">Đinh Sắt</div>
+                                    <div class="text-[10px] font-bold text-slate-500">Chứa nhiều kim loại sắt (Fe)</div>
+                                </div>
+                            </li>
+                            <li class="flex items-center gap-3 bg-white p-2 rounded-xl border border-emerald-100">
+                                <span class="text-2xl bg-slate-100 p-2 rounded-lg">📎</span>
+                                <div>
+                                    <div class="font-black text-slate-800 text-xs" data-i18n="matSteel">Ghim Thép</div>
+                                    <div class="text-[10px] font-bold text-slate-500">Hợp kim của sắt và carbon</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-rose-50 rounded-2xl p-4 border-2 border-rose-300 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">❌</span>
+                            <h3 class="font-black text-rose-900 text-sm uppercase" data-i18n="cmpNotAttract">VẬT KHÔNG BỊ HÚT</h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-white p-2 text-center rounded-xl border border-rose-100">
+                                <div class="text-2xl mb-1">🪙</div>
+                                <div class="font-black text-slate-800 text-xs" data-i18n="matCopper">Đồng Xu</div>
+                                <div class="text-[10px] font-bold text-slate-500">(Kim loại đồng)</div>
+                            </div>
+                            <div class="bg-white p-2 text-center rounded-xl border border-rose-100">
+                                <div class="text-2xl mb-1">🥄</div>
+                                <div class="font-black text-slate-800 text-xs" data-i18n="matPlastic">Thìa Nhựa</div>
+                                <div class="text-[10px] font-bold text-slate-500">(Nhựa)</div>
+                            </div>
+                            <div class="bg-white p-2 text-center rounded-xl border border-rose-100">
+                                <div class="text-2xl mb-1">🪵</div>
+                                <div class="font-black text-slate-800 text-xs" data-i18n="matWood">Khối Gỗ</div>
+                                <div class="text-[10px] font-bold text-slate-500">(Gỗ)</div>
+                            </div>
+                            <div class="bg-white p-2 text-center rounded-xl border border-rose-100">
+                                <div class="text-2xl mb-1">🟦</div>
+                                <div class="font-black text-slate-800 text-xs" data-i18n="matRubber">Cục Tẩy</div>
+                                <div class="text-[10px] font-bold text-slate-500">(Cao su)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: QUIZ -->
+            <section id="view-quiz" class="hidden">
+                <div class="max-w-2xl mx-auto bg-white rounded-2xl p-6 border-2 border-amber-300 shadow-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                        <div>
+                            <span id="quiz-num-badge" class="text-xs font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                            <h3 class="text-lg font-black text-slate-800" data-i18n="quizTitle">Đố Vui Kiểm Tra Kiến Thức</h3>
+                        </div>
+                        <button onclick="resetQuiz()" class="btn-kid px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span data-i18n="resetBtn">Làm lại</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-amber-50 p-5 rounded-xl border border-amber-200 text-center mb-5">
+                        <div id="quiz-icon" class="text-4xl mb-2">🧲</div>
+                        <p id="quiz-q-text" class="font-black text-base text-slate-800 leading-snug"></p>
+                    </div>
+
+                    <div id="quiz-opts-box" class="space-y-3 mb-4"></div>
+                    <div id="quiz-msg-box" class="hidden p-3 rounded-xl font-black text-sm text-center"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        lucide.createIcons();
+
+        // --- SOUND EFFECTS ---
+        let soundEnabled = true;
+        let audioCtx = null;
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+        function playChime() {
+            playTone(523.25, 'triangle', 0.1);
+            setTimeout(() => playTone(659.25, 'triangle', 0.1), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+        }
+        function playClank() {
+            playTone(800, 'square', 0.05, 0.05);
+            setTimeout(() => playTone(1200, 'sine', 0.1, 0.1), 30);
+        }
+        function playThud() {
+            playTone(150, 'sawtooth', 0.1, 0.2);
+            setTimeout(() => playTone(100, 'sine', 0.15, 0.2), 50);
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // --- STATE & DATA ---
+        let currentLang = 'vi';
+        let score = 0;
+        let activeTab = 'lab';
+
+        const materials = {
+            iron: { id: 'iron', nameVi: 'Đinh sắt', nameEn: 'Iron Nail', magnetic: true, icon: '📍', color: '#94a3b8' },
+            steel: { id: 'steel', nameVi: 'Ghim thép', nameEn: 'Steel Clip', magnetic: true, icon: '📎', color: '#cbd5e1' },
+            copper: { id: 'copper', nameVi: 'Đồng xu', nameEn: 'Copper Coin', magnetic: false, icon: '🪙', color: '#d97706' },
+            wood: { id: 'wood', nameVi: 'Khối gỗ', nameEn: 'Wood Block', magnetic: false, icon: '🪵', color: '#78350f' },
+            plastic: { id: 'plastic', nameVi: 'Thìa nhựa', nameEn: 'Plastic Spoon', magnetic: false, icon: '🥄', color: '#ef4444' },
+            rubber: { id: 'rubber', nameVi: 'Cục tẩy', nameEn: 'Rubber Eraser', magnetic: false, icon: '🟦', color: '#60a5fa' }
+        };
+
+        let currentItem = null;
+        let itemY = 360; // start Y position
+        let animState = 'idle'; // idle, moving_up, stuck, falling
+        const magnetY = 160; // where items snap
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        // --- LAB LOGIC ---
+        function testMaterial(id) {
+            if (animState !== 'idle' && animState !== 'stuck' && animState !== 'falling_done') return;
+            currentItem = materials[id];
+            itemY = 360;
+            animState = 'moving_up';
+            playTone(400, 'sine', 0.1);
+            
+            // UI Updates
+            document.getElementById('result-box').className = 'bg-white p-3.5 rounded-xl border-2 border-dashed border-slate-300 shadow-sm transition-colors duration-300';
+            document.getElementById('result-desc').innerHTML = currentLang === 'vi' ? 'Đang thử nghiệm...' : 'Testing...';
+            document.getElementById('magnet-status-badge').textContent = currentLang === 'vi' ? 'ĐANG THỬ...' : 'TESTING...';
+            document.getElementById('magnet-status-badge').className = 'bg-amber-500 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+        }
+
+        function resetLab() {
+            currentItem = null;
+            itemY = 360;
+            animState = 'idle';
+            document.getElementById('result-box').className = 'bg-white p-3.5 rounded-xl border-2 border-dashed border-blue-300 shadow-sm transition-colors duration-300';
+            document.getElementById('result-desc').innerHTML = currentLang === 'vi' ? 'Hãy chọn một đồ vật bên trên để bắt đầu thử nghiệm.' : 'Select an item above to start testing.';
+            document.getElementById('magnet-status-badge').textContent = 'SẴN SÀNG';
+            document.getElementById('magnet-status-badge').className = 'bg-slate-600 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+        }
+
+        function showResult(isMagnetic) {
+            const box = document.getElementById('result-box');
+            const desc = document.getElementById('result-desc');
+            const badge = document.getElementById('magnet-status-badge');
+            
+            const name = currentLang === 'vi' ? currentItem.nameVi : currentItem.nameEn;
+            
+            if (isMagnetic) {
+                box.className = 'bg-emerald-50 p-3.5 rounded-xl border-2 border-emerald-400 shadow-sm transition-colors duration-300';
+                badge.className = 'bg-emerald-500 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+                if (currentLang === 'vi') {
+                    desc.innerHTML = `✅ <strong>Nam châm HÚT ${name}!</strong><br>Vì ${name} được làm từ vật liệu có từ tính (sắt/thép).`;
+                    badge.textContent = 'BỊ HÚT';
+                } else {
+                    desc.innerHTML = `✅ <strong>Magnet ATTRACTS ${name}!</strong><br>Because ${name} is made of magnetic material (iron/steel).`;
+                    badge.textContent = 'ATTRACTED';
+                }
+            } else {
+                box.className = 'bg-rose-50 p-3.5 rounded-xl border-2 border-rose-400 shadow-sm transition-colors duration-300';
+                badge.className = 'bg-rose-500 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+                if (currentLang === 'vi') {
+                    desc.innerHTML = `❌ <strong>Nam châm KHÔNG HÚT ${name}!</strong><br>Vì ${name} làm từ vật liệu không có từ tính (nhựa, gỗ, đồng, cao su...).`;
+                    badge.textContent = 'KHÔNG HÚT';
+                } else {
+                    desc.innerHTML = `❌ <strong>Magnet DOES NOT attract ${name}!</strong><br>Because ${name} is non-magnetic (plastic, wood, copper, rubber...).`;
+                    badge.textContent = 'NOT ATTRACTED';
+                }
+            }
+        }
+
+        // --- CANVAS RENDERER ---
+        const canvas = document.getElementById('magnetCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 465 / 2;
+
+        function renderCanvas() {
+            ctx.clearRect(0, 0, 465, 435);
+
+            // Draw Magnetic Field Lines (Faint)
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.ellipse(cx, 110, 80 + i*20, 120 + i*30, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw Magnet (U-Shape)
+            const magTop = 40;
+            const magW = 120;
+            const magH = 100;
+            const thick = 35;
+            
+            // Left pole (N - Red)
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(cx - magW/2, magTop, thick, magH);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 20px Nunito';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx - magW/2 + thick/2, magTop + magH - 15);
+
+            // Right pole (S - Blue)
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(cx + magW/2 - thick, magTop, thick, magH);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('S', cx + magW/2 - thick/2, magTop + magH - 15);
+
+            // Top connector (Gray)
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.arc(cx, magTop, magW/2, Math.PI, 0);
+            ctx.lineTo(cx + magW/2 - thick, magTop);
+            ctx.arc(cx, magTop, magW/2 - thick, 0, Math.PI, true);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw current item and handle animation
+            if (currentItem) {
+                // Animation Logic
+                if (animState === 'moving_up') {
+                    itemY -= 12; // Speed
+                    if (itemY <= magnetY) {
+                        itemY = magnetY;
+                        if (currentItem.magnetic) {
+                            animState = 'stuck';
+                            playClank();
+                            addScore(2);
+                            showResult(true);
+                        } else {
+                            animState = 'falling';
+                            playThud();
+                            addScore(1);
+                            showResult(false);
+                        }
+                    }
+                } else if (animState === 'falling') {
+                    itemY += 15;
+                    if (itemY >= 360) {
+                        itemY = 360;
+                        animState = 'falling_done';
+                    }
+                }
+
+                // Draw Item Background Bubble
+                ctx.fillStyle = currentItem.color;
+                ctx.beginPath();
+                ctx.arc(cx, itemY, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw Icon Emoji
+                ctx.fillStyle = '#000000';
+                ctx.font = '32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(currentItem.icon, cx, itemY + 2);
+            }
+
+            // Draw Table/Floor surface
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(0, 390, 465, 45);
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(0, 390, 465, 5);
+
+            requestAnimationFrame(renderCanvas);
+        }
+
+        // --- QUIZ LOGIC ---
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🧲',
+                qVi: '1. Nam châm có thể hút được vật liệu nào sau đây?',
+                qEn: '1. Which of the following materials can a magnet attract?',
+                optsVi: ['Gỗ', 'Nhựa', 'Sắt', 'Cao su'],
+                optsEn: ['Wood', 'Plastic', 'Iron', 'Rubber'],
+                ans: 2
+            },
+            {
+                icon: '🥄',
+                qVi: '2. Tại sao nam châm KHÔNG hút được thìa nhựa?',
+                qEn: '2. Why DOES NOT a magnet attract a plastic spoon?',
+                optsVi: ['Vì thìa quá nặng', 'Vì nhựa không có từ tính', 'Vì thìa bị ướt', 'Vì nam châm bị hỏng'],
+                optsEn: ['Because it is too heavy', 'Because plastic is non-magnetic', 'Because it is wet', 'Because the magnet is broken'],
+                ans: 1
+            },
+            {
+                icon: '📎',
+                qVi: '3. Ghim thép bị nam châm hút là vì sao?',
+                qEn: '3. Why is a steel clip attracted to a magnet?',
+                optsVi: ['Vì thép chứa sắt (kim loại có từ tính)', 'Vì thép rất nhẹ', 'Vì thép màu trắng bạc', 'Vì thép có hình cong'],
+                optsEn: ['Because steel contains iron (magnetic)', 'Because steel is light', 'Because steel is silver', 'Because of its curved shape'],
+                ans: 0
+            },
+            {
+                icon: '🪙',
+                qVi: '4. Đồng xu làm từ kim loại Đồng (Copper). Nam châm có hút đồng xu không?',
+                qEn: '4. A coin is made of Copper. Does a magnet attract it?',
+                optsVi: ['Có hút mạnh', 'Không hút', 'Hút nhưng rất yếu', 'Hút rồi đẩy ra'],
+                optsEn: ['Attracts strongly', 'Does not attract', 'Attracts weakly', 'Attracts then repels'],
+                ans: 1
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent = currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / 4` : `QUESTION ${quizIdx + 1} / 4`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-3 rounded-xl bg-slate-50 hover:bg-amber-50 border-2 border-slate-200 text-slate-800 font-black text-sm text-left flex items-center gap-3';
+                btn.innerHTML = `<span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-3 rounded-xl font-black text-sm text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi' ? '🎉 Chính xác! Bạn trả lời rất đúng (+3 Điểm)!' : '🎉 Correct! Great job (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1500);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-3 rounded-xl font-black text-sm text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi' ? '🤔 Chưa chính xác, hãy chọn lại nhé!' : '🤔 Not quite right, try again!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // --- NAVIGATION & TRANSLATION ---
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-blue-600 text-white border-2 border-blue-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-blue-100 border-2 border-slate-200';
+                }
+            });
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+            
+            const dict = {
+                vi: {
+                    labBadge: 'Môn Khoa Học & Tự Nhiên', goalPill: '🎯 Mục tiêu: Tìm hiểu từ tính của vật liệu',
+                    appTitle: 'Lab 003: Nam Châm Hút Vật Liệu Gì?', starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành Khám Phá', tab2: '2. Bảng Phân Loại', tab3: '3. Ôn Tập Đố Vui',
+                    canvasTitle: 'Mô Phỏng Tương Tác Từ Tính', toolsHeader: '🧰 Chọn Vật Liệu Để Thử',
+                    resetBtn: 'Làm lại', toolInstruct: 'Bấm vào từng đồ vật bên dưới để đưa lại gần nam châm. Quan sát xem đồ vật nào bị hút lên, đồ vật nào bị rơi xuống nhé!',
+                    matIron: 'Đinh Sắt', matIronDesc: 'Kim Loại',
+                    matSteel: 'Ghim Thép', matSteelDesc: 'Hợp Kim',
+                    matCopper: 'Đồng Xu', matCopperDesc: 'Kim Loại Đồng',
+                    matPlastic: 'Thìa Nhựa', matPlasticDesc: 'Nhựa (Plastic)',
+                    matWood: 'Khối Gỗ', matWoodDesc: 'Gỗ Tự Nhiên',
+                    matRubber: 'Cục Tẩy', matRubberDesc: 'Cao Su',
+                    resTitle: 'KẾT QUẢ QUAN SÁT:',
+                    cmpSub: 'Kiến Thức Trọng Tâm', cmpTitle: 'Nam châm chỉ hút được một số vật liệu nhất định (Từ tính)',
+                    cmpDesc: 'Nam châm hút được các vật làm từ sắt, thép, niken, coban. Những vật liệu này gọi là vật liệu có từ tính. Nam châm không hút được nhựa, gỗ, cao su, đồng, nhôm...',
+                    cmpAttract: 'VẬT BỊ NAM CHÂM HÚT', cmpNotAttract: 'VẬT KHÔNG BỊ HÚT', quizTitle: 'Đố Vui Kiểm Tra Kiến Thức'
+                },
+                en: {
+                    labBadge: 'Science & Nature Subject', goalPill: '🎯 Goal: Explore Magnetic Properties',
+                    appTitle: 'Lab 003: What does a magnet attract?', starsUnit: 'Pts',
+                    tab1: '1. Interactive Lab', tab2: '2. Classification Table', tab3: '3. Quiz',
+                    canvasTitle: 'Magnetic Interaction Simulation', toolsHeader: '🧰 Select Material to Test',
+                    resetBtn: 'Reset', toolInstruct: 'Click on the objects below to move them near the magnet. Observe which ones are attracted and which ones fall!',
+                    matIron: 'Iron Nail', matIronDesc: 'Metal',
+                    matSteel: 'Steel Clip', matSteelDesc: 'Alloy',
+                    matCopper: 'Copper Coin', matCopperDesc: 'Copper Metal',
+                    matPlastic: 'Plastic Spoon', matPlasticDesc: 'Plastic',
+                    matWood: 'Wood Block', matWoodDesc: 'Natural Wood',
+                    matRubber: 'Eraser', matRubberDesc: 'Rubber',
+                    resTitle: 'OBSERVATION RESULT:',
+                    cmpSub: 'Core Knowledge', cmpTitle: 'Magnets only attract specific materials (Magnetic)',
+                    cmpDesc: 'Magnets attract objects made of iron, steel, nickel, and cobalt. These are magnetic materials. Magnets do not attract plastic, wood, rubber, copper, aluminum...',
+                    cmpAttract: 'ATTRACTED BY MAGNET', cmpNotAttract: 'NOT ATTRACTED', quizTitle: 'Knowledge Check Quiz'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            resetLab();
+            renderQuiz();
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            renderQuiz();
+            requestAnimationFrame(renderCanvas);
+        };
+    </script>
+</body>
+</html>

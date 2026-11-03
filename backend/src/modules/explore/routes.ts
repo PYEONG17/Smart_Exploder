@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middlewares/auth.middleware.js";
+import { lab3DModelUpload } from "../../utils/course-media.js";
 import {
   listExploreMaterials,
   getExploreFilters,
@@ -25,12 +26,14 @@ router.post(
   "/",
   requireAuth,
   requireRole("TEACHER"),
+  lab3DModelUpload,
   createExploreMaterial,
 );
 router.put(
   "/:id",
   requireAuth,
   requireRole("TEACHER"),
+  lab3DModelUpload,
   updateExploreMaterial,
 );
 router.delete(

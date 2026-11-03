@@ -22,14 +22,14 @@ export async function updateProfile(req: Request, res: Response) {
   res.json(success(data, "Profile updated successfully"));
 }
 
-// ─── POST /api/users/:id/avatar ───────────────────────────────────────────────
+// ───avatar ───────────────────────────────────────────────
 
 export async function uploadAvatar(req: Request, res: Response) {
   if (!req.user) throw new AppError("Authentication required", 401);
 
   const targetId = String(req.params.id);
 
-  // Only the account owner can change their avatar.
+ 
   if (req.user.id !== targetId) {
     throw new AppError("Forbidden: you can only change your own avatar", 403);
   }
@@ -38,13 +38,12 @@ export async function uploadAvatar(req: Request, res: Response) {
     throw new AppError("No image file provided", 400);
   }
 
-  // Build public URL for the uploaded file
   const avatarUrl = getAvatarUrl(req, req.file.filename);
   const data = await usersService.uploadAvatar(targetId, avatarUrl);
   res.json(success(data, "Avatar uploaded successfully"));
 }
 
-// ─── GET /api/users/:id/avatar/random ────────────────────────────────────────
+// ──────────────────────────────────────────
 
 export async function randomAvatar(req: Request, res: Response) {
   if (!req.user) throw new AppError("Authentication required", 401);

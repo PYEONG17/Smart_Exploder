@@ -73,6 +73,7 @@ export interface ExploreMaterial {
   typeLabelVi: string;
   typeLabelEn: string;
   modelType: string;
+  uploadedModelUrl?: string | null;
   thumbnailUrl?: string;
   curriculum: string; // "GDPT 2018"
   textbook: string; // "Kết Nối Tri Thức" | "Cánh Diều" | "Chân Trời Sáng Tạo"
@@ -1858,5 +1859,4 @@ export const EXPLORE_MATERIALS_CONFIG: ExploreMaterial[] = [
     aiPromptContext: "Bạn là Nora AI - Gia sư Vật lý 8 bộ sách Kết Nối Tri Thức. Học sinh đang quan sát thí nghiệm ảo 3D Áp suất chất lỏng Bài 16. Hãy giải thích công thức p = d.h, định luật Pascal, và giải thích tại sao màng cao su phía dưới đáy lại phồng to nhất.",
   },
 ];
-
 

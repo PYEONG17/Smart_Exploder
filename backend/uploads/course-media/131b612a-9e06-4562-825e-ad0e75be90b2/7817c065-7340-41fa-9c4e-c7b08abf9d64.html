@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Khám Phá Mô Hình Hệ Mặt Trời (Solar System Model Lab)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 60%, #311042 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #f59e0b;
+            box-shadow: 0 18px 40px -12px rgba(245, 158, 11, 0.3), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #f59e0b;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-amber-600 via-purple-700 to-indigo-800 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-amber-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-amber-600 flex items-center justify-center shadow border-2 border-amber-200 shrink-0 text-2xl font-black">
+                    ☀️
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Thiên Văn Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Khám phá vị trí, quỹ đạo & đặc điểm 8 hành tinh
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Mô Phỏng Mô Hình Hệ Mặt Trời 3D Tương Tác
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-amber-700 hover:bg-amber-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-amber-50/80 px-3.5 py-2 border-b-2 border-amber-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-amber-600 text-white border-2 border-amber-700">
+                <span>🪐</span>
+                <span data-i18n="tab1">1. Quỹ Đạo & 4 Bước Khám Phá</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-amber-100 border-2 border-slate-200">
+                <span>🔬</span>
+                <span data-i18n="tab2">2. So Sánh Các Hành Tinh Chi Tiết</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-amber-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Quy Luật & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-amber-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: MÔ PHỎNG QUỸ ĐẠO & 4 BƯỚC LAB
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Solar System Canvas Chamber -->
+                    <div class="bg-slate-950 rounded-2xl border-3 border-amber-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    ĐANG QUAY
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-amber-200 truncate" data-i18n="statusReady">
+                                    Bấm chọn hành tinh hoặc chọn các bước khám phá
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block cursor-pointer"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleRotate()" id="btn-rotate" class="btn-kid px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="pause" id="rotate-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="rotate-text" data-i18n="rotateBtnOff">Tạm dừng</span>
+                                </button>
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự động 4 bước</span>
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-300">
+                                <span data-i18n="selectedLabel">Đang chọn:</span> <strong id="selected-planet-name" class="text-amber-400">Trái Đất (Earth)</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Orbit Controls + Sliders + 4 Steps -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50/60 rounded-2xl p-3 border-2 border-amber-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <!-- Header & Tools -->
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🎛️ Điều Chỉnh Quỹ Đạo Vũ Trụ
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Đặt lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Controls -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-amber-100 space-y-2 mb-2">
+
+                                <!-- Planet Selector Dropdown -->
+                                <div>
+                                    <label class="text-[11px] font-black text-slate-700 block mb-1" data-i18n="selectPlanetLabel">Chọn hành tinh muốn quan sát:</label>
+                                    <select id="select-planet" onchange="onPlanetSelectChange()" class="w-full bg-amber-50 border-2 border-amber-300 text-amber-950 font-black text-xs rounded-lg p-1.5 cursor-pointer outline-none">
+                                        <option value="sun">☀️ Mặt Trời (Trung tâm)</option>
+                                        <option value="mercury">⚫ Sao Thủy (Mercury - Gần nhất)</option>
+                                        <option value="venus">🟡 Sao Kim (Venus - Nóng nhất)</option>
+                                        <option value="earth" selected>🌍 Trái Đất (Earth - Sự sống)</option>
+                                        <option value="mars">🔴 Sao Hỏa (Mars - Hành tinh Đỏ)</option>
+                                        <option value="jupiter">🟠 Sao Mộc (Jupiter - Lớn nhất)</option>
+                                        <option value="saturn">🪐 Sao Thổ (Saturn - Có vành đai)</option>
+                                        <option value="uranus">🩵 Sao Thiên Vương (Uranus)</option>
+                                        <option value="neptune">💙 Sao Hải Vương (Neptune - Xa nhất)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Speed Slider -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-1">
+                                        <span class="flex items-center gap-1 text-amber-700">
+                                            <span>⏱️</span> <span data-i18n="speedLabel">Tốc độ chuyển động quỹ đạo:</span>
+                                        </span>
+                                        <span id="speed-display" class="bg-amber-100 text-amber-950 px-2 py-0.5 rounded-md font-black text-xs">1.0x</span>
+                                    </div>
+                                    <input type="range" id="slider-speed" min="0" max="3" step="0.2" value="1" oninput="onParamChange()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Planet Parameter Dashboard -->
+                                <div class="bg-slate-900 text-white p-2 rounded-lg text-center flex items-center justify-around font-black text-[11px] border border-amber-300">
+                                    <div class="text-cyan-300">Khoảng cách: <span id="val-dist">1.00 AU</span></div>
+                                    <div class="text-slate-400">|</div>
+                                    <div class="text-amber-300">Chu kỳ: <span id="val-period">365 Ngày</span></div>
+                                    <div class="text-slate-400">|</div>
+                                    <div class="text-emerald-400">Đường kính: <span id="val-size">1.0x Đất</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-amber-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Khám Phá (Bấm 1 → 4):
+                            </div>
+
+                            <!-- 4 Step Buttons -->
+                            <div class="space-y-1">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-4 h-4 rounded-md bg-amber-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step1Text">1. Quan sát 4 Hành tinh đá vòng trong (Thủy, Kim, Đất, Hỏa).</span>
+                                    <span id="step-badge-1" class="text-[10px] font-black text-amber-800">👉 Thử ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step2Text">2. Quan sát 4 Khổng lồ khí/băng vòng ngoài (Mộc, Thổ, TV, HV).</span>
+                                    <span id="step-badge-2" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step3Text">3. So sánh vận tốc: Càng gần Mặt Trời quay càng nhanh!</span>
+                                    <span id="step-badge-3" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step4Text">4. Phân tích cấu trúc Vành đai Sao Thổ & Vành đai Tiểu hành tinh.</span>
+                                    <span id="step-badge-4" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2 rounded-xl border-2 border-amber-300 shadow-sm mt-1">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-amber-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Bấm chọn một hành tinh hoặc bấm <strong>Bước 1</strong> để bắt đầu hành trình khám phá Vũ trụ!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Stage Strip -->
+                <div class="bg-amber-50/90 rounded-2xl p-2 border-2 border-amber-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Nhóm Hành Tinh Trong Hệ Mặt Trời
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Định luật Kepler: Chu kỳ quay $T^2$ tỉ lệ với bán kính $a^3$
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: COMPARE PLANETS
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-3 rounded-2xl border-2 border-amber-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-amber-800 bg-amber-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích chi tiết
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-0.5" data-i18n="cmpTitle">
+                            So sánh đặc điểm 4 hành tinh tiêu biểu trong Hệ Mặt Trời
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5">
+                    <!-- Mercury -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-slate-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-slate-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">SAO THỦY</span>
+                                <span class="text-[10px] font-bold text-slate-500">Gần Mặt Trời nhất</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenATitle">Sao Thủy (Mercury)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasA" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-slate-800 bg-slate-100 p-1.5 rounded-lg leading-tight" data-i18n="scenARes">
+                            ⚡ <strong>Quay cực nhanh:</strong> Chỉ mất 88 ngày Trái Đất để quay xong 1 vòng. Không có bầu khí quyển giữ nhiệt.
+                        </p>
+                    </div>
+
+                    <!-- Earth -->
+                    <div class="bg-white rounded-2xl p-2.5 border-3 border-emerald-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRÁI ĐẤT</span>
+                                <span class="text-[10px] font-bold text-slate-500">Hành tinh sự sống</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenBTitle">Trái Đất (Earth)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasB" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-emerald-900 bg-emerald-50 p-1.5 rounded-lg leading-tight" data-i18n="scenBRes">
+                            🌍 <strong>Có nước & sự sống:</strong> Khoảng cách lý tưởng (1 AU), chu kỳ 365 ngày, có 1 Mặt Trăng tự nhiên.
+                        </p>
+                    </div>
+
+                    <!-- Jupiter -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-orange-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-orange-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">SAO MỘC</span>
+                                <span class="text-[10px] font-bold text-slate-500">Gã khổng lồ khí</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenCTitle">Sao Mộc (Jupiter)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasC" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-orange-900 bg-orange-50 p-1.5 rounded-lg leading-tight" data-i18n="scenCRes">
+                            👑 <strong>Hành tinh lớn nhất:</strong> Đường kính gấp 11 lần Trái Đất, có Vết Đỏ Lớn là bão khí khổng lồ.
+                        </p>
+                    </div>
+
+                    <!-- Saturn -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">SAO THỔ</span>
+                                <span class="text-[10px] font-bold text-slate-500">Vành đai rực rỡ</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenDTitle">Sao Thổ (Saturn)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-amber-900 bg-amber-50 p-1.5 rounded-lg leading-tight" data-i18n="scenDRes">
+                            🪐 <strong>Vành đai đá & băng:</strong> Vành đai bao quanh lấp lánh, nhẹ hơn nước nếu có bể bơi đủ lớn!
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: SUMMARY & QUIZ
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-3.5 border-2 border-amber-300 space-y-2.5">
+                        <div class="flex items-center gap-2 border-b border-amber-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-amber-800">Phiếu Kiến Thức Trọng Tâm</span>
+                                <h3 class="text-base font-black text-amber-950">Mô Hình Cấu Trúc Hệ Mặt Trời</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200 space-y-0.5">
+                            <div class="text-xs font-black text-amber-800">☀️ 1. Mặt Trời - Ngôi sao trung tâm:</div>
+                            <p class="text-xs font-bold text-slate-700">Chiếm 99.86% tổng khối lượng toàn Hệ Mặt Trời, cung cấp ánh sáng và nhiệt năng nhờ phản ứng nhiệt hạch.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200 space-y-0.5">
+                            <div class="text-xs font-black text-amber-800">🌌 2. Thứ tự 8 Hành tinh (từ gần đến xa):</div>
+                            <p class="text-xs font-bold text-slate-700 leading-relaxed">
+                                1. Sao Thủy &bull; 2. Sao Kim &bull; 3. Trái Đất &bull; 4. Sao Hỏa &bull; 5. Sao Mộc &bull; 6. Sao Thổ &bull; 7. Sao Thiên Vương &bull; 8. Sao Hải Vương
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200 space-y-0.5">
+                            <div class="text-xs font-black text-amber-800">📐 3. Hai nhóm hành tinh chính:</div>
+                            <ul class="text-xs font-bold text-slate-700 space-y-0.5 list-disc list-inside">
+                                <li><strong>Hành tinh đá (Vòng trong):</strong> Thủy, Kim, Đất, Hỏa - Kích thước nhỏ, bề mặt đất đá rắn.</li>
+                                <li><strong>Khổng lồ khí/băng (Vòng ngoài):</strong> Mộc, Thổ, Thiên Vương, Hải Vương - Kích thước lớn, chứa khí H₂/He/băng.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-100 p-2.5 rounded-xl border-2 border-amber-300">
+                            <div class="text-xs font-black text-amber-900">💡 Mẹo ghi nhớ thứ tự các hành tinh</div>
+                            <p class="text-xs font-bold text-amber-950 mt-0.5">
+                                "Thủy - Kim - Trái - Hỏa - Mộc - Thổ - Thiên - Hải" (8 hành tinh chính thức tính từ Mặt Trời ra ngoài).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Thử Thách Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🪐</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-1.5"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.28), 240);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            isRotating: true,
+            rotSpeed: 1.0,
+            selectedPlanet: 'earth',
+            step: 0
+        };
+
+        // Planets Database (Distance scaled for 465x345 Canvas)
+        const planetsData = {
+            sun:     { nameVi: 'Mặt Trời', nameEn: 'Sun', color: '#fbbf24', radius: 18, dist: 0, speed: 0, distAU: '0 AU', period: '0 Ngày', sizeRel: '109x Đất' },
+            mercury: { nameVi: 'Sao Thủy', nameEn: 'Mercury', color: '#a1a1aa', radius: 3.5, dist: 38, speed: 0.04, distAU: '0.39 AU', period: '88 Ngày', sizeRel: '0.38x Đất' },
+            venus:   { nameVi: 'Sao Kim', nameEn: 'Venus', color: '#fde047', radius: 5.5, dist: 58, speed: 0.028, distAU: '0.72 AU', period: '225 Ngày', sizeRel: '0.95x Đất' },
+            earth:   { nameVi: 'Trái Đất', nameEn: 'Earth', color: '#38bdf8', radius: 6.0, dist: 80, speed: 0.02, distAU: '1.00 AU', period: '365 Ngày', sizeRel: '1.00x Đất' },
+            mars:    { nameVi: 'Sao Hỏa', nameEn: 'Mars', color: '#f87171', radius: 4.5, dist: 102, speed: 0.016, distAU: '1.52 AU', period: '687 Ngày', sizeRel: '0.53x Đất' },
+            jupiter: { nameVi: 'Sao Mộc', nameEn: 'Jupiter', color: '#fb923c', radius: 12.0, dist: 135, speed: 0.009, distAU: '5.20 AU', period: '12 Năm', sizeRel: '11.2x Đất' },
+            saturn:  { nameVi: 'Sao Thổ', nameEn: 'Saturn', color: '#fef08a', radius: 10.0, dist: 165, speed: 0.006, distAU: '9.58 AU', period: '29 Năm', sizeRel: '9.45x Đất', hasRings: true },
+            uranus:  { nameVi: 'Sao Thiên Vương', nameEn: 'Uranus', color: '#22d3ee', radius: 7.5, dist: 190, speed: 0.004, distAU: '19.2 AU', period: '84 Năm', sizeRel: '4.00x Đất' },
+            neptune: { nameVi: 'Sao Hải Vương', nameEn: 'Neptune', color: '#818cf8', radius: 7.0, dist: 212, speed: 0.003, distAU: '30.1 AU', period: '165 Năm', sizeRel: '3.88x Đất' }
+        };
+
+        // Angles for animated orbit
+        const planetAngles = {
+            mercury: 0.5, venus: 1.2, earth: 2.1, mars: 3.5,
+            jupiter: 4.2, saturn: 0.8, uranus: 5.1, neptune: 2.8
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Hành tinh đá', shortEn: '1. Rocky Planets', icon: '🪨' },
+            2: { shortVi: '2. Khổng lồ khí', shortEn: '2. Gas Giants', icon: '🪐' },
+            3: { shortVi: '3. Vận tốc Kepler', shortEn: '3. Kepler Speed', icon: '⚡' },
+            4: { shortVi: '4. Vành đai thiên thể', shortEn: '4. Celestial Belts', icon: '✨' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function toggleRotate() {
+            labState.isRotating = !labState.isRotating;
+            playTone(labState.isRotating ? 600 : 350, 'sine', 0.1);
+            updateLabUI();
+        }
+
+        function onParamChange() {
+            labState.rotSpeed = parseFloat(document.getElementById('slider-speed').value);
+            playTone(300 + labState.rotSpeed * 120, 'sine', 0.05, 0.05);
+            updateLabUI();
+        }
+
+        function onPlanetSelectChange() {
+            labState.selectedPlanet = document.getElementById('select-planet').value;
+            playTone(550, 'triangle', 0.1);
+            updateLabUI();
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                labState.selectedPlanet = 'earth';
+                document.getElementById('select-planet').value = 'earth';
+                playTone(500, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                labState.selectedPlanet = 'jupiter';
+                document.getElementById('select-planet').value = 'jupiter';
+                playTone(650, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.selectedPlanet = 'mercury';
+                document.getElementById('select-planet').value = 'mercury';
+                playTone(750, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                labState.selectedPlanet = 'saturn';
+                document.getElementById('select-planet').value = 'saturn';
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2300);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 500);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.isRotating = true;
+            labState.rotSpeed = 1.0;
+            labState.selectedPlanet = 'earth';
+            labState.step = 0;
+
+            document.getElementById('slider-speed').value = 1.0;
+            document.getElementById('select-planet').value = 'earth';
+
+            playTone(320, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const curP = planetsData[labState.selectedPlanet];
+
+            // Speed display & Dashboard
+            document.getElementById('speed-display').textContent = labState.rotSpeed.toFixed(1) + 'x';
+            document.getElementById('selected-planet-name').textContent = currentLang === 'vi' ? curP.nameVi : curP.nameEn;
+            document.getElementById('val-dist').textContent = curP.distAU;
+            document.getElementById('val-period').textContent = curP.period;
+            document.getElementById('val-size').textContent = curP.sizeRel;
+
+            // Rotate button UI
+            const rotBtn = document.getElementById('btn-rotate');
+            const rotTxt = document.getElementById('rotate-text');
+            const rotIcon = document.getElementById('rotate-icon');
+            if (labState.isRotating) {
+                rotBtn.className = 'btn-kid px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1';
+                rotTxt.textContent = currentLang === 'vi' ? 'Tạm dừng' : 'Pause';
+                rotIcon.setAttribute('data-lucide', 'pause');
+            } else {
+                rotBtn.className = 'btn-kid px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1';
+                rotTxt.textContent = currentLang === 'vi' ? 'Tiếp tục quay' : 'Resume Orbit';
+                rotIcon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+
+            // Top Status Badge
+            const badge = document.getElementById('status-step-badge');
+            const title = document.getElementById('status-step-title');
+            badge.className = 'bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+            badge.textContent = st === 0 ? (currentLang === 'vi' ? 'HỆ MẶT TRỜI' : 'SOLAR SYSTEM') : `BƯỚC ${st}/4`;
+
+            const stepTitles = [
+                'Bấm chọn bất kỳ hành tinh nào để xem thông số chi tiết!',
+                'Bước 1: 4 Hành tinh đá vòng trong (Thủy, Kim, Trái Đất, Hỏa) có kích thước nhỏ và vỏ đất đá cứng',
+                'Bước 2: 4 Hành tinh vòng ngoài (Mộc, Thổ, Thiên Vương, Hải Vương) là các gã khổng lồ khí và băng',
+                'Bước 3: Tốc độ quỹ đạo: Càng gần Mặt Trời lực hấp dẫn càng lớn nên quay càng nhanh',
+                'Bước 4: Đặc trưng đặc biệt: Vành đai Sao Thổ gồm các mảnh băng đá, Vành đai tiểu hành tinh giữa Hỏa & Mộc'
+            ];
+            title.textContent = stepTitles[st];
+
+            // 4 Steps buttons UI
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-4 h-4 rounded-md bg-amber-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-emerald-700';
+                    bdg.textContent = '✅';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-4 h-4 rounded-md bg-amber-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-80';
+                    icon.className = 'w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Result Text
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) {
+                obsEl.innerHTML = `Đang chọn <strong>${curP.nameVi}</strong>. Khoảng cách: <strong>${curP.distAU}</strong>, Chu kỳ quay: <strong>${curP.period}</strong>, Đường kính: <strong>${curP.sizeRel}</strong>!`;
+            } else if (st === 1) {
+                obsEl.innerHTML = `4 Hành tinh đá vòng trong nằm gần Mặt Trời, bề mặt rắn chắc, có mật độ vật chất cao (Trái Đất là hành tinh có sự sống duy nhất).`;
+            } else if (st === 2) {
+                obsEl.innerHTML = `4 Khổng lồ khí vòng ngoài gồm Sao Mộc, Sao Thổ, Sao Thiên Vương & Hải Vương. Sao Mộc là hành tinh lớn nhất Hệ Mặt Trời!`;
+            } else if (st === 3) {
+                obsEl.innerHTML = `⚡ <strong>Theo Định luật Kepler:</strong> Sao Thủy gần Mặt Trời nhất quay hết 1 vòng chỉ mất 88 ngày, trong khi Sao Hải Vương ở cực xa mất đến 165 năm!`;
+            } else if (st === 4) {
+                obsEl.innerHTML = `🎉 <strong>Vành đai Vũ trụ:</strong> Vành đai tiểu hành tinh nằm giữa Sao Hỏa & Sao Mộc. Vành đai Sao Thổ được cấu tạo từ vô số hạt băng rực rỡ!`;
+            }
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-100 text-amber-950 border-2 border-amber-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345 Solar System View)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // Canvas click handler to pick planet
+        mainCanvas.addEventListener('click', (e) => {
+            const rect = mainCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const cX = 232, cY = 172;
+            const keys = Object.keys(planetsData);
+
+            for (let k of keys) {
+                if (k === 'sun') {
+                    if (Math.hypot(mouseX - cX, mouseY - cY) <= 22) {
+                        labState.selectedPlanet = 'sun';
+                        document.getElementById('select-planet').value = 'sun';
+                        updateLabUI();
+                        playTone(600, 'triangle', 0.1);
+                        return;
+                    }
+                } else {
+                    const p = planetsData[k];
+                    const angle = planetAngles[k];
+                    const px = cX + Math.cos(angle) * p.dist;
+                    const py = cY + Math.sin(angle) * (p.dist * 0.55); // Elliptical perspective
+                    if (Math.hypot(mouseX - px, mouseY - py) <= p.radius + 6) {
+                        labState.selectedPlanet = k;
+                        document.getElementById('select-planet').value = k;
+                        updateLabUI();
+                        playTone(650, 'triangle', 0.1);
+                        return;
+                    }
+                }
+            }
+        });
+
+        function drawCalloutPill(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath(); c.arc(targetX, targetY, 3, 0, Math.PI * 2); c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 175, 24, 7);
+            c.fill(); c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 6, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Deep Space Background
+                ctx.fillStyle = '#090d16'; ctx.fillRect(0, 0, 465, 345);
+
+                // Background Starfield
+                ctx.fillStyle = '#ffffff';
+                for (let s = 0; s < 45; s++) {
+                    const sx = (s * 83) % 465;
+                    const sy = (s * 47) % 345;
+                    ctx.beginPath(); ctx.arc(sx, sy, (s % 3 === 0) ? 1.2 : 0.7, 0, Math.PI * 2); ctx.fill();
+                }
+
+                const cX = 232, cY = 172; // Center Sun coordinates
+
+                // --- 1. DRAW ORBIT TRAILS (Ellipses for 3D tilt perspective) ---
+                const keys = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+                keys.forEach(k => {
+                    const p = planetsData[k];
+                    ctx.strokeStyle = (k === labState.selectedPlanet) ? '#f59e0b' : 'rgba(255, 255, 255, 0.15)';
+                    ctx.lineWidth = (k === labState.selectedPlanet) ? 2 : 1;
+                    if (k === labState.selectedPlanet) ctx.setLineDash([4, 4]); else ctx.setLineDash([]);
+
+                    ctx.beginPath();
+                    ctx.ellipse(cX, cY, p.dist, p.dist * 0.55, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                });
+
+                // Asteroid Belt between Mars & Jupiter (dist ~ 118)
+                ctx.strokeStyle = 'rgba(217, 119, 6, 0.25)'; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.ellipse(cX, cY, 118, 118 * 0.55, 0, 0, Math.PI * 2); ctx.stroke();
+
+                // --- 2. UPDATE PLANET ANGLES ---
+                if (labState.isRotating) {
+                    keys.forEach(k => {
+                        planetAngles[k] += planetsData[k].speed * labState.rotSpeed;
+                    });
+                }
+
+                // --- 3. DRAW SUN (CENTER) ---
+                const sunGlow = ctx.createRadialGradient(cX, cY, 4, cX, cY, 32);
+                sunGlow.addColorStop(0, '#fef08a');
+                sunGlow.addColorStop(0.4, '#f59e0b');
+                sunGlow.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                ctx.fillStyle = sunGlow;
+                ctx.beginPath(); ctx.arc(cX, cY, 32, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath(); ctx.arc(cX, cY, 18, 0, Math.PI * 2); ctx.fill();
+
+                if (labState.selectedPlanet === 'sun') {
+                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(cX, cY, 22, 0, Math.PI * 2); ctx.stroke();
+                }
+
+                // --- 4. DRAW PLANETS ---
+                let selX = cX, selY = cY;
+
+                keys.forEach(k => {
+                    const p = planetsData[k];
+                    const angle = planetAngles[k];
+                    const px = cX + Math.cos(angle) * p.dist;
+                    const py = cY + Math.sin(angle) * (p.dist * 0.55);
+
+                    if (k === labState.selectedPlanet) {
+                        selX = px; selY = py;
+                    }
+
+                    // Saturn Rings
+                    if (p.hasRings) {
+                        ctx.strokeStyle = 'rgba(254, 240, 138, 0.7)'; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.ellipse(px, py, p.radius * 2.2, p.radius * 0.8, 0.4, 0, Math.PI * 2); ctx.stroke();
+                    }
+
+                    // Planet Sphere
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(px, py, p.radius, 0, Math.PI * 2); ctx.fill();
+
+                    // Selection Ring Highlight
+                    if (k === labState.selectedPlanet) {
+                        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.arc(px, py, p.radius + 4, 0, Math.PI * 2); ctx.stroke();
+                    }
+                });
+
+                // --- 5. CALLOUT OVERLAYS ---
+                const pillX = 280;
+                const curP = planetsData[labState.selectedPlanet];
+                const pName = currentLang === 'vi' ? curP.nameVi : curP.nameEn;
+
+                if (labState.selectedPlanet === 'sun') {
+                    drawCalloutPill(ctx, cX, cY, pillX, 140, '☀️ Mặt Trời: Ngôi sao trung tâm', '#fbbf24');
+                } else {
+                    drawCalloutPill(ctx, selX, selY, pillX, 140, `🪐 ${pName}: ${curP.distAU}`, '#f59e0b');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: COMPARISON SLIDES
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', key: 'mercury' },
+                { id: 'cmpCanvasB', key: 'earth' },
+                { id: 'cmpCanvasC', key: 'jupiter' },
+                { id: 'cmpCanvasD', key: 'saturn' }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 144;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#090d16'; ctx.fillRect(0, 0, w, h);
+
+                const cX = w / 2, cY = h / 2 - 8;
+                const p = planetsData[cfg.key];
+
+                // Saturn Rings in comparison
+                if (p.hasRings) {
+                    ctx.strokeStyle = 'rgba(254, 240, 138, 0.8)'; ctx.lineWidth = 5;
+                    ctx.beginPath(); ctx.ellipse(cX, cY, 45, 16, 0.3, 0, Math.PI * 2); ctx.stroke();
+                }
+
+                // Planet Sphere
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(cX, cY, p.radius * 2.2, 0, Math.PI * 2); ctx.fill();
+
+                // Jupiter Great Red Spot
+                if (cfg.key === 'jupiter') {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath(); ctx.ellipse(cX + 8, cY + 6, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
+                }
+
+                ctx.fillStyle = '#f8fafc'; ctx.font = '800 10px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(`Đường kính: ${p.sizeRel}`, cX, h - 14);
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '☀️',
+                qVi: '1. Ngôi sao nào nằm ở vị trí trung tâm của Hệ Mặt Trời?',
+                qEn: '1. Which star is located at the center of the Solar System?',
+                optsVi: [
+                    'Mặt Trời (Sun)',
+                    'Sao Mộc',
+                    'Sao Kim',
+                    'Trái Đất'
+                ],
+                optsEn: [
+                    'The Sun',
+                    'Jupiter',
+                    'Venus',
+                    'Earth'
+                ],
+                ans: 0
+            },
+            {
+                icon: '⚡',
+                qVi: '2. Hành tinh nào nằm gần Mặt Trời nhất và có chu kỳ quay ngắn nhất (88 ngày)?',
+                qEn: '2. Which planet is closest to the Sun with the shortest orbital period (88 days)?',
+                optsVi: [
+                    'Sao Thủy (Mercury)',
+                    'Sao Hỏa',
+                    'Sao Thiên Vương',
+                    'Trái Đất'
+                ],
+                optsEn: [
+                    'Mercury',
+                    'Mars',
+                    'Uranus',
+                    'Earth'
+                ],
+                ans: 0
+            },
+            {
+                icon: '👑',
+                qVi: '3. Hành tinh nào có đường kính lớn nhất trong Hệ Mặt Trời?',
+                qEn: '3. Which planet has the largest diameter in the Solar System?',
+                optsVi: [
+                    'Sao Mộc (Jupiter)',
+                    'Sao Thổ',
+                    'Sao Hải Vương',
+                    'Trái Đất'
+                ],
+                optsEn: [
+                    'Jupiter',
+                    'Saturn',
+                    'Neptune',
+                    'Earth'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🪐',
+                qVi: '4. Tụ tập vô số các mảnh đá và băng rực rỡ nhất tạo thành Vành đai bao quanh hành tinh nào?',
+                qEn: '4. Which planet is famous for its magnificent ring system made of ice and rock particles?',
+                optsVi: [
+                    'Sao Thổ (Saturn)',
+                    'Sao Thủy',
+                    'Sao Kim',
+                    'Trái Đất'
+                ],
+                optsEn: [
+                    'Saturn',
+                    'Mercury',
+                    'Venus',
+                    'Earth'
+                ],
+                ans: 0
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 font-black">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã hiểu rất rõ về Hệ Mặt Trời (+3 Điểm)!'
+                    : '🎉 Correct! You mastered the Solar System (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1400);
+            } else {
+                playTone(220, 'sawtooth', 0.2);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi, hãy đọc lại phiếu tóm tắt bên trái nhé!'
+                    : '🤔 Not quite right, check the theory sheet on the left!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-amber-600 text-white border-2 border-amber-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-amber-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Thiên Văn Học',
+                    goalPill: '🎯 Mục tiêu: Khám phá vị trí, quỹ đạo & đặc điểm 8 hành tinh',
+                    appTitle: 'Lab: Mô Phỏng Mô Hình Hệ Mặt Trời 3D Tương Tác',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Quỹ Đạo & 4 Bước Khám Phá',
+                    tab2: '2. So Sánh Các Hành Tinh Chi Tiết',
+                    tab3: '3. Tóm Tắt Quy Luật & Đố Vui',
+                    autoObsBtn: 'Tự động 4 bước',
+                    toolsHeader: '🎛️ Điều Chỉnh Quỹ Đạo Vũ Trụ',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Đặt lại',
+                    selectPlanetLabel: 'Chọn hành tinh muốn quan sát:',
+                    speedLabel: 'Tốc độ chuyển động quỹ đạo:',
+                    selectedLabel: 'Đang chọn:',
+                    stepsHeader: '📋 Các Bước Khám Phá (Bấm 1 → 4):',
+                    step1Text: '1. Quan sát 4 Hành tinh đá vòng trong (Thủy, Kim, Đất, Hỏa).',
+                    step2Text: '2. Quan sát 4 Khổng lồ khí/băng vòng ngoài (Mộc, Thổ, TV, HV).',
+                    step3Text: '3. So sánh vận tốc: Càng gần Mặt Trời quay càng nhanh!',
+                    step4Text: '4. Phân tích cấu trúc Vành đai Sao Thổ & Vành đai Tiểu hành tinh.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Sơ Đồ Các Nhóm Hành Tinh Trong Hệ Mặt Trời',
+                    finalConclusionBadge: '✅ Định luật Kepler: Chu kỳ quay T² tỉ lệ với bán kính a³',
+                    cmpSub: 'Phân tích chi tiết',
+                    cmpTitle: 'So sánh đặc điểm 4 hành tinh tiêu biểu trong Hệ Mặt Trời',
+                    scenATitle: 'Sao Thủy (Mercury)',
+                    scenARes: '⚡ <strong>Quay cực nhanh:</strong> Chỉ mất 88 ngày Trái Đất để quay xong 1 vòng. Không có bầu khí quyển giữ nhiệt.',
+                    scenBTitle: 'Trái Đất (Earth)',
+                    scenBRes: '🌍 <strong>Có nước & sự sống:</strong> Khoảng cách lý tưởng (1 AU), chu kỳ 365 ngày, có 1 Mặt Trăng tự nhiên.',
+                    scenCTitle: 'Sao Mộc (Jupiter)',
+                    scenCRes: '👑 <strong>Hành tinh lớn nhất:</strong> Đường kính gấp 11 lần Trái Đất, có Vết Đỏ Lớn là bão khí khổng lồ.',
+                    scenDTitle: 'Sao Thổ (Saturn)',
+                    scenDRes: '🪐 <strong>Vành đai đá & băng:</strong> Vành đai bao quanh lấp lánh, nhẹ hơn nước nếu có bể bơi đủ lớn!'
+                },
+                en: {
+                    labBadge: 'Astronomy Lab',
+                    goalPill: '🎯 Goal: Discover positions, orbits & features of 8 planets',
+                    appTitle: 'Lab: Interactive 3D Solar System Model',
+                    starsUnit: 'Pts',
+                    tab1: '1. Orbits & 4 Exploration Steps',
+                    tab2: '2. Detailed Planet Comparison',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🎛️ Cosmic Orbit Controls',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    selectPlanetLabel: 'Select planet to inspect:',
+                    speedLabel: 'Orbital Speed Rate:',
+                    selectedLabel: 'Selected:',
+                    stepsHeader: '📋 Exploration Steps (Click 1 → 4):',
+                    step1Text: '1. Inspect 4 Inner Terrestrial Planets (Mercury, Venus, Earth, Mars).',
+                    step2Text: '2. Inspect 4 Outer Gas/Ice Giants (Jupiter, Saturn, Uranus, Neptune).',
+                    step3Text: '3. Compare Orbital Speeds: Closer planets orbit faster!',
+                    step4Text: '4. Analyze Saturn\'s Rings & Asteroid Belt structures.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Solar System Planetary Groups Diagram',
+                    finalConclusionBadge: '✅ Kepler\'s Law: Orbital Period T² proportional to radius a³',
+                    cmpSub: 'Detailed Analysis',
+                    cmpTitle: 'Comparing 4 Key Representative Planets',
+                    scenATitle: 'Mercury',
+                    scenARes: '⚡ <strong>Fastest Orbit:</strong> Takes only 88 Earth days to orbit the Sun. Lacks protective atmosphere.',
+                    scenBTitle: 'Earth',
+                    scenBRes: '🌍 <strong>Water & Life:</strong> Ideal distance (1 AU), 365-day year, 1 natural Moon.',
+                    scenCTitle: 'Jupiter',
+                    scenCRes: '👑 <strong>Largest Planet:</strong> 11x Earth diameter with iconic Great Red Spot storm.',
+                    scenDTitle: 'Saturn',
+                    scenDRes: '🪐 <strong>Spectacular Rings:</strong> Dazzling rings composed of ice and dust particles.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

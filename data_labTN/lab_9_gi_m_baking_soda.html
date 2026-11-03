@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Giấm & Baking Soda (Chemical Reaction)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #f5f3ff 0%, #fae8ff 60%, #fdf4ff 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #9333ea;
+            box-shadow: 0 18px 40px -12px rgba(147, 51, 234, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-violet-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-purple-600 flex items-center justify-center shadow border-2 border-purple-200 shrink-0 text-2xl">
+                    🎈
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Hóa Học Vui
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Quan sát phản ứng tạo khí CO2
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Giấm & Baking Soda (Thí Nghiệm Thổi Bóng Bay)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-purple-700 hover:bg-purple-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-purple-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-violet-50 px-3.5 py-2 border-b-2 border-violet-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-violet-600 text-white border-2 border-violet-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Thực Hành 4 Bước Thí Nghiệm</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-violet-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Phân Tích 4 Trường Hợp Khác</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-violet-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Phản Ứng & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-violet-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: THỰC HÀNH HÓA HỌC
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Lab Canvas -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-violet-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-violet-200 truncate" data-i18n="statusReady">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-violet-500 hover:bg-violet-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Xem tự động 4 bước</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 4 Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-violet-50 to-fuchsia-50/60 rounded-2xl p-3 border-2 border-violet-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-violet-900 bg-violet-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Dụng Cụ Thí Nghiệm (4 món)
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tools Grid (4 items) -->
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <div onclick="triggerToolClick('flask')" id="tool-flask" class="cursor-pointer bg-violet-100 border-2 border-violet-500 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">⚗️</div>
+                                    <div class="font-black text-[10px] text-violet-950 mt-1" data-i18n="toolFlask">Bình nón</div>
+                                    <div id="tool-status-flask" class="text-[9px] font-extrabold text-violet-700">✓ Sẵn</div>
+                                </div>
+                                <div onclick="triggerToolClick('vinegar')" id="tool-vinegar" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🍶</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolVinegar">Nước giấm</div>
+                                    <div id="tool-status-vinegar" class="text-[9px] font-extrabold text-amber-600">Bước 1</div>
+                                </div>
+                                <div onclick="triggerToolClick('soda')" id="tool-soda" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🥄</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolSoda">Baking soda</div>
+                                    <div id="tool-status-soda" class="text-[9px] font-extrabold text-slate-400">Bước 2</div>
+                                </div>
+                                <div onclick="triggerToolClick('balloon')" id="tool-balloon" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🎈</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolBalloon">Bóng bay</div>
+                                    <div id="tool-status-balloon" class="text-[9px] font-extrabold text-slate-400">Bước 3</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-violet-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-violet-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Đổ nước giấm vào trong bình nón.</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Xúc bột baking soda vào trong bóng bay.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Trùm chặt miệng bóng bay vào miệng bình.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Dốc ngược bóng để bột rơi xuống giấm.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-violet-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-violet-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Đổ giấm</strong> để bắt đầu chuẩn bị phản ứng!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: 4 Stages Strip -->
+                <div class="bg-violet-50/90 rounded-2xl p-2.5 border-2 border-violet-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-violet-900 bg-violet-200 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết quả: Sinh ra khí CO2
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 TRƯỜNG HỢP (COMPARE)
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-violet-50 to-fuchsia-50 p-3.5 rounded-2xl border-2 border-violet-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-violet-800 bg-violet-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Mở rộng & Ứng dụng
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Hiện tượng sẽ ra sao nếu thay đổi chất tham gia phản ứng?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Hãy phân tích hiện tượng ở 4 mô hình dưới đây:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Case A: Standard -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-violet-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-violet-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MÔ HÌNH A</span>
+                                <span class="text-xs">✅ Chuẩn</span>
+                            </div>
+                            <h4 class="font-black text-xs text-violet-950 mt-1.5" data-i18n="cupATitle">Giấm + Baking Soda</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-violet-900 bg-violet-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Bóng phình to:</strong> Phản ứng giữa axit (giấm) và bazơ (baking soda) tạo ra rất nhiều khí CO2.
+                        </p>
+                    </div>
+
+                    <!-- Case B: Water only -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-slate-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-slate-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MÔ HÌNH B</span>
+                                <span class="text-xs">💧 Nước lọc</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Nước lọc + Baking Soda</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-slate-800 bg-slate-100 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ❌ <strong>Không phình:</strong> Nước lọc không có tính axit nên không xảy ra phản ứng hóa học sinh khí, bóng vẫn xẹp.
+                        </p>
+                    </div>
+
+                    <!-- Case C: Open bottle -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-sky-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-sky-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MÔ HÌNH C</span>
+                                <span class="text-xs">🌬️ Hở nắp</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Giấm + Soda (Không bóng bay)</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-sky-900 bg-sky-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            ⚠️ <strong>Khí bay mất:</strong> Bọt khí sủi bọt trào ra ngoài nhưng khí CO2 lập tức bay vào không khí, không thu lại được.
+                        </p>
+                    </div>
+
+                    <!-- Case D: Double ingredients -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-rose-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MÔ HÌNH D</span>
+                                <span class="text-xs">💥 Gấp đôi</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Giấm + Rất nhiều Soda</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-rose-900 bg-rose-50 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ✨ <strong>Phình rất to:</strong> Lượng chất tham gia nhiều hơn tạo ra phản ứng mãnh liệt, sinh ra lượng lớn khí CO2.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-4 border-2 border-violet-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-violet-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-violet-800">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-violet-950">Tóm Tắt Lab: Giấm & Baking Soda</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                            <div class="text-xs font-black text-violet-800">🎯 1. Mục tiêu bài học:</div>
+                            <p class="text-xs font-bold text-slate-700">Khám phá phản ứng hóa học giữa Axit và Bazơ sinh ra chất khí.</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                            <div class="text-xs font-black text-violet-800">🧰 2. Hóa chất & Dụng cụ:</div>
+                            <div class="grid grid-cols-2 gap-1 pt-1 text-xs font-bold text-slate-700">
+                                <div>• 🍶 Giấm (Axit Acetic)</div>
+                                <div>• 🥄 Baking soda (Natri Bicarbonat)</div>
+                                <div>• ⚗️ Bình nón thủy tinh</div>
+                                <div>• 🎈 Bóng bay cao su</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-violet-200 space-y-1">
+                            <div class="text-xs font-black text-violet-800">👣 3. Hiện tượng chính:</div>
+                            <ol class="text-xs font-bold text-slate-700 space-y-0.5 list-decimal list-inside">
+                                <li>Khi baking soda rơi xuống giấm, chất lỏng sủi bọt mạnh mẽ.</li>
+                                <li>Quả bóng bay dần dần phình to ra và đứng thẳng lên.</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-amber-900">💡 4. Giải thích khoa học:</div>
+                            <p class="text-xs font-black text-violet-950">
+                                Phản ứng hóa học đã tạo ra <strong>khí Carbon Dioxide (CO2)</strong>. Khí này bay lên, không thoát ra ngoài được nên đã thổi phồng quả bóng bay!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🎈</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.3), 270);
+        }
+
+        function playLiquidSound() {
+            playTone(320, 'sine', 0.1);
+            setTimeout(() => playTone(440, 'sine', 0.15), 100);
+        }
+
+        function playFizzSound() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const bufferSize = ctx.sampleRate * 2.0; // 2 seconds of noise
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 1000;
+                
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.8);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+        let animFrame = 0;
+
+        const labState = {
+            step: 0,           // 0: Prep, 1: Vinegar added, 2: Baking soda in balloon, 3: Balloon attached, 4: Reaction
+            reactionProgress: 0 // 0 to 1
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Đổ giấm', shortEn: '1. Pour Vinegar', icon: '🍶' },
+            2: { shortVi: '2. Xúc bột', shortEn: '2. Scoop Soda', icon: '🥄' },
+            3: { shortVi: '3. Bọc bóng', shortEn: '3. Attach Balloon', icon: '🎈' },
+            4: { shortVi: '4. Phản ứng', shortEn: '4. Reaction', icon: '💨' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'vinegar' && labState.step === 0) {
+                executeStep(1);
+            } else if (toolKey === 'soda' && labState.step === 1) {
+                executeStep(2);
+            } else if (toolKey === 'balloon' && labState.step === 2) {
+                executeStep(3);
+            }
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                playLiquidSound();
+            } else if (targetStep === 2) {
+                playTone(600, 'square', 0.1, 0.05);
+            } else if (targetStep === 3) {
+                playTone(450, 'triangle', 0.14);
+            } else if (targetStep === 4) {
+                playFizzSound();
+                labState.reactionProgress = 0; // Starts animation
+                setTimeout(() => playChime(), 1500);
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2100);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-violet-500 hover:bg-violet-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            labState.reactionProgress = 0;
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const titlesVi = [
+                'Chuẩn bị bình nón và các vật liệu',
+                'Bước 1: Đổ nước giấm vào trong bình nón',
+                'Bước 2: Xúc bột baking soda vào trong bóng bay',
+                'Bước 3: Trùm chặt miệng bóng bay vào miệng bình',
+                'Bước 4: Dốc ngược bóng bay - Phản ứng sinh khí CO2!'
+            ];
+
+            document.getElementById('status-step-badge').textContent = st === 0 ? 'CHUẨN BỊ' : `BƯỚC ${st}/4`;
+            document.getElementById('status-step-title').textContent = titlesVi[st];
+
+            // Tool status
+            const vinegarCard = document.getElementById('tool-vinegar');
+            vinegarCard.className = st >= 1 ? 'cursor-pointer bg-violet-100 border-2 border-violet-500 rounded-xl p-1 text-center transition' : (st === 0 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-vinegar').textContent = st >= 1 ? '✓ Đã đổ' : (st === 0 ? '👉 Bấm chọn' : 'Bước 1');
+
+            const sodaCard = document.getElementById('tool-soda');
+            sodaCard.className = st >= 2 ? 'cursor-pointer bg-violet-100 border-2 border-violet-500 rounded-xl p-1 text-center transition' : (st === 1 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-soda').textContent = st >= 2 ? '✓ Đã xúc' : (st === 1 ? '👉 Bấm chọn' : 'Bước 2');
+
+            const balloonCard = document.getElementById('tool-balloon');
+            balloonCard.className = st >= 3 ? 'cursor-pointer bg-violet-100 border-2 border-violet-500 rounded-xl p-1 text-center transition' : (st === 2 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-balloon').textContent = st >= 3 ? '✓ Đã bọc' : (st === 2 ? '👉 Bấm chọn' : 'Bước 3');
+
+
+            // 4 Steps buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-5 h-5 rounded-md bg-violet-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    icon.className = 'w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Description box
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Đổ giấm</strong> để bắt đầu chuẩn bị phản ứng!';
+            if (st === 1) obsEl.innerHTML = 'Giấm (Axit Acetic) đã được đổ vào bình nón. Tiếp theo bấm <strong>Bước 2</strong> để chuẩn bị bột baking soda!';
+            if (st === 2) obsEl.innerHTML = 'Bột Baking Soda đã được xúc vào gọn gàng bên trong quả bóng bay. Tiếp theo bấm <strong>Bước 3</strong>!';
+            if (st === 3) obsEl.innerHTML = 'Miệng bóng bay đã bọc chặt miệng bình. Hiện tại giấm và soda chưa tiếp xúc nhau. Bấm <strong>Bước 4</strong> để dốc ngược bóng!';
+            if (st === 4) obsEl.innerHTML = '🎉 <strong>KẾT QUẢ:</strong> Baking soda rơi xuống giấm tạo phản ứng sủi bọt, sinh ra <strong>khí CO2</strong> bay lên làm quả bóng phình to ra!';
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-violet-100 text-violet-950 border-2 border-violet-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawFlaskAndBalloon(c, fX, fY, stateObj, isMini = false) {
+            const st = stateObj.step;
+            const rp = stateObj.reactionProgress;
+            const scale = isMini ? 0.6 : 1;
+            
+            c.save();
+            c.translate(fX, fY);
+            c.scale(scale, scale);
+
+            const fw = 70; // flask base width
+            const fh = 90; // flask height
+            const fnw = 20; // flask neck width
+
+            // 1. Draw Liquid (Vinegar) - Step 1+
+            if (st >= 1 || isMini) {
+                let liqColor = 'rgba(253, 244, 255, 0.7)'; // Slightly cloudy vinegar
+                let liqHeight = 35;
+                if (st === 4 && rp > 0) {
+                    liqHeight += rp * 15; // Liquid rises slightly due to bubbles
+                }
+                c.fillStyle = liqColor;
+                c.beginPath();
+                c.moveTo(-fw/2 + 4, fh/2 - 2);
+                c.lineTo(fw/2 - 4, fh/2 - 2);
+                c.lineTo(fw/2 - 4 - liqHeight*0.4, fh/2 - liqHeight);
+                c.lineTo(-fw/2 + 4 + liqHeight*0.4, fh/2 - liqHeight);
+                c.fill();
+            }
+
+            // 2. Draw Bubbles & Powder (Step 4)
+            if (st === 4 && rp > 0 && rp < 1) {
+                // Falling powder
+                c.fillStyle = '#ffffff';
+                for(let i=0; i<5; i++) {
+                    const py = -fh/2 + 20 + Math.random() * 50;
+                    c.beginPath(); c.arc(Math.random()*10 - 5, py, 1.5, 0, Math.PI*2); c.fill();
+                }
+            }
+            if (st === 4 && rp > 0.1) {
+                // Bubbles in liquid
+                c.strokeStyle = '#cbd5e1';
+                c.fillStyle = 'rgba(255,255,255,0.8)';
+                for(let i=0; i<8; i++) {
+                    const bx = Math.random()*40 - 20;
+                    const by = fh/2 - 5 - Math.random()*25;
+                    c.beginPath(); c.arc(bx, by, 2 + Math.random()*2, 0, Math.PI*2); c.fill(); c.stroke();
+                }
+            }
+
+            // 3. Flask Body
+            c.strokeStyle = 'rgba(255,255,255,0.9)';
+            c.fillStyle = 'rgba(255,255,255,0.15)';
+            c.lineWidth = 3;
+            c.lineJoin = 'round';
+            
+            c.beginPath();
+            c.moveTo(-fnw/2, -fh/2); // Top left neck
+            c.lineTo(-fnw/2, -fh/4); // Bot left neck
+            c.lineTo(-fw/2, fh/2);   // Bot left base
+            c.quadraticCurveTo(0, fh/2 + 8, fw/2, fh/2); // Bot curve
+            c.lineTo(fnw/2, -fh/4);  // Bot right neck
+            c.lineTo(fnw/2, -fh/2);  // Top right neck
+            c.stroke();
+            
+            // Neck rim
+            c.beginPath();
+            c.rect(-fnw/2 - 3, -fh/2 - 4, fnw + 6, 6);
+            c.stroke();
+
+            // 4. Balloon (Step 3 & 4)
+            if (st >= 3 || (isMini && stateObj.hasBalloon)) {
+                c.fillStyle = 'rgba(236, 72, 153, 0.85)'; // Pink balloon
+                c.strokeStyle = '#be185d';
+                c.lineWidth = 2;
+
+                if (st === 3) {
+                    // Floppy balloon hanging to the side
+                    c.beginPath();
+                    c.moveTo(-fnw/2 - 3, -fh/2);
+                    c.quadraticCurveTo(-40, -fh/2 - 20, -35, -fh/2 + 25);
+                    c.quadraticCurveTo(-15, -fh/2 + 25, fnw/2 + 3, -fh/2);
+                    c.fill(); c.stroke();
+                    
+                    // Powder bulge in floppy balloon
+                    c.fillStyle = '#f8fafc';
+                    c.beginPath();
+                    c.arc(-30, -fh/2 + 15, 6, 0, Math.PI*2);
+                    c.fill();
+                } else if (st === 4) {
+                    // Inflating balloon
+                    const bRadius = 15 + rp * 45; // grows from 15 to 60
+                    const bCenterY = -fh/2 - bRadius - 5;
+                    
+                    c.beginPath();
+                    // Connect neck to balloon body
+                    c.moveTo(-fnw/2 - 3, -fh/2);
+                    c.lineTo(-bRadius*0.4, bCenterY + bRadius*0.8);
+                    // Balloon bulb
+                    c.arc(0, bCenterY, bRadius, Math.PI*0.7, Math.PI*0.3);
+                    c.lineTo(fnw/2 + 3, -fh/2);
+                    c.fill(); c.stroke();
+
+                    // CO2 Gas visual effect inside
+                    if (rp > 0.3) {
+                        c.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        c.beginPath(); c.arc(-bRadius*0.3, bCenterY - bRadius*0.3, bRadius*0.2, 0, Math.PI*2); c.fill();
+                        c.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        c.font = `900 ${10 + rp*10}px Nunito`;
+                        c.textAlign = 'center';
+                        c.fillText('CO₂', 0, bCenterY + 5);
+                    }
+                }
+            }
+
+            c.restore();
+        }
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath();
+            c.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 172, 24, 7);
+            c.fill();
+            c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 7, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                animFrame++;
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Progress animation logic
+                if (labState.step === 4 && labState.reactionProgress < 1) {
+                    labState.reactionProgress += 0.008; // Inflate slowly
+                    if (labState.reactionProgress > 1) labState.reactionProgress = 1;
+                }
+
+                // Table
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, 310, 465, 35);
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, 310, 465, 4);
+
+                const st = labState.step;
+                const fX = 150;
+                const fY = 260; // Base of flask
+
+                // Draw Flask & Balloon
+                drawFlaskAndBalloon(ctx, fX, fY, labState);
+
+                // Additional props before step 3
+                if (st === 0) {
+                    // Vinegar bottle
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.beginPath(); ctx.roundRect(fX - 80, 240, 30, 70, 4); ctx.fill(); ctx.stroke();
+                } else if (st === 1) {
+                    // Bowl of soda
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.beginPath(); ctx.arc(fX - 70, 300, 20, 0, Math.PI, false); ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.ellipse(fX - 70, 298, 18, 5, 0, 0, Math.PI*2); ctx.fill();
+                } else if (st === 2) {
+                    // Deflated balloon near flask
+                    ctx.fillStyle = 'rgba(236, 72, 153, 0.85)';
+                    ctx.beginPath(); ctx.ellipse(fX - 60, 290, 25, 15, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                }
+
+                // Callout Labels (Right side x=280..450)
+                const pillX = 278;
+                if (st === 0) {
+                    drawRightCallout(ctx, fX, fY, pillX, 180, '⚗️ Bình nón rỗng', '#cbd5e1');
+                } else if (st === 1) {
+                    drawRightCallout(ctx, fX, fY + 20, pillX, 180, '🍶 Nước giấm (Axit)', '#fde047');
+                } else if (st === 2) {
+                    drawRightCallout(ctx, fX - 60, 290, pillX, 230, '🥄 Baking soda trong bóng', '#38bdf8');
+                } else if (st === 3) {
+                    drawRightCallout(ctx, fX - 35, fY - 35, pillX, 140, '🎈 Baking soda sẵn sàng', '#f472b6');
+                    drawRightCallout(ctx, fX, fY + 20, pillX, 190, '🍶 Nước giấm chờ sẵn', '#fde047');
+                } else if (st === 4) {
+                    drawRightCallout(ctx, fX, fY - 100, pillX, 80, '🎈 Bóng phình to!', '#f472b6');
+                    drawRightCallout(ctx, fX, fY - 50, pillX, 130, '💨 Sinh ra khí CO2', '#cbd5e1');
+                    drawRightCallout(ctx, fX, fY + 20, pillX, 180, '💥 Phản ứng sủi bọt', '#fde047');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: 4 COMPARISON CASES
+        // ==========================================
+        function renderComparisonCups() {
+            const configs = [
+                { id: 'cmpCanvasA', type: 'standard' },
+                { id: 'cmpCanvasB', type: 'water' },
+                { id: 'cmpCanvasC', type: 'open' },
+                { id: 'cmpCanvasD', type: 'double' }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 176;
+                ctx.clearRect(0, 0, w, h);
+
+                const cX = w / 2;
+                const cY = 110;
+
+                // Adjust state for drawFlaskAndBalloon
+                let miniState = { step: 4, reactionProgress: 1, hasBalloon: true };
+                
+                if (cfg.type === 'water') {
+                    miniState.reactionProgress = 0; // Flat balloon
+                    miniState.step = 3; 
+                } else if (cfg.type === 'open') {
+                    miniState.hasBalloon = false;
+                    miniState.reactionProgress = 0.5; // Bubbling but no balloon
+                } else if (cfg.type === 'double') {
+                    miniState.reactionProgress = 1.6; // Extra large balloon
+                }
+
+                drawFlaskAndBalloon(ctx, cX, cY, miniState, true);
+                
+                // Override liquid color for Water
+                if (cfg.type === 'water') {
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+                    ctx.fillRect(cX - 15, cY + 5, 30, 20);
+                }
+
+                // Erupting bubbles for Open bottle
+                if (cfg.type === 'open') {
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.strokeStyle = '#cbd5e1';
+                    for(let i=0; i<15; i++) {
+                        ctx.beginPath(); 
+                        ctx.arc(cX + Math.random()*20 - 10, cY - 35 - Math.random()*25, 3 + Math.random()*3, 0, Math.PI*2); 
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🎈',
+                qVi: '1. Chất khí nào được sinh ra làm quả bóng bay phình to trong thí nghiệm?',
+                qEn: '1. Which gas is produced that inflates the balloon?',
+                optsVi: [
+                    'Khí Oxy (O2)',
+                    'Khí Carbon Dioxide (CO2)',
+                    'Khí Hydro (H2)',
+                    'Không khí bình thường'
+                ],
+                optsEn: [
+                    'Oxygen gas (O2)',
+                    'Carbon Dioxide gas (CO2)',
+                    'Hydrogen gas (H2)',
+                    'Normal air'
+                ],
+                ans: 1
+            },
+            {
+                icon: '💥',
+                qVi: '2. Hiện tượng gì xảy ra ngay khi baking soda rơi xuống giấm?',
+                qEn: '2. What happens immediately when baking soda falls into vinegar?',
+                optsVi: [
+                    'Nước giấm đóng băng thành đá.',
+                    'Dung dịch sủi bọt mạnh mẽ (phản ứng hóa học).',
+                    'Bình nón phát nổ.',
+                    'Dung dịch đổi sang màu đen.'
+                ],
+                optsEn: [
+                    'Vinegar freezes into ice.',
+                    'The solution bubbles vigorously (chemical reaction).',
+                    'The flask explodes.',
+                    'Solution turns black.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '💧',
+                qVi: '3. Nếu ta thay giấm (axit) bằng nước lọc thông thường, hiện tượng gì sẽ xảy ra?',
+                qEn: '3. If we replace vinegar (acid) with plain water, what happens?',
+                optsVi: [
+                    'Bóng bay phình to gấp đôi.',
+                    'Bóng bay bị nổ tung.',
+                    'Không có phản ứng sinh khí, bóng bay vẫn xẹp.',
+                    'Nước lọc biến thành giấm.'
+                ],
+                optsEn: [
+                    'Balloon inflates twice as big.',
+                    'Balloon pops.',
+                    'No gas-producing reaction, balloon stays deflated.',
+                    'Water turns into vinegar.'
+                ],
+                ans: 2
+            },
+            {
+                icon: '🧪',
+                qVi: '4. Thí nghiệm Giấm và Baking soda chứng minh điều gì?',
+                qEn: '4. What does the Vinegar and Baking Soda experiment prove?',
+                optsVi: [
+                    'Sự hòa tan của muối trong nước.',
+                    'Phản ứng hóa học có thể tạo ra chất khí mới.',
+                    'Bóng bay tự thổi được không cần hơi.',
+                    'Giấm có thể tái chế thành baking soda.'
+                ],
+                optsEn: [
+                    'Dissolving salt in water.',
+                    'Chemical reactions can create a new gas substance.',
+                    'Balloons inflate themselves.',
+                    'Vinegar can be recycled into baking soda.'
+                ],
+                ans: 1
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-violet-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-violet-100 text-violet-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn là một nhà hóa học tài ba (+3 Điểm)!'
+                    : '🎉 Correct! You are a great chemist (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, hãy xem lại phiếu tổng kết bên trái rồi thử lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-violet-600 text-white border-2 border-violet-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-violet-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonCups();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Hóa Học Vui',
+                    goalPill: '🎯 Mục tiêu: Quan sát phản ứng tạo khí CO2',
+                    appTitle: 'Lab: Giấm & Baking Soda (Thí Nghiệm Thổi Bóng Bay)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành 4 Bước Thí Nghiệm',
+                    tab2: '2. Phân Tích 4 Trường Hợp Khác',
+                    tab3: '3. Tóm Tắt Phản Ứng & Đố Vui',
+                    autoObsBtn: 'Xem tự động 4 bước',
+                    toolsHeader: '🧰 Dụng Cụ Thí Nghiệm (4 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolFlask: 'Bình nón',
+                    toolVinegar: 'Nước giấm',
+                    toolSoda: 'Baking soda',
+                    toolBalloon: 'Bóng bay',
+                    stepsHeader: '📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):',
+                    step1Text: '1. Đổ nước giấm vào trong bình nón.',
+                    step2Text: '2. Xúc bột baking soda vào trong bóng bay.',
+                    step3Text: '3. Trùm chặt miệng bóng bay vào miệng bình.',
+                    step4Text: '4. Dốc ngược bóng để bột rơi xuống giấm.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)',
+                    finalConclusionBadge: '✅ Kết quả: Sinh ra khí CO2',
+                    cmpSub: 'Mở rộng & Ứng dụng',
+                    cmpTitle: 'Hiện tượng sẽ ra sao nếu thay đổi chất tham gia phản ứng?',
+                    cmpDesc: 'Hãy phân tích hiện tượng ở 4 mô hình dưới đây:',
+                    cupATitle: 'Giấm + Baking Soda',
+                    cupARes: '✅ <strong>Bóng phình to:</strong> Phản ứng giữa axit (giấm) và bazơ (baking soda) tạo ra rất nhiều khí CO2.',
+                    cupBTitle: 'Nước lọc + Baking Soda',
+                    cupBRes: '❌ <strong>Không phình:</strong> Nước lọc không có tính axit nên không xảy ra phản ứng hóa học sinh khí, bóng vẫn xẹp.',
+                    cupCTitle: 'Giấm + Soda (Không bóng bay)',
+                    cupCRes: '⚠️ <strong>Khí bay mất:</strong> Bọt khí sủi bọt trào ra ngoài nhưng khí CO2 lập tức bay vào không khí, không thu lại được.',
+                    cupDTitle: 'Giấm + Rất nhiều Soda',
+                    cupDRes: '✨ <strong>Phình rất to:</strong> Lượng chất tham gia nhiều hơn tạo ra phản ứng mãnh liệt, sinh ra lượng lớn khí CO2.'
+                },
+                en: {
+                    labBadge: 'Fun Chemistry Lab',
+                    goalPill: '🎯 Goal: Observe CO2 gas production',
+                    appTitle: 'Lab: Vinegar & Baking Soda (Balloon Blow-up Experiment)',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Experiment',
+                    tab2: '2. 4 Control Scenarios',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🧰 Tools (4 items)',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    toolFlask: 'Flask',
+                    toolVinegar: 'Vinegar',
+                    toolSoda: 'Baking Soda',
+                    toolBalloon: 'Balloon',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Pour vinegar into the flask.',
+                    step2Text: '2. Scoop baking soda into the balloon.',
+                    step3Text: '3. Stretch balloon over the flask mouth.',
+                    step4Text: '4. Lift balloon to drop powder into vinegar.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Experiment Stages',
+                    finalConclusionBadge: '✅ Result: CO2 Gas Produced',
+                    cmpSub: 'Extension & Application',
+                    cmpTitle: 'What happens if we change the reactants?',
+                    cmpDesc: 'Analyze the phenomena in the 4 models below:',
+                    cupATitle: 'Vinegar + Baking Soda',
+                    cupARes: '✅ <strong>Balloon inflates:</strong> Reaction between acid (vinegar) and base (baking soda) produces lots of CO2 gas.',
+                    cupBTitle: 'Water + Baking Soda',
+                    cupBRes: '❌ <strong>No inflation:</strong> Water is not an acid, so no gas-producing chemical reaction occurs. Balloon stays flat.',
+                    cupCTitle: 'Vinegar + Soda (No Balloon)',
+                    cupCRes: '⚠️ <strong>Gas escapes:</strong> Bubbles fizz and erupt, but CO2 gas escapes immediately into the air.',
+                    cupDTitle: 'Vinegar + Double Soda',
+                    cupDRes: '✨ <strong>Inflates huge:</strong> More reactants create a vigorous reaction, producing a massive amount of CO2 gas.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonCups();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonCups();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

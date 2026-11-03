@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Khám Phá Con Lắc Đơn & Dao Động Điều Hòa (Simple Pendulum Lab)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 60%, #7dd3fc 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #0284c7;
+            box-shadow: 0 18px 40px -12px rgba(2, 132, 199, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0284c7;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #0284c7; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-sky-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-sky-600 flex items-center justify-center shadow border-2 border-sky-200 shrink-0 text-2xl font-black">
+                    ⏱️
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Vật Lý Cơ Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Kiểm chứng chu kỳ $T = 2\pi\sqrt{\frac{l}{g}}$
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Mô Phỏng Con Lắc Đơn & Dao Động Điều Hòa
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-sky-700 hover:bg-sky-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-sky-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-sky-50 px-3.5 py-2 border-b-2 border-sky-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-600 text-white border-2 border-sky-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Khảo Sát Con Lắc & 4 Bước</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span>🔬</span>
+                <span data-i18n="tab2">2. So Sánh 4 Yếu Tố (l, m, g, α)</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Công Thức & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-sky-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: MÔ PHỎNG CON LẮC & 4 BƯỚC LAB
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Pendulum Canvas Chamber -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-sky-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    ĐANG KHẢO SÁT
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-sky-200 truncate" data-i18n="statusReady">
+                                    Quan sát dao động điều hòa của con lắc đơn
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block cursor-pointer"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <button onclick="togglePendulumRun()" id="btn-run" class="btn-kid px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="pause" id="run-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="run-text" data-i18n="pauseBtn">Tạm dừng</span>
+                                </button>
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự động 4 bước</span>
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-300">
+                                <span data-i18n="periodLabel">Chu kỳ T:</span> <strong id="period-val" class="text-amber-400">2.01s</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Sliders + Math Dashboard + 4 Steps -->
+                    <div class="bg-gradient-to-br from-sky-50 to-blue-50/60 rounded-2xl p-3 border-2 border-sky-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <!-- Header & Tools -->
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-sky-900 bg-sky-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🎛️ Tùy Chỉnh Thông Số Con Lắc
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Đặt lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Controls -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-sky-100 space-y-2 mb-2">
+
+                                <!-- Length Slider l -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-0.5">
+                                        <span class="flex items-center gap-1 text-sky-700">
+                                            <span>📏</span> <span data-i18n="lengthLabel">Chiều dài dây l:</span>
+                                        </span>
+                                        <span id="l-display" class="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs">1.00 m</span>
+                                    </div>
+                                    <input type="range" id="slider-l" min="0.4" max="1.8" step="0.1" value="1.0" oninput="onParamChange()" class="w-full accent-sky-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Angle Slider alpha0 -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-0.5">
+                                        <span class="flex items-center gap-1 text-sky-700">
+                                            <span>📐</span> <span data-i18n="angleLabel">Góc lệch ban đầu α₀:</span>
+                                        </span>
+                                        <span id="angle-display" class="bg-sky-100 text-sky-900 px-2 py-0.5 rounded-md font-black text-xs">15°</span>
+                                    </div>
+                                    <input type="range" id="slider-angle" min="5" max="30" step="5" value="15" oninput="onParamChange()" class="w-full accent-sky-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Math Equation Bar -->
+                                <div class="bg-slate-900 text-white p-2 rounded-lg text-center flex items-center justify-around font-black text-xs border border-sky-300">
+                                    <div class="text-cyan-300">T = 2π√(l/g)</div>
+                                    <div class="text-slate-400">➔</div>
+                                    <div class="text-amber-300">2×3.14×√(<span id="val-l">1.0</span>/9.8)</div>
+                                    <div class="text-slate-400">=</div>
+                                    <div id="val-t" class="text-emerald-400 text-sm font-black">2.01 s</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-sky-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Khám Phá (Bấm 1 → 4):
+                            </div>
+
+                            <!-- 4 Step Buttons -->
+                            <div class="space-y-1">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-4 h-4 rounded-md bg-sky-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step1Text">1. Khảo sát ảnh hưởng của chiều dài dây l.</span>
+                                    <span id="step-badge-1" class="text-[10px] font-black text-amber-800">👉 Thử ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step2Text">2. Khảo sát ảnh hưởng của góc lệch ban đầu α₀.</span>
+                                    <span id="step-badge-2" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step3Text">3. Khảo sát ảnh hưởng của khối lượng vật nặng m.</span>
+                                    <span id="step-badge-3" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step4Text">4. Xác định gia tốc trọng trường g.</span>
+                                    <span id="step-badge-4" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2 rounded-xl border-2 border-sky-300 shadow-sm mt-1">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-sky-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Bấm chọn <strong>Bước 1</strong> hoặc thay đổi thanh trượt chiều dài dây $l$ để bắt đầu khảo sát con lắc!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Stage Strip -->
+                <div class="bg-sky-50/90 rounded-2xl p-2 border-2 border-sky-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Tiến Trình Khám Phá Con Lắc Đơn
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-sky-900 bg-sky-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Định luật: $T = 2\pi\sqrt{\frac{l}{g}}$ (Độc lập với biên độ & khối lượng)
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: COMPARE 4 FACTORS
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-sky-50 to-blue-50 p-3 rounded-2xl border-2 border-sky-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-sky-800 bg-sky-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Thí nghiệm phân tích
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-0.5" data-i18n="cmpTitle">
+                            So sánh ảnh hưởng của 4 yếu tố đến chu kỳ con lắc đơn
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5">
+                    <!-- Factor A: Length l -->
+                    <div class="bg-white rounded-2xl p-2.5 border-3 border-emerald-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">YẾU TỐ 1</span>
+                                <span class="text-[10px] font-bold text-slate-500">Chiều dài l</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenATitle">Chiều dài dây l</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-emerald-900 bg-emerald-50 p-1.5 rounded-lg leading-tight" data-i18n="scenARes">
+                            ✅ <strong>Tỉ lệ thuận căn bậc hai:</strong> Dây càng dài ($l$ tăng) thì chu kỳ dao động $T$ càng lớn.
+                        </p>
+                    </div>
+
+                    <!-- Factor B: Amplitude alpha0 -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-sky-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-sky-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">YẾU TỐ 2</span>
+                                <span class="text-[10px] font-bold text-slate-500">Biên độ α₀</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenBTitle">Góc lệch ban đầu α₀</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-sky-900 bg-sky-50 p-1.5 rounded-lg leading-tight" data-i18n="scenBRes">
+                            🔄 <strong>Độc lập biên độ:</strong> Với góc nhỏ ($\alpha_0 \le 10^\circ$), chu kỳ không phụ thuộc vào biên độ dao động.
+                        </p>
+                    </div>
+
+                    <!-- Factor C: Mass m -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">YẾU TỐ 3</span>
+                                <span class="text-[10px] font-bold text-slate-500">Khối lượng m</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenCTitle">Khối lượng vật m</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-amber-900 bg-amber-50 p-1.5 rounded-lg leading-tight" data-i18n="scenCRes">
+                            ⚖️ <strong>Không ảnh hưởng:</strong> Khối lượng $m$ lớn hay nhỏ không làm thay đổi chu kỳ dao động của con lắc đơn.
+                        </p>
+                    </div>
+
+                    <!-- Factor D: Gravity g -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-indigo-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-indigo-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">YẾU TỐ 4</span>
+                                <span class="text-[10px] font-bold text-slate-500">Trọng trường g</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenDTitle">Gia tốc trọng trường g</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-indigo-900 bg-indigo-50 p-1.5 rounded-lg leading-tight" data-i18n="scenDRes">
+                            🌍 <strong>Tỉ lệ nghịch căn bậc hai:</strong> Nơi có $g$ lớn (như ở cực) thì chu kỳ $T$ nhỏ hơn ở xích đạo.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: SUMMARY & QUIZ
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl p-3.5 border-2 border-sky-300 space-y-2.5">
+                        <div class="flex items-center gap-2 border-b border-sky-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-sky-800">Phiếu Kiến Thức Trọng Tâm</span>
+                                <h3 class="text-base font-black text-sky-950">Con Lắc Đơn & Dao Động Điều Hòa</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-sky-200 space-y-0.5">
+                            <div class="text-xs font-black text-sky-800">⏱️ 1. Cấu tạo & Bản chất dao động:</div>
+                            <p class="text-xs font-bold text-slate-700">Con lắc đơn gồm vật nặng khối lượng $m$ treo vào đầu sợi dây mảnh nhẹ dài $l$. Khi được kéo lệch khỏi vị trí cân bằng rồi thả ra, nó dao động điều hòa với góc nhỏ.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-sky-200 space-y-0.5">
+                            <div class="text-xs font-black text-sky-800">📐 2. Công thức chu kỳ và tần số góc:</div>
+                            <div class="text-center bg-sky-50 p-1.5 rounded-lg font-black text-sm text-sky-900">
+                                $T = 2\pi\sqrt{\frac{l}{g}} \quad ; \quad \omega = \sqrt{\frac{g}{l}}$
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-center font-extrabold text-slate-600">
+                                <div>• <strong>T</strong>: Chu kỳ (s)</div>
+                                <div>• <strong>l</strong>: Chiều dài (m)</div>
+                                <div>• <strong>g</strong>: Gia tốc ($m/s^2$)</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-sky-200 space-y-0.5">
+                            <div class="text-xs font-black text-sky-800">💡 3. Năng lượng của con lắc đơn:</div>
+                            <ul class="text-xs font-bold text-slate-700 space-y-0.5 list-disc list-inside">
+                                <li>Động năng đạt cực đại ở vị trí cân bằng ($v_{max}$).</li>
+                                <li>Thế năng đạt cực đại ở vị trí biên ($\alpha = \alpha_0$).</li>
+                                <li>Cơ năng của con lắc đơn được bảo toàn nếu bỏ qua ma sát.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-100 p-2.5 rounded-xl border-2 border-amber-300">
+                            <div class="text-xs font-black text-amber-900">💡 Chú ý quan trọng</div>
+                            <p class="text-xs font-bold text-amber-950 mt-0.5">
+                                Chu kỳ $T$ của con lắc đơn <strong>không phụ thuộc vào khối lượng $m$</strong> và <strong>không phụ thuộc vào biên độ góc $\alpha_0$</strong> (với $\alpha_0$ nhỏ).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Thử Thách Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">⏱️</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-1.5"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.28), 240);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            lengthL: 1.0,         // Length l in meters (0.4 to 1.8)
+            angleDeg: 15,         // Initial angle alpha0 in degrees (5 to 30)
+            massM: 1.0,           // Mass m in kg
+            gravityG: 9.8,        // g in m/s^2
+            isRunning: true,
+            step: 0,              // 0: Prep, 1: Length impact, 2: Angle impact, 3: Mass impact, 4: Gravity impact
+            time: 0
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Khảo sát chiều dài l', shortEn: '1. Length l Factor', icon: '📏' },
+            2: { shortVi: '2. Khảo sát góc lệch α₀', shortEn: '2. Angle α₀ Factor', icon: '📐' },
+            3: { shortVi: '3. Khảo sát khối lượng m', shortEn: '3. Mass m Factor', icon: '⚖️' },
+            4: { shortVi: '4. Xác định trọng trường g', shortEn: '4. Gravity g Factor', icon: '🌍' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function togglePendulumRun() {
+            labState.isRunning = !labState.isRunning;
+            playTone(450, 'sine', 0.1);
+            const runText = document.getElementById('run-text');
+            const runIcon = document.getElementById('run-icon');
+            runText.textContent = currentLang === 'vi' ? (labState.isRunning ? 'Tạm dừng' : 'Tiếp tục') : (labState.isRunning ? 'Pause' : 'Resume');
+            runIcon.setAttribute('data-lucide', labState.isRunning ? 'pause' : 'play');
+            lucide.createIcons();
+        }
+
+        function onParamChange() {
+            labState.lengthL = parseFloat(document.getElementById('slider-l').value);
+            labState.angleDeg = parseInt(document.getElementById('slider-angle').value);
+            playTone(300 + labState.lengthL * 150, 'sine', 0.04, 0.04);
+            updateLabUI();
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                labState.lengthL = 0.5;
+                document.getElementById('slider-l').value = 0.5;
+                playTone(500, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                labState.lengthL = 1.2;
+                labState.angleDeg = 25;
+                document.getElementById('slider-l').value = 1.2;
+                document.getElementById('slider-angle').value = 25;
+                playTone(650, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.massM = 2.0; // Simulated mass change
+                playTone(750, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                labState.gravityG = 9.8;
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2500);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.lengthL = 1.0;
+            labState.angleDeg = 15;
+            labState.massM = 1.0;
+            labState.gravityG = 9.8;
+            labState.step = 0;
+            labState.time = 0;
+            labState.isRunning = true;
+
+            document.getElementById('slider-l').value = 1.0;
+            document.getElementById('slider-angle').value = 15;
+            document.getElementById('run-text').textContent = currentLang === 'vi' ? 'Tạm dừng' : 'Pause';
+            document.getElementById('run-icon').setAttribute('data-lucide', 'pause');
+            lucide.createIcons();
+
+            playTone(320, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function calculatePeriod() {
+            const T = 2 * Math.PI * Math.sqrt(labState.lengthL / labState.gravityG);
+            return T;
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const T = calculatePeriod();
+
+            // Display numbers
+            document.getElementById('l-display').textContent = labState.lengthL.toFixed(2) + ' m';
+            document.getElementById('angle-display').textContent = labState.angleDeg + '°';
+            document.getElementById('val-l').textContent = labState.lengthL.toFixed(1);
+            document.getElementById('val-t').textContent = T.toFixed(2) + ' s';
+            document.getElementById('period-val').textContent = T.toFixed(2) + 's';
+
+            // Top Status Badge
+            const badge = document.getElementById('status-step-badge');
+            const title = document.getElementById('status-step-title');
+            badge.className = 'bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+            badge.textContent = st === 0 ? (currentLang === 'vi' ? 'ĐANG KHẢO SÁT' : 'EXPLORING') : `BƯỚC ${st}/4`;
+
+            const stepTitles = [
+                'Điều chỉnh chiều dài l và góc lệch α₀ để khảo sát chu kỳ con lắc!',
+                'Bước 1: Chiều dài l = ' + labState.lengthL.toFixed(2) + 'm ➔ Chu kỳ T = ' + T.toFixed(2) + 's',
+                'Bước 2: Thay đổi góc lệch α₀ = ' + labState.angleDeg + '° ➔ Nhận xét chu kỳ dao động!',
+                'Bước 3: Thay đổi khối lượng vật nặng m ➔ Chu kỳ T không hề thay đổi!',
+                'Bước 4: Xác định mối liên hệ giữa chu kỳ T và gia tốc trọng trường g!'
+            ];
+            title.textContent = stepTitles[st];
+
+            // 4 Steps buttons UI state
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-4 h-4 rounded-md bg-sky-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-emerald-700';
+                    bdg.textContent = '✅';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-4 h-4 rounded-md bg-sky-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-80';
+                    icon.className = 'w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Result Text
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) {
+                obsEl.innerHTML = `Chiều dài dây <strong>l = ${labState.lengthL.toFixed(2)}m</strong>, góc lệch <strong>α₀ = ${labState.angleDeg}°</strong>. Chu kỳ tính toán: <strong>T = ${T.toFixed(2)}s</strong>!`;
+            } else if (st === 1) {
+                obsEl.innerHTML = `Giảm chiều dài xuống <strong>l = ${labState.lengthL.toFixed(2)}m</strong> ➔ Chu kỳ dao động giảm còn <strong>T = ${T.toFixed(2)}s</strong>. Dây càng ngắn con lắc dao động càng nhanh!`;
+            } else if (st === 2) {
+                obsEl.innerHTML = `Tăng góc lệch ban đầu lên <strong>α₀ = ${labState.angleDeg}°</strong> nhưng chu kỳ <strong>T = ${T.toFixed(2)}s</strong> hầu như không đổi đối với dao động góc nhỏ!`;
+            } else if (st === 3) {
+                obsEl.innerHTML = `⚡ <strong>Đặc tính cốt lõi:</strong> Dù tăng khối lượng vật nặng lên <strong>m = ${labState.massM} kg</strong>, chu kỳ T vẫn giữ nguyên không đổi!`;
+            } else if (st === 4) {
+                obsEl.innerHTML = `🎉 Định luật được xác thực: <strong>$T = 2\\pi\\sqrt{\\frac{l}{g}}$</strong>. Chu kỳ chỉ phụ thuộc vào chiều dài dây $l$ và gia tốc trọng trường $g$ tại nơi làm thí nghiệm!`;
+            }
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-sky-100 text-sky-950 border-2 border-sky-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345 Pendulum & Waveform)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawCalloutPill(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath(); c.arc(targetX, targetY, 3, 0, Math.PI * 2); c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 175, 24, 7);
+            c.fill(); c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 6, pillY + 12.5);
+            c.restore();
+        }
+
+        let animationTime = 0;
+        let lastTimestamp = 0;
+
+        function renderMainLabCanvas(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            if (activeTab === 'lab') {
+                if (labState.isRunning) {
+                    animationTime += dt;
+                }
+
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Background
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 465, 345);
+
+                // Grid lines
+                ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+                for (let x = 0; x < 465; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 345); ctx.stroke(); }
+                for (let y = 0; y < 345; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(465, y); ctx.stroke(); }
+
+                const T = calculatePeriod();
+                const omega = 2 * Math.PI / T;
+                const alphaMax = (labState.angleDeg * Math.PI) / 180;
+                const currentAlpha = alphaMax * Math.cos(omega * animationTime);
+
+                // Pivot point for Pendulum
+                const pivotX = 232, pivotY = 50;
+                // Scale length in pixels (e.g. 1.0m = 140px)
+                const pxPerMeter = 135;
+                const stringLenPx = labState.lengthL * pxPerMeter;
+
+                const bobX = pivotX + stringLenPx * Math.sin(currentAlpha);
+                const bobY = pivotY + stringLenPx * Math.cos(currentAlpha);
+
+                // --- 1. DRAW SUPPORT MOUNT & PROTRACTOR ---
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(pivotX - 35, pivotY - 14, 70, 10);
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath(); ctx.arc(pivotX, pivotY, 6, 0, Math.PI * 2); ctx.fill();
+
+                // Protractor arc
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(pivotX, pivotY, 45, 0, Math.PI); ctx.stroke();
+
+                // --- 2. DRAW STRING & BOB ---
+                ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(bobX, bobY); ctx.stroke();
+
+                // Bob radius proportional to mass m
+                const bobRadius = 12 + (labState.massM - 1) * 4;
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath(); ctx.arc(bobX, bobY, bobRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+                // Highlight gloss on bob
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath(); ctx.arc(bobX - 3, bobY - 3, 3, 0, Math.PI * 2); ctx.fill();
+
+                // --- 3. WAVEFORM GRAPH AT THE BOTTOM ---
+                const graphX = 40, graphY = 245, graphW = 385, graphH = 80;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillRect(graphX, graphY, graphW, graphH);
+                ctx.strokeStyle = '#0284c7'; ctx.lineWidth = 1.5; ctx.strokeRect(graphX, graphY, graphW, graphH);
+
+                // Graph Center Axis
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(graphX, graphY + graphH / 2); ctx.lineTo(graphX + graphW, graphY + graphH / 2); ctx.stroke();
+
+                // Draw Sine Wave
+                ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let px = 0; px < graphW; px++) {
+                    const tSample = animationTime - (graphW - px) / 40;
+                    const val = alphaMax * Math.cos(omega * tSample);
+                    const py = graphY + graphH / 2 - (val / (Math.PI / 4)) * (graphH / 2.5);
+                    if (px === 0) ctx.moveTo(graphX + px, py);
+                    else ctx.lineTo(graphX + px, py);
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = '#94a3b8'; ctx.font = '800 9.5px Nunito'; ctx.textAlign = 'left';
+                ctx.fillText('Đồ thị li độ góc α(t)', graphX + 8, graphY + 16);
+
+                // Callouts Overlay
+                if (labState.step === 0) {
+                    drawCalloutPill(ctx, bobX, bobY, 260, 110, `⏱️ Chu kỳ T = ${T.toFixed(2)}s`, '#38bdf8');
+                } else if (labState.step === 1) {
+                    drawCalloutPill(ctx, bobX, bobY, 260, 110, `📏 Chiều dài l = ${labState.lengthL.toFixed(2)}m`, '#10b981');
+                } else if (labState.step === 2) {
+                    drawCalloutPill(ctx, bobX, bobY, 260, 110, `📐 Góc lệch α₀ = ${labState.angleDeg}°`, '#f59e0b');
+                } else if (labState.step === 3) {
+                    drawCalloutPill(ctx, bobX, bobY, 260, 110, `⚖️ Khối lượng m = ${labState.massM}kg`, '#eab308');
+                } else if (labState.step === 4) {
+                    drawCalloutPill(ctx, bobX, bobY, 260, 110, `🌍 g = 9.8 m/s² (Không đổi)`, '#6366f1');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: COMPARISON SLIDES
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', mode: 'length_factor' },
+                { id: 'cmpCanvasB', mode: 'angle_factor' },
+                { id: 'cmpCanvasC', mode: 'mass_factor' },
+                { id: 'cmpCanvasD', mode: 'gravity_factor' }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 144;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+                const cX = w / 2, pivotY = 25;
+
+                if (cfg.mode === 'length_factor') {
+                    // Two pendulums with different lengths
+                    [35, 70].forEach((len, idx) => {
+                        const col = idx === 0 ? '#38bdf8' : '#f43f5e';
+                        ctx.strokeStyle = col; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(cX - 25 + idx * 50, pivotY); ctx.lineTo(cX - 25 + idx * 50 + 15, pivotY + len); ctx.stroke();
+                        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cX - 25 + idx * 50 + 15, pivotY + len, 8, 0, Math.PI * 2); ctx.fill();
+                    });
+                } else if (cfg.mode === 'angle_factor') {
+                    // Pendulum swung at small vs large angle
+                    [15, 45].forEach((deg, idx) => {
+                        const col = idx === 0 ? '#38bdf8' : '#eab308';
+                        const rad = (deg * Math.PI) / 180;
+                        const px = cX + Math.sin(rad) * 60;
+                        const py = pivotY + Math.cos(rad) * 60;
+                        ctx.strokeStyle = col; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(cX, pivotY); ctx.lineTo(px, py); ctx.stroke();
+                        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
+                    });
+                } else if (cfg.mode === 'mass_factor') {
+                    // Small bob vs Large bob
+                    [8, 14].forEach((rad, idx) => {
+                        const col = idx === 0 ? '#38bdf8' : '#10b981';
+                        ctx.strokeStyle = col; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(cX - 30 + idx * 60, pivotY); ctx.lineTo(cX - 30 + idx * 60, pivotY + 70); ctx.stroke();
+                        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cX - 30 + idx * 60, pivotY + 70, rad, 0, Math.PI * 2); ctx.fill();
+                    });
+                } else if (cfg.mode === 'gravity_factor') {
+                    // Earth vs Moon gravity representation
+                    ctx.fillStyle = '#38bdf8'; ctx.font = '800 11px Nunito'; ctx.textAlign = 'center';
+                    ctx.fillText('Trái Đất (g lớn)', cX - 45, pivotY + 20);
+                    ctx.fillText('Mặt Trăng (g nhỏ)', cX + 45, pivotY + 20);
+
+                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(cX - 45, pivotY + 30); ctx.lineTo(cX - 45 + 20, pivotY + 90); ctx.stroke();
+                    ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(cX - 45 + 20, pivotY + 90, 8, 0, Math.PI * 2); ctx.fill();
+
+                    ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(cX + 45, pivotY + 30); ctx.lineTo(cX + 45 - 25, pivotY + 90); ctx.stroke();
+                    ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(cX + 45 - 25, pivotY + 90, 8, 0, Math.PI * 2); ctx.fill();
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '⏱️',
+                qVi: '1. Chu kỳ dao động điều hòa của con lắc đơn phụ thuộc vào yếu tố nào sau đây?',
+                qEn: '1. The period of a simple pendulum depends on which of the following?',
+                optsVi: [
+                    'Chiều dài dây treo l và gia tốc trọng trường g.',
+                    'Khối lượng vật nặng m.',
+                    'Biên độ dao động lớn hay nhỏ.',
+                    'Bản chất của vật liệu làm dây treo.'
+                ],
+                optsEn: [
+                    'Pendulum length l and acceleration due to gravity g.',
+                    'Mass of the bob m.',
+                    'Amplitude of oscillation.',
+                    'Material of the suspension string.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '📐',
+                qVi: '2. Công thức tính chu kỳ dao động điều hòa của con lắc đơn là gì?',
+                qEn: '2. What is the formula for the period of a simple pendulum?',
+                optsVi: [
+                    'T = 2π√(l/g)',
+                    'T = 2π√(g/l)',
+                    'T = 1/2π√(l/g)',
+                    'T = m·g·l'
+                ],
+                optsEn: [
+                    'T = 2π√(l/g)',
+                    'T = 2π√(g/l)',
+                    'T = 1/2π√(l/g)',
+                    'T = m·g·l'
+                ],
+                ans: 0
+            },
+            {
+                icon: '⚖️',
+                qVi: '3. Nếu tăng khối lượng m của vật nặng gấp đôi thì chu kỳ dao động của con lắc đơn sẽ:',
+                qEn: '3. If the mass m of the pendulum bob is doubled, its period will:',
+                optsVi: [
+                    'Không thay đổi.',
+                    'Tăng lên gấp đôi.',
+                    'Tăng lên √2 lần.',
+                    'Giảm đi một nửa.'
+                ],
+                optsEn: [
+                    'Remain unchanged.',
+                    'Double.',
+                    'Increase by √2 times.',
+                    'Halve.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🌍',
+                qVi: '4. Đưa một con lắc đơn từ mặt đất lên đỉnh núi cao (nơi g giảm), chu kỳ dao động của con lắc sẽ:',
+                qEn: '4. Moving a pendulum from sea level to a high mountain (where g decreases) will cause its period to:',
+                optsVi: [
+                    'Tăng lên.',
+                    'Giảm đi.',
+                    'Không thay đổi.',
+                    'Bằng không.'
+                ],
+                optsEn: [
+                    'Increase.',
+                    'Decrease.',
+                    'Remain unchanged.',
+                    'Become zero.'
+                ],
+                ans: 0
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2 rounded-xl bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0 font-black">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã nắm rất vững kiến thức về Con Lắc Đơn (+3 Điểm)!'
+                    : '🎉 Correct! You mastered Simple Pendulum physics (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1400);
+            } else {
+                playTone(220, 'sawtooth', 0.2);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi, hãy đọc lại phiếu tóm tắt bên trái nhé!'
+                    : '🤔 Not quite right, check the theory sheet on the left!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-600 text-white border-2 border-sky-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Vật Lý Cơ Học',
+                    goalPill: '🎯 Mục tiêu: Kiểm chứng chu kỳ $T = 2\\pi\\sqrt{\\frac{l}{g}}$',
+                    appTitle: 'Lab: Mô Phỏng Con Lắc Đơn & Dao Động Điều Hòa',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Khảo Sát Con Lắc & 4 Bước',
+                    tab2: '2. So Sánh 4 Yếu Tố (l, m, g, α)',
+                    tab3: '3. Tóm Tắt Công Thức & Đố Vui',
+                    autoObsBtn: 'Tự động 4 bước',
+                    toolsHeader: '🎛️ Tùy Chỉnh Thông Số Con Lắc',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Đặt lại',
+                    lengthLabel: 'Chiều dài dây l:',
+                    angleLabel: 'Góc lệch ban đầu α₀:',
+                    stepsHeader: '📋 Các Bước Khám Phá (Bấm 1 → 4):',
+                    step1Text: '1. Khảo sát ảnh hưởng của chiều dài dây l.',
+                    step2Text: '2. Khảo sát ảnh hưởng của góc lệch ban đầu α₀.',
+                    step3Text: '3. Khảo sát ảnh hưởng của khối lượng vật nặng m.',
+                    step4Text: '4. Xác định gia tốc trọng trường g.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Tiến Trình Khám Phá Con Lắc Đơn',
+                    finalConclusionBadge: '✅ Định luật: $T = 2\\pi\\sqrt{\\frac{l}{g}}$ (Độc lập với biên độ & khối lượng)',
+                    cmpSub: 'Thí nghiệm phân tích',
+                    cmpTitle: 'So sánh ảnh hưởng của 4 yếu tố đến chu kỳ con lắc đơn',
+                    scenATitle: 'Chiều dài dây l',
+                    scenARes: '✅ <strong>Tỉ lệ thuận căn bậc hai:</strong> Dây càng dài ($l$ tăng) thì chu kỳ dao động $T$ càng lớn.',
+                    scenBTitle: 'Góc lệch ban đầu α₀',
+                    scenBRes: '🔄 <strong>Độc lập biên độ:</strong> Với góc nhỏ ($\alpha_0 \\le 10^\\circ$), chu kỳ không phụ thuộc vào biên độ dao động.',
+                    scenCTitle: 'Khối lượng vật m',
+                    scenCRes: '⚖️ <strong>Không ảnh hưởng:</strong> Khối lượng $m$ lớn hay nhỏ không làm thay đổi chu kỳ dao động của con lắc đơn.',
+                    scenDTitle: 'Gia tốc trọng trường g',
+                    scenDRes: '🌍 <strong>Tỉ lệ nghịch căn bậc hai:</strong> Nơi có $g$ lớn (như ở cực) thì chu kỳ $T$ nhỏ hơn ở xích đạo.'
+                },
+                en: {
+                    labBadge: 'Physics Mechanics Lab',
+                    goalPill: '🎯 Goal: Verify period formula $T = 2\\pi\\sqrt{\\frac{l}{g}}$',
+                    appTitle: 'Lab: Simple Pendulum & Oscillation Simulation',
+                    starsUnit: 'Pts',
+                    tab1: '1. Pendulum Lab & 4 Steps',
+                    tab2: '2. Compare 4 Factors (l, m, g, α)',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🎛️ Pendulum Parameters Controls',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    lengthLabel: 'Pendulum length l:',
+                    angleLabel: 'Initial angle α₀:',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Investigate effect of string length l.',
+                    step2Text: '2. Investigate effect of initial angle α₀.',
+                    step3Text: '3. Investigate effect of bob mass m.',
+                    step4Text: '4. Determine gravitational acceleration g.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Simple Pendulum Discovery Progress',
+                    finalConclusionBadge: '✅ Law: $T = 2\\pi\\sqrt{\\frac{l}{g}}$ (Independent of amplitude & mass)',
+                    cmpSub: 'Analytical Experiments',
+                    cmpTitle: 'Comparing 4 Factors Affecting Pendulum Period',
+                    scenATitle: 'String Length l',
+                    scenARes: '✅ <strong>Square root proportional:</strong> Longer string ($l$) results in longer period $T$.',
+                    scenBTitle: 'Initial Angle α₀',
+                    scenBRes: '🔄 <strong>Amplitude independent:</strong> For small angles ($\alpha_0 \\le 10^\\circ$), period is independent of amplitude.',
+                    scenCTitle: 'Bob Mass m',
+                    scenCRes: '⚖️ <strong>No effect:</strong> Changing mass $m$ does not alter the oscillation period.',
+                    scenDTitle: 'Gravity g',
+                    scenDRes: '🌍 <strong>Inverse square root:</strong> Higher gravity $g$ (like at poles) yields a shorter period $T$.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

@@ -5,7 +5,6 @@ import {
   getMyProgress,
   getMyQuizAttempts,
   getInteractiveVideoAnalytics,
-  createLessonQuiz,
   createLessonVideo,
   listAvailableQuizzes,
   saveProgress,
@@ -17,11 +16,6 @@ import {
 const router = Router();
 
 router.use(requireAuth);
-router.post(
-  "/lessons/:lessonId/quizzes",
-  requireRole("TEACHER"),
-  createLessonQuiz,
-);
 router.post(
   "/lessons/:lessonId/videos",
   requireRole("TEACHER"),

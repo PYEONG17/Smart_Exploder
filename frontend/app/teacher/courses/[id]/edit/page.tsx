@@ -35,7 +35,6 @@ import {
   updateLesson,
   generateBilingualLessonDraft,
   updateLessonVideoMetadata,
-  createLessonQuiz,
   createLessonMaterial,
   answerLessonQuestion,
   createLessonVideo,
@@ -44,7 +43,6 @@ import {
   fetchInteractiveVideoAnalytics,
   fetchCourseById,
   fetchLessonQuestions,
-  type CreateLessonQuizInput,
   type CreateLessonVideoInput,
   type InteractiveVideoAnalytics,
   type LessonQuestion,
@@ -72,14 +70,6 @@ import type {
   MaterialType,
   LessonVocabularyTerm,
 } from "@/types";
-
-type QuizQuestionDraft = {
-  question: string;
-  questionEn: string;
-  answers: string[];
-  answersEn: string[];
-  correctIndex: number;
-};
 
 type VideoCheckpointDraft = {
   timestamp: string;
@@ -166,16 +156,6 @@ const additionalActivityTemplates: Record<
     context: "Add lesson-specific context here",
   },
 };
-
-function createQuizQuestionDraft(): QuizQuestionDraft {
-  return {
-    question: "",
-    questionEn: "",
-    answers: ["", "", "", ""],
-    answersEn: ["", "", "", ""],
-    correctIndex: 0,
-  };
-}
 
 function createVideoCheckpointDraft(timestamp = "60"): VideoCheckpointDraft {
   return {
@@ -326,10 +306,9 @@ export default function CourseEditStudioPage({
   const [isUploadingCourseThumbnail, setIsUploadingCourseThumbnail] =
     useState(false);
   const [newLessonDuration, setNewLessonDuration] = useState("20 phút");
-  const [activeEditor, setActiveEditor] = useState<{
-    lessonId: string;
-    kind: "video" | "quiz";
-  } | null>(null);
+  const [activeEditor, setActiveEditor] = useState<{ lessonId: string } | null>(
+    null,
+  );
   const [videoTitle, setVideoTitle] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -361,11 +340,6 @@ export default function CourseEditStudioPage({
   const [analyticsErrors, setAnalyticsErrors] = useState<
     Record<string, string>
   >({});
-  const [quizTitle, setQuizTitle] = useState("");
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([
-    createQuizQuestionDraft(),
-  ]);
-
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialType, setMaterialType] = useState<MaterialType>("PDF");
   const [materialUrl, setMaterialUrl] = useState("");
@@ -952,64 +926,6 @@ export default function CourseEditStudioPage({
       }));
     } finally {
       setLoadingAnalyticsVideoId(null);
-    }
-  };
-
-  const handleSaveLessonQuiz = async (lessonId: string) => {
-    if (!token) return toast.error("Vui lòng đăng nhập lại.");
-    if (
-      quizQuestions.some(
-        (question) =>
-          question.question.trim().length < 2 ||
-          question.answers.some((answer) => !answer.trim()),
-      )
-    ) {
-      return toast.error(
-        "Nhập từng câu hỏi và đủ 4 lựa chọn trước khi lưu.",
-      );
-    }
-    setIsSavingContent(true);
-    try {
-      const data: CreateLessonQuizInput = {
-        title: quizTitle.trim() || undefined,
-        sourceLanguage: contentLanguage,
-        questions: quizQuestions.map((question) => ({
-          question: question.question.trim(),
-          questionEn: question.questionEn.trim() || undefined,
-          type: "MULTIPLE_CHOICE",
-          answers: question.answers.map((content, index) => ({
-            content: content.trim(),
-            contentEn: question.answersEn[index].trim() || undefined,
-            isCorrect: index === question.correctIndex,
-          })),
-        })),
-      };
-      const savedQuiz = await createLessonQuiz(token, lessonId, data);
-      setLessons((current) =>
-        current.map((lesson) =>
-          lesson.id === lessonId
-            ? {
-                ...lesson,
-                quizzes: [
-                  ...(lesson.quizzes ?? []),
-                  savedQuiz as NonNullable<Lesson["quizzes"]>[number],
-                ],
-              }
-            : lesson,
-        ),
-      );
-      setQuizTitle("");
-      setQuizQuestions([createQuizQuestionDraft()]);
-      setActiveEditor(null);
-      toast.success("Đã thêm bài tập song ngữ vào bài học.");
-    } catch (saveError) {
-      toast.error(
-        saveError instanceof Error
-          ? saveError.message
-          : "Không thể lưu bài tập.",
-      );
-    } finally {
-      setIsSavingContent(false);
     }
   };
 
@@ -1759,24 +1675,12 @@ export default function CourseEditStudioPage({
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        setActiveEditor({ lessonId: lesson.id, kind: "video" })
+                        setActiveEditor({ lessonId: lesson.id })
                       }
                       className="rounded-xl border-blue-500/30 text-blue-600 hover:bg-blue-500/10 text-xs font-semibold"
                     >
                       <Video className="w-3.5 h-3.5 mr-1" />
                       Thêm video tương tác
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setActiveEditor({ lessonId: lesson.id, kind: "quiz" })
-                      }
-                      className="rounded-xl border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 text-xs font-semibold"
-                    >
-                      <ClipboardList className="w-3.5 h-3.5 mr-1" />
-                      Tạo bài tập
                     </Button>
 
                     <Button
@@ -1817,11 +1721,7 @@ export default function CourseEditStudioPage({
                   <section className="mb-5 rounded-lg border border-border bg-muted/20 p-4">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <div>
-                        <h4 className="font-semibold">
-                          {activeEditor.kind === "video"
-                            ? "Video bài giảng tương tác"
-                            : "Bài tập của bài học"}
-                        </h4>
+                        <h4 className="font-semibold">Video bài giảng tương tác</h4>
                         <p className="text-xs text-muted-foreground">
                           Nội dung Tiếng Việt và Tiếng Anh được lưu riêng.
                         </p>
@@ -1836,27 +1736,26 @@ export default function CourseEditStudioPage({
                       </Button>
                     </div>
 
-                    {activeEditor.kind === "video" ? (
-                      <form
-                        className="space-y-3"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          void handleSaveLessonVideo(lesson.id);
-                        }}
-                      >
-                        <AuthoringLanguageToggle
-                          value={contentLanguage}
-                          onChange={setContentLanguage}
-                          disabled={isSavingContent}
-                        />
-                        <input
-                          value={videoTitle}
-                          onChange={(event) => setVideoTitle(event.target.value)}
-                          placeholder={
-                            contentLanguage === "vi" ? "Tên video (không bắt buộc)" : "Video title (optional)"
-                          }
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                        />
+                    <form
+                      className="space-y-3"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void handleSaveLessonVideo(lesson.id);
+                      }}
+                    >
+                      <AuthoringLanguageToggle
+                        value={contentLanguage}
+                        onChange={setContentLanguage}
+                        disabled={isSavingContent}
+                      />
+                      <input
+                        value={videoTitle}
+                        onChange={(event) => setVideoTitle(event.target.value)}
+                        placeholder={
+                          contentLanguage === "vi" ? "Tên video (không bắt buộc)" : "Video title (optional)"
+                        }
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      />
                         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Nguồn video">
                           <Button
                             type="button"
@@ -2403,195 +2302,7 @@ export default function CourseEditStudioPage({
                               : "Lưu video và checkpoint"}
                           </Button>
                         </div>
-                      </form>
-                    ) : (
-                      <form
-                        className="space-y-3"
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          void handleSaveLessonQuiz(lesson.id);
-                        }}
-                      >
-                        <AuthoringLanguageToggle
-                          value={contentLanguage}
-                          onChange={setContentLanguage}
-                          disabled={isSavingContent}
-                        />
-                        <input
-                          value={quizTitle}
-                          onChange={(event) => setQuizTitle(event.target.value)}
-                          placeholder={
-                            contentLanguage === "vi" ? "Tên bài tập (không bắt buộc)" : "Assignment title (optional)"
-                          }
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                        />
-                        {quizQuestions.map((draft, questionIndex) => (
-                          <fieldset
-                            key={questionIndex}
-                            className="space-y-3 rounded-lg border border-border p-3"
-                          >
-                            <div className="flex items-center justify-between">
-                              <legend className="text-sm font-semibold">
-                                Câu hỏi {questionIndex + 1}
-                              </legend>
-                              {quizQuestions.length > 1 && (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    setQuizQuestions((current) =>
-                                      current.filter(
-                                        (_, index) => index !== questionIndex,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  Xóa câu
-                                </Button>
-                              )}
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <textarea
-                                required
-                                value={draft.question}
-                                onChange={(event) =>
-                                  setQuizQuestions((current) =>
-                                    current.map((item, index) =>
-                                      index === questionIndex
-                                        ? {
-                                            ...item,
-                                            question: event.target.value,
-                                          }
-                                        : item,
-                                    ),
-                                  )
-                                }
-                                placeholder="Câu hỏi (Tiếng Việt)"
-                                rows={2}
-                                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                              />
-                              <textarea
-                                value={draft.questionEn}
-                                onChange={(event) =>
-                                  setQuizQuestions((current) =>
-                                    current.map((item, index) =>
-                                      index === questionIndex
-                                        ? {
-                                            ...item,
-                                            questionEn: event.target.value,
-                                          }
-                                        : item,
-                                    ),
-                                  )
-                                }
-                                placeholder="Question (English)"
-                                rows={2}
-                                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                              />
-                            </div>
-                            {draft.answers.map((answer, answerIndex) => (
-                              <div
-                                key={answerIndex}
-                                className="grid gap-2 sm:grid-cols-[32px_1fr_1fr]"
-                              >
-                                <label
-                                  className="flex items-center justify-center gap-1 text-xs text-muted-foreground"
-                                  title="Chọn đáp án đúng"
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`quiz-correct-${lesson.id}-${questionIndex}`}
-                                    checked={draft.correctIndex === answerIndex}
-                                    onChange={() =>
-                                      setQuizQuestions((current) =>
-                                        current.map((item, index) =>
-                                          index === questionIndex
-                                            ? {
-                                                ...item,
-                                                correctIndex: answerIndex,
-                                              }
-                                            : item,
-                                        ),
-                                      )
-                                    }
-                                  />
-                                  {String.fromCharCode(65 + answerIndex)}
-                                </label>
-                                <input
-                                  required
-                                  value={answer}
-                                  onChange={(event) =>
-                                    setQuizQuestions((current) =>
-                                      current.map((item, index) =>
-                                        index === questionIndex
-                                          ? {
-                                              ...item,
-                                              answers: item.answers.map(
-                                                (value, optionIndex) =>
-                                                  optionIndex === answerIndex
-                                                    ? event.target.value
-                                                    : value,
-                                              ),
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  placeholder={`Lựa chọn ${answerIndex + 1} (VI)`}
-                                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                                />
-                                <input
-                                  value={draft.answersEn[answerIndex]}
-                                  onChange={(event) =>
-                                    setQuizQuestions((current) =>
-                                      current.map((item, index) =>
-                                        index === questionIndex
-                                          ? {
-                                              ...item,
-                                              answersEn: item.answersEn.map(
-                                                (value, optionIndex) =>
-                                                  optionIndex === answerIndex
-                                                    ? event.target.value
-                                                    : value,
-                                              ),
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  placeholder={`Option ${answerIndex + 1} (EN, tùy chọn)`}
-                                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                                />
-                              </div>
-                            ))}
-                          </fieldset>
-                        ))}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={quizQuestions.length >= 40}
-                          onClick={() =>
-                            setQuizQuestions((current) => [
-                              ...current,
-                              createQuizQuestionDraft(),
-                            ])
-                          }
-                        >
-                          <Plus className="mr-1.5 h-4 w-4" />
-                          Thêm câu hỏi
-                        </Button>
-                        <div className="flex justify-end">
-                          <Button
-                            type="submit"
-                            disabled={isSavingContent}
-                            className="bg-emerald-600 text-white"
-                          >
-                            {isSavingContent ? "Đang lưu..." : "Lưu bài tập"}
-                          </Button>
-                        </div>
-                      </form>
-                    )}
+                    </form>
                   </section>
                 )}
 
@@ -2604,15 +2315,6 @@ export default function CourseEditStudioPage({
                       setLessons((prev) =>
                         prev.map((item) =>
                           item.id === updated.id ? { ...item, ...updated } : item,
-                        ),
-                      )
-                    }
-                    onQuizSaved={(lessonId, quiz) =>
-                      setLessons((prev) =>
-                        prev.map((item) =>
-                          item.id === lessonId
-                            ? { ...item, quizzes: [...(item.quizzes ?? []), quiz] }
-                            : item,
                         ),
                       )
                     }

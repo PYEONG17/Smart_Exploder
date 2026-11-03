@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   createLessonMaterial,
-  createLessonQuiz,
   findAiLessonResources,
   generateAiLessonDraft,
   updateLesson,
@@ -20,7 +19,6 @@ type Props = {
   lesson: Lesson;
   locale: "vi" | "en";
   onLessonUpdated: (lesson: Lesson) => void;
-  onQuizSaved: (lessonId: string, quiz: NonNullable<Lesson["quizzes"]>[number]) => void;
   onMaterialAdded: (material: Material) => void;
 };
 
@@ -33,7 +31,6 @@ export function AiLessonAssistant({
   lesson,
   locale,
   onLessonUpdated,
-  onQuizSaved,
   onMaterialAdded,
 }: Props) {
   const isVi = locale === "vi";
@@ -83,32 +80,6 @@ export function AiLessonAssistant({
     }
   };
 
-  const saveQuiz = async () => {
-    if (!draft) return;
-    setBusy("save");
-    try {
-      const saved = await createLessonQuiz(token, lesson.id, {
-        title: isVi ? "Bài tập do AI soạn" : "AI-generated quiz",
-        questions: draft.quiz.map((item) => ({
-          question: item.question,
-          questionEn: item.questionEn,
-          type: "MULTIPLE_CHOICE" as const,
-          answers: item.options.map((content, index) => ({
-            content,
-            contentEn: item.optionsEn[index],
-            isCorrect: index === item.correctIndex,
-          })),
-        })),
-      });
-      onQuizSaved(lesson.id, saved as NonNullable<Lesson["quizzes"]>[number]);
-      toast.success("Đã lưu bài tập AI vào bài học.");
-    } catch (error) {
-      toast.error(errorMessage(error, "Không thể lưu bài tập."));
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const addSource = async (source: { title: string; url: string }) => {
     try {
       const material = await createLessonMaterial(token, lesson.id, {
@@ -144,7 +115,7 @@ export function AiLessonAssistant({
             ) : (
               <Sparkles className="mr-1 h-3.5 w-3.5" />
             )}
-            {isVi ? "AI soạn nội dung & bài tập" : "AI draft content & quiz"}
+            {isVi ? "AI soạn nội dung bài học" : "AI draft lesson content"}
           </Button>
           <Button
             type="button"
@@ -173,29 +144,6 @@ export function AiLessonAssistant({
               <li key={index}>{isVi ? point.vi : point.en}</li>
             ))}
           </ul>
-          <ol className="list-decimal space-y-2 pl-5">
-            {draft.quiz.map((item, index) => (
-              <li key={index}>
-                <span className="font-semibold">
-                  {isVi ? item.question : item.questionEn}
-                </span>
-                <ul className="mt-1 space-y-0.5">
-                  {(isVi ? item.options : item.optionsEn).map((option, optionIndex) => (
-                    <li
-                      key={optionIndex}
-                      className={
-                        optionIndex === item.correctIndex
-                          ? "font-semibold text-emerald-600"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {String.fromCharCode(65 + optionIndex)}. {option}
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -205,20 +153,11 @@ export function AiLessonAssistant({
             >
               {isVi ? "Áp dụng mô tả & ý chính" : "Apply description & key points"}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={busy !== null}
-              onClick={() => void saveQuiz()}
-            >
-              {isVi ? "Lưu thành bài tập" : "Save as quiz"}
-            </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
             {isVi
-              ? "Nội dung do AI tạo — hãy kiểm tra lại trước khi đăng cho học sinh."
-              : "AI-generated content — please review before publishing to students."}
+              ? "Nội dung do AI tạo — hãy kiểm tra lại trước khi áp dụng."
+              : "AI-generated content — please review before applying it."}
           </p>
         </div>
       )}

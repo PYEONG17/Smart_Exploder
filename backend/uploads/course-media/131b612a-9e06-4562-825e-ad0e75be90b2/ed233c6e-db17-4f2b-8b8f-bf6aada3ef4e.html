@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 6: Tác Dụng Của Đòn Bẩy (Lever Principle)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 60%, #fed7aa 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #ea580c;
+            box-shadow: 0 18px 40px -12px rgba(234, 88, 12, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #fff7ed; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #ea580c; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-500 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-orange-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-orange-600 flex items-center justify-center shadow border-2 border-orange-200 shrink-0 text-2xl">
+                    ⚖️
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-sky-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Vật Lý Cơ Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Nâng vật nặng bằng đòn bẩy
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab 6: Tác Dụng Của Đòn Bẩy (Nguyên Lý Đòn Bẩy)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-white text-orange-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-orange-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-orange-700 hover:bg-orange-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-orange-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-orange-50 px-3.5 py-2 border-b-2 border-orange-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-orange-600 text-white border-2 border-orange-700">
+                <span>🛠️</span>
+                <span data-i18n="tab1">1. Lắp Ráp & Thực Hành 4 Bước</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Thử Nghiệm 4 Vị Trí Điểm Tựa</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt & Đố Vui Kiến Thức</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-orange-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: THỰC HÀNH ĐÒN BẨY
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Lab Canvas -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-orange-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-orange-200 truncate" data-i18n="statusReady">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Xem tự động 4 bước</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 4 Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-orange-50 to-amber-50/60 rounded-2xl p-3 border-2 border-orange-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-orange-900 bg-orange-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Công Cụ (4 món)
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tools Grid (4 items) -->
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <div onclick="triggerToolClick('fulcrum')" id="tool-fulcrum" class="cursor-pointer bg-orange-100 border-2 border-orange-500 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🔺</div>
+                                    <div class="font-black text-[10px] text-orange-950 mt-1" data-i18n="toolFulcrum">Điểm tựa</div>
+                                    <div id="tool-status-fulcrum" class="text-[9px] font-extrabold text-orange-700">✓ Sẵn</div>
+                                </div>
+                                <div onclick="triggerToolClick('plank')" id="tool-plank" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🪵</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolPlank">Thanh gỗ</div>
+                                    <div id="tool-status-plank" class="text-[9px] font-extrabold text-amber-600">Bước 1</div>
+                                </div>
+                                <div onclick="triggerToolClick('rock')" id="tool-rock" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🪨</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolRock">Vật nặng</div>
+                                    <div id="tool-status-rock" class="text-[9px] font-extrabold text-slate-400">Bước 2</div>
+                                </div>
+                                <div onclick="triggerToolClick('force')" id="tool-force" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">💪</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolForce">Lực đẩy</div>
+                                    <div id="tool-status-force" class="text-[9px] font-extrabold text-slate-400">Bước 3</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-orange-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Lắp Ráp (Bấm lần lượt 1 → 4):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-orange-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Đặt điểm tựa cố định xuống mặt đất.</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Kê thanh gỗ vững chắc lên điểm tựa.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Đặt tảng đá nặng lên đầu bên trái.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Tác dụng lực ấn xuống đầu bên phải.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-orange-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-orange-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Trạng thái đòn bẩy:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Đặt điểm tựa</strong> để bắt đầu lắp ráp hệ thống!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: 4 Stages Strip -->
+                <div class="bg-orange-50/90 rounded-2xl p-2.5 border-2 border-orange-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Bước Lắp Ráp (Bấm vào từng bước để xem lại)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-orange-900 bg-orange-200 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết quả: Nâng vật dễ dàng
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 TRƯỜNG HỢP (COMPARE)
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-orange-50 to-amber-50 p-3.5 rounded-2xl border-2 border-orange-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-orange-800 bg-orange-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích đòn bẩy
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Vị trí điểm tựa ảnh hưởng thế nào đến lực cần nâng?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Hãy quan sát lực (mũi tên đỏ) ở 4 trường hợp dưới đây:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Case A: Fulcrum Middle -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-orange-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-orange-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP A</span>
+                                <span class="text-xs">⚖️ Cân bằng</span>
+                            </div>
+                            <h4 class="font-black text-xs text-orange-950 mt-1.5" data-i18n="cupATitle">Điểm tựa ở chính giữa</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-orange-900 bg-orange-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Bình thường:</strong> Cánh tay đòn bằng nhau, lực tác dụng cần thiết bằng chính trọng lượng của vật.
+                        </p>
+                    </div>
+
+                    <!-- Case B: Fulcrum Near Load -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-emerald-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP B</span>
+                                <span class="text-xs">✅ Lợi về lực</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Điểm tựa gần vật nặng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-emerald-900 bg-emerald-50 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ✨ <strong>Lực rất nhỏ:</strong> Cánh tay đòn lực rất dài. Chỉ cần một lực nhỏ là nâng được vật nặng lên cao.
+                        </p>
+                    </div>
+
+                    <!-- Case C: Fulcrum Far from Load -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-rose-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP C</span>
+                                <span class="text-xs">⚠️ Thiệt về lực</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Điểm tựa xa vật nặng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-rose-900 bg-rose-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            ❌ <strong>Lực rất lớn:</strong> Cánh tay đòn lực quá ngắn. Cần dùng lực rất lớn mới nâng nổi vật lên, rất mệt mỏi.
+                        </p>
+                    </div>
+
+                    <!-- Case D: No Lever -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-slate-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-slate-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP D</span>
+                                <span class="text-xs">🚫 Trực tiếp</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Nâng trực tiếp không đòn bẩy</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-slate-700 bg-slate-100 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ⚠️ <strong>Rất nặng:</strong> Phải chịu toàn bộ trọng lượng của vật. Không có sự hỗ trợ của đòn bẩy.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-4 border-2 border-orange-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-orange-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-orange-800">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-orange-950">Tóm Tắt Lab: Nguyên Lý Đòn Bẩy</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-orange-200 space-y-1">
+                            <div class="text-xs font-black text-orange-800">🎯 1. Tác dụng của đòn bẩy:</div>
+                            <p class="text-xs font-bold text-slate-700">Giúp con người thực hiện công việc dễ dàng hơn (ví dụ: nâng vật nặng bằng một lực nhỏ hơn trọng lượng của vật).</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-orange-200 space-y-1">
+                            <div class="text-xs font-black text-orange-800">🧰 2. Cấu tạo đòn bẩy gồm:</div>
+                            <div class="grid grid-cols-2 gap-1 pt-1 text-xs font-bold text-slate-700">
+                                <div>• 🔺 Điểm tựa (O)</div>
+                                <div>• 🪵 Thanh đòn</div>
+                                <div>• 🪨 Trọng lực vật (P)</div>
+                                <div>• 💪 Lực tác dụng (F)</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-orange-200 space-y-1">
+                            <div class="text-xs font-black text-orange-800">📏 3. Nguyên tắc hoạt động:</div>
+                            <p class="text-xs font-bold text-slate-700">
+                                Khoảng cách từ điểm tựa đến lực tác dụng (cánh tay đòn) càng <strong>dài</strong> thì lực cần thiết để nâng vật càng <strong>nhỏ</strong> (càng có lợi về lực).
+                            </p>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-orange-900">💡 4. Ứng dụng thực tế:</div>
+                            <p class="text-xs font-black text-orange-950">
+                                Cái bập bênh, cái kìm, cái kéo, xe cút kít, mái chèo thuyền... đều là các ứng dụng của đòn bẩy trong đời sống!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">⚖️</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.3), 270);
+        }
+
+        function playHeavyThud() {
+            playTone(150, 'sawtooth', 0.2, 0.2);
+            setTimeout(() => playTone(100, 'square', 0.2, 0.2), 50);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            step: 0,           // 0: Prep, 1: Fulcrum, 2: Plank, 3: Rock, 4: Force applied
+            angle: 0,          // Current animated angle of the plank
+            targetAngle: 0     // Target angle based on step
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Đặt điểm tựa', shortEn: '1. Place Fulcrum', icon: '🔺' },
+            2: { shortVi: '2. Kê thanh gỗ', shortEn: '2. Add Plank', icon: '🪵' },
+            3: { shortVi: '3. Đặt vật nặng', shortEn: '3. Place Rock', icon: '🪨' },
+            4: { shortVi: '4. Tác dụng lực', shortEn: '4. Apply Force', icon: '💪' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'fulcrum' && labState.step === 0) {
+                executeStep(1);
+            } else if (toolKey === 'plank' && labState.step === 1) {
+                executeStep(2);
+            } else if (toolKey === 'rock' && labState.step === 2) {
+                executeStep(3);
+            } else if (toolKey === 'force' && labState.step === 3) {
+                executeStep(4);
+            }
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                playTone(400, 'square', 0.1);
+            } else if (targetStep === 2) {
+                playTone(500, 'square', 0.1);
+                labState.targetAngle = 0;
+            } else if (targetStep === 3) {
+                playHeavyThud();
+                labState.targetAngle = -0.15; // Tilts down on left side
+            } else if (targetStep === 4) {
+                playTone(300, 'sine', 0.3, 0.3); // "Effort" sound
+                labState.targetAngle = 0.2;  // Tilts down on right side (lifts rock)
+                setTimeout(() => playChime(), 600);
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2100);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            labState.angle = 0;
+            labState.targetAngle = 0;
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const titlesVi = [
+                'Chuẩn bị dụng cụ lắp ráp đòn bẩy',
+                'Bước 1: Đặt điểm tựa cố định xuống mặt đất',
+                'Bước 2: Kê thanh gỗ vững chắc lên điểm tựa',
+                'Bước 3: Đặt tảng đá nặng lên đầu bên trái đòn bẩy',
+                'Bước 4: Tác dụng lực ấn xuống đầu bên phải để nâng đá'
+            ];
+
+            document.getElementById('status-step-badge').textContent = st === 0 ? 'CHUẨN BỊ' : `BƯỚC ${st}/4`;
+            document.getElementById('status-step-title').textContent = titlesVi[st];
+
+            // Tool status updates
+            const fulcrumCard = document.getElementById('tool-fulcrum');
+            fulcrumCard.className = st >= 1 ? 'cursor-pointer bg-orange-100 border-2 border-orange-500 rounded-xl p-1 text-center transition' : 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next';
+            document.getElementById('tool-status-fulcrum').textContent = st >= 1 ? '✓ Đã đặt' : '👉 Bấm chọn';
+
+            const plankCard = document.getElementById('tool-plank');
+            plankCard.className = st >= 2 ? 'cursor-pointer bg-orange-100 border-2 border-orange-500 rounded-xl p-1 text-center transition' : (st === 1 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-plank').textContent = st >= 2 ? '✓ Đã kê' : (st === 1 ? '👉 Bấm chọn' : 'Bước 2');
+
+            const rockCard = document.getElementById('tool-rock');
+            rockCard.className = st >= 3 ? 'cursor-pointer bg-orange-100 border-2 border-orange-500 rounded-xl p-1 text-center transition' : (st === 2 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-rock').textContent = st >= 3 ? '✓ Đã đặt' : (st === 2 ? '👉 Bấm chọn' : 'Bước 3');
+
+            const forceCard = document.getElementById('tool-force');
+            forceCard.className = st >= 4 ? 'cursor-pointer bg-orange-100 border-2 border-orange-500 rounded-xl p-1 text-center transition' : (st === 3 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition');
+            document.getElementById('tool-status-force').textContent = st >= 4 ? '✓ Đã đẩy' : (st === 3 ? '👉 Bấm chọn' : 'Bước 4');
+
+
+            // 4 Steps buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-5 h-5 rounded-md bg-orange-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    icon.className = 'w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Description box
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Đặt điểm tựa</strong> để bắt đầu lắp ráp!';
+            if (st === 1) obsEl.innerHTML = 'Điểm tựa (O) đã được cố định chắc chắn trên mặt đất. Tiếp theo bấm <strong>Bước 2</strong>!';
+            if (st === 2) obsEl.innerHTML = 'Thanh đòn gỗ đã kê lên điểm tựa. Hiện tại hệ thống đang cân bằng nằm ngang. Bấm <strong>Bước 3</strong>!';
+            if (st === 3) obsEl.innerHTML = 'Tảng đá nặng (Trọng lực P) đè lên làm đòn bẩy nghiêng xuống bên trái. Bấm <strong>Bước 4</strong> để nâng!';
+            if (st === 4) obsEl.innerHTML = '🎉 <strong>KẾT QUẢ:</strong> Lực tác dụng (F) ấn xuống bên phải đã <strong>nâng bổng tảng đá</strong> lên một cách dễ dàng nhờ đòn bẩy!';
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-orange-100 text-orange-950 border-2 border-orange-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // Helper functions to draw parts
+        function drawFulcrum(c) {
+            c.fillStyle = '#dc2626'; // Red triangle
+            c.beginPath();
+            c.moveTo(0, 0);       // Top point (touches plank)
+            c.lineTo(-20, 35);    // Bottom left
+            c.lineTo(20, 35);     // Bottom right
+            c.closePath();
+            c.fill();
+            c.strokeStyle = '#991b1b';
+            c.lineWidth = 2;
+            c.stroke();
+        }
+
+        function drawPlank(c, len) {
+            c.fillStyle = '#d97706'; // Wood color
+            c.strokeStyle = '#92400e';
+            c.lineWidth = 2;
+            c.beginPath();
+            // Assuming origin is at the fulcrum pivot point (center of the top edge)
+            c.roundRect(-len/2, -8, len, 8, 3);
+            c.fill();
+            c.stroke();
+            
+            // Wood grain lines
+            c.strokeStyle = '#b45309';
+            c.beginPath(); c.moveTo(-len/2+10, -4); c.lineTo(len/2-10, -4); c.stroke();
+        }
+
+        function drawRock(c) {
+            c.fillStyle = '#64748b'; // Slate gray
+            c.strokeStyle = '#334155';
+            c.lineWidth = 2;
+            c.beginPath();
+            // A bumpy polygon
+            c.moveTo(0, 0); // Bottom center
+            c.lineTo(-20, -10);
+            c.lineTo(-30, -35);
+            c.lineTo(-10, -50);
+            c.lineTo(15, -45);
+            c.lineTo(25, -20);
+            c.closePath();
+            c.fill();
+            c.stroke();
+            
+            // Text P
+            c.fillStyle = '#f8fafc';
+            c.font = '800 14px Nunito';
+            c.textAlign = 'center';
+            c.fillText('P', -2, -22);
+        }
+
+        function drawForceArrow(c, magnitudeClass = 'normal') {
+            c.fillStyle = '#ef4444';
+            c.strokeStyle = '#991b1b';
+            c.lineWidth = 2;
+            
+            let arrH = 50;
+            if(magnitudeClass === 'small') arrH = 25;
+            if(magnitudeClass === 'large') arrH = 80;
+
+            c.beginPath();
+            // Downward pointing arrow
+            c.moveTo(0, 0); // Tip
+            c.lineTo(-10, -15);
+            c.lineTo(-4, -15);
+            c.lineTo(-4, -arrH);
+            c.lineTo(4, -arrH);
+            c.lineTo(4, -15);
+            c.lineTo(10, -15);
+            c.closePath();
+            c.fill();
+            c.stroke();
+
+            // Text F
+            c.fillStyle = '#fef2f2';
+            c.font = '800 14px Nunito';
+            c.textAlign = 'center';
+            c.fillText('F', 18, -arrH/2);
+        }
+
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath();
+            c.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 172, 24, 7);
+            c.fill();
+            c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 7, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Smooth animation interpolation for angle
+                labState.angle += (labState.targetAngle - labState.angle) * 0.15;
+
+                // Ground Level
+                const groundY = 270;
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, groundY, 465, 75);
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(0, groundY, 465, 6);
+
+                const st = labState.step;
+                const fX = 200; // Fulcrum center X
+                const fY = groundY - 35; // Fulcrum top Y (pivot point)
+                const plankLen = 280;
+
+                // 1. Draw Fulcrum (Step 1+)
+                if (st >= 1) {
+                    ctx.save();
+                    ctx.translate(fX, fY);
+                    drawFulcrum(ctx);
+                    ctx.restore();
+                }
+
+                // 2. Draw Plank & Objects (Step 2+)
+                if (st >= 2) {
+                    ctx.save();
+                    ctx.translate(fX, fY);       // Move to pivot
+                    ctx.rotate(labState.angle);  // Rotate based on state
+
+                    // Plank
+                    drawPlank(ctx, plankLen);
+
+                    // Rock (Step 3+) - attached to left side of plank
+                    if (st >= 3) {
+                        ctx.save();
+                        ctx.translate(-plankLen/2 + 20, -8); // Position at left end, on top
+                        drawRock(ctx);
+                        ctx.restore();
+                    }
+
+                    // Force Arrow (Step 4+) - attached to right side of plank
+                    if (st >= 4) {
+                        ctx.save();
+                        ctx.translate(plankLen/2 - 10, -2); // Position at right end
+                        drawForceArrow(ctx, 'normal');
+                        ctx.restore();
+                    }
+
+                    ctx.restore();
+                }
+
+                // Callout Labels (Right side x=280..450)
+                const pillX = 278;
+                if (st === 0) {
+                    drawRightCallout(ctx, fX, groundY, pillX, 150, '🌍 Bắt đầu thí nghiệm', '#94a3b8');
+                } else if (st === 1) {
+                    drawRightCallout(ctx, fX, fY + 20, pillX, 150, '🔺 Điểm tựa cố định (O)', '#ef4444');
+                } else if (st === 2) {
+                    drawRightCallout(ctx, fX + 50, fY, pillX, 120, '🪵 Đòn bẩy (Cánh tay đòn)', '#f59e0b');
+                    drawRightCallout(ctx, fX, fY + 20, pillX, 160, '🔺 Điểm tựa', '#ef4444');
+                } else if (st === 3) {
+                    // Calculate rock approximate screen pos for callout line
+                    const rockScreenX = fX - Math.cos(labState.angle) * (plankLen/2 - 20);
+                    const rockScreenY = fY - Math.sin(labState.angle) * (plankLen/2 - 20) - 20;
+                    drawRightCallout(ctx, rockScreenX, rockScreenY, pillX, 100, '🪨 Vật nặng đè xuống (P)', '#94a3b8');
+                } else if (st === 4) {
+                    const rockScreenX = fX - Math.cos(labState.angle) * (plankLen/2 - 20);
+                    const rockScreenY = fY - Math.sin(labState.angle) * (plankLen/2 - 20) - 20;
+                    
+                    const forceScreenX = fX + Math.cos(labState.angle) * (plankLen/2 - 10);
+                    const forceScreenY = fY + Math.sin(labState.angle) * (plankLen/2 - 10) - 20;
+
+                    drawRightCallout(ctx, rockScreenX, rockScreenY, pillX, 90, '✨ Vật đã được nâng lên', '#10b981');
+                    drawRightCallout(ctx, forceScreenX, forceScreenY, pillX, 140, '💪 Lực nhấn (F)', '#ef4444');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: 4 COMPARISON LEVERS
+        // ==========================================
+        function drawMiniLever(ctx, cX, cY, fulcrumOffset, forceMag, rotAngle) {
+            const plankL = 120;
+            
+            ctx.save();
+            ctx.translate(cX, cY);
+
+            // Ground
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(-80, 20, 160, 4);
+
+            // Move to fulcrum position
+            ctx.translate(fulcrumOffset, 20-15); // Fulcrum height is 15
+
+            // Fulcrum
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-10,15); ctx.lineTo(10,15); ctx.fill();
+
+            // Rotate plank
+            ctx.rotate(rotAngle);
+
+            // Plank (origin is at the shifted fulcrum)
+            // Left end relative to fulcrum: -plankL/2 - fulcrumOffset
+            const leftEnd = -plankL/2 - fulcrumOffset;
+            const rightEnd = plankL/2 - fulcrumOffset;
+            
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(leftEnd, -4, plankL, 4);
+
+            // Rock on left end
+            ctx.save();
+            ctx.translate(leftEnd + 10, -4);
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath(); ctx.arc(0, -8, 8, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // Force on right end (if not Direct Lift D)
+            if (forceMag !== 'none') {
+                ctx.save();
+                ctx.translate(rightEnd - 5, 0);
+                drawForceArrow(ctx, forceMag);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function drawDirectLift(ctx, cX, cY) {
+            ctx.save();
+            ctx.translate(cX, cY);
+            
+            // Ground
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(-80, 20, 160, 4);
+
+            // Rock
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath(); ctx.arc(0, 10, 12, 0, Math.PI*2); ctx.fill();
+            
+            // Upward Force Arrow
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(0, -30); // tip
+            ctx.lineTo(-5, -20); ctx.lineTo(-2, -20); ctx.lineTo(-2, -5); 
+            ctx.lineTo(2, -5); ctx.lineTo(2, -20); ctx.lineTo(5, -20);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function renderComparisonLevers() {
+            const configs = [
+                { id: 'cmpCanvasA', type: 'lever', fOffset: 0, force: 'normal', angle: 0.1 },      // Mid
+                { id: 'cmpCanvasB', type: 'lever', fOffset: -25, force: 'small', angle: 0.25 },   // Near Load (Left)
+                { id: 'cmpCanvasC', type: 'lever', fOffset: 25, force: 'large', angle: 0.05 },    // Far Load (Right)
+                { id: 'cmpCanvasD', type: 'direct' }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 176;
+                ctx.clearRect(0, 0, w, h);
+
+                const cX = w / 2;
+                const cY = 110; // Ground roughly around here
+
+                if (cfg.type === 'lever') {
+                    drawMiniLever(ctx, cX, cY, cfg.fOffset, cfg.force, cfg.angle);
+                } else if (cfg.type === 'direct') {
+                    drawDirectLift(ctx, cX, cY);
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '⚖️',
+                qVi: '1. Đòn bẩy có tác dụng chính là gì?',
+                qEn: '1. What is the main function of a lever?',
+                optsVi: [
+                    'Làm cho vật nặng thêm.',
+                    'Giúp nâng vật nặng bằng một lực nhỏ hơn trọng lượng của vật (lợi về lực).',
+                    'Tạo ra năng lượng điện.',
+                    'Giữ vật đứng yên vĩnh viễn.'
+                ],
+                optsEn: [
+                    'Make the object heavier.',
+                    'Help lift heavy objects using a force smaller than the object\'s weight.',
+                    'Generate electrical energy.',
+                    'Keep object permanently still.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '🔺',
+                qVi: '2. Để nâng một vật nặng thật dễ dàng (tốn ít sức nhất), ta nên đặt điểm tựa ở đâu?',
+                qEn: '2. To lift a heavy object very easily (least effort), where should the fulcrum be?',
+                optsVi: [
+                    'Càng xa vật nặng càng tốt.',
+                    'Chính giữa thanh đòn.',
+                    'Càng gần vật nặng càng tốt (cánh tay đòn lực dài ra).',
+                    'Không cần điểm tựa.'
+                ],
+                optsEn: [
+                    'As far from the load as possible.',
+                    'Exactly in the middle.',
+                    'As close to the load as possible (longer effort arm).',
+                    'No fulcrum needed.'
+                ],
+                ans: 2
+            },
+            {
+                icon: '🧩',
+                qVi: '3. Cấu tạo cơ bản của một hệ thống đòn bẩy bao gồm các yếu tố nào?',
+                qEn: '3. What are the basic components of a lever system?',
+                optsVi: [
+                    'Chỉ cần một thanh gỗ là đủ.',
+                    'Điểm tựa (O), lực tác dụng (F) và trọng lượng vật (P).',
+                    'Nước, lửa và đất.',
+                    'Bánh xe và ròng rọc.'
+                ],
+                optsEn: [
+                    'Only a wooden plank is enough.',
+                    'Fulcrum (O), applied force (F) and object weight (P).',
+                    'Water, fire and earth.',
+                    'Wheel and pulley.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '✂️',
+                qVi: '4. Dụng cụ nào sau đây KHÔNG PHẢI là ứng dụng của đòn bẩy?',
+                qEn: '4. Which of the following is NOT an application of a lever?',
+                optsVi: [
+                    'Cái kéo cắt giấy.',
+                    'Cái bập bênh ở công viên.',
+                    'Chiếc gương soi mặt.',
+                    'Cái kìm nhổ đinh.'
+                ],
+                optsEn: [
+                    'Paper scissors.',
+                    'Seesaw in the park.',
+                    'A mirror.',
+                    'Pliers.'
+                ],
+                ans: 2
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-orange-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-orange-100 text-orange-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã hiểu rất rõ nguyên lý đòn bẩy (+3 Điểm)!'
+                    : '🎉 Correct! Great job (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, hãy xem lại phiếu tổng kết bên trái rồi thử lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-orange-600 text-white border-2 border-orange-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-orange-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonLevers();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Vật Lý Cơ Học',
+                    goalPill: '🎯 Mục tiêu: Nâng vật nặng bằng đòn bẩy',
+                    appTitle: 'Lab 6: Tác Dụng Của Đòn Bẩy (Nguyên Lý Đòn Bẩy)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Lắp Ráp & Thực Hành 4 Bước',
+                    tab2: '2. Thử Nghiệm 4 Vị Trí Điểm Tựa',
+                    tab3: '3. Tóm Tắt & Đố Vui Kiến Thức',
+                    autoObsBtn: 'Xem tự động 4 bước',
+                    toolsHeader: '🧰 Công Cụ (4 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolFulcrum: 'Điểm tựa',
+                    toolPlank: 'Thanh gỗ',
+                    toolRock: 'Vật nặng',
+                    toolForce: 'Lực đẩy',
+                    stepsHeader: '📋 Các Bước Lắp Ráp (Bấm lần lượt 1 → 4):',
+                    step1Text: '1. Đặt điểm tựa cố định xuống mặt đất.',
+                    step2Text: '2. Kê thanh gỗ vững chắc lên điểm tựa.',
+                    step3Text: '3. Đặt tảng đá nặng lên đầu bên trái.',
+                    step4Text: '4. Tác dụng lực ấn xuống đầu bên phải.',
+                    resultTitle: 'Trạng thái đòn bẩy:',
+                    diaryHeader: 'Sơ Đồ Các Bước Lắp Ráp (Bấm vào từng bước để xem lại)',
+                    finalConclusionBadge: '✅ Kết quả: Nâng vật dễ dàng',
+                    cmpSub: 'Phân tích đòn bẩy',
+                    cmpTitle: 'Vị trí điểm tựa ảnh hưởng thế nào đến lực cần nâng?',
+                    cmpDesc: 'Hãy quan sát lực (mũi tên đỏ) ở 4 trường hợp dưới đây:',
+                    cupATitle: 'Điểm tựa ở chính giữa',
+                    cupARes: '✅ <strong>Bình thường:</strong> Cánh tay đòn bằng nhau, lực tác dụng cần thiết bằng chính trọng lượng của vật.',
+                    cupBTitle: 'Điểm tựa gần vật nặng',
+                    cupBRes: '✨ <strong>Lực rất nhỏ:</strong> Cánh tay đòn lực rất dài. Chỉ cần một lực nhỏ là nâng được vật nặng lên cao.',
+                    cupCTitle: 'Điểm tựa xa vật nặng',
+                    cupCRes: '❌ <strong>Lực rất lớn:</strong> Cánh tay đòn lực quá ngắn. Cần dùng lực rất lớn mới nâng nổi vật lên, rất mệt mỏi.',
+                    cupDTitle: 'Nâng trực tiếp không đòn bẩy',
+                    cupDRes: '⚠️ <strong>Rất nặng:</strong> Phải chịu toàn bộ trọng lượng của vật. Không có sự hỗ trợ của đòn bẩy.'
+                },
+                en: {
+                    labBadge: 'Mechanics Physics Lab',
+                    goalPill: '🎯 Goal: Lift a heavy load using a lever',
+                    appTitle: 'Lab 6: Effects of a Lever (Lever Principle)',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Assembly',
+                    tab2: '2. 4 Fulcrum Positions',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🧰 Tools (4 items)',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    toolFulcrum: 'Fulcrum',
+                    toolPlank: 'Plank',
+                    toolRock: 'Heavy Rock',
+                    toolForce: 'Push Force',
+                    stepsHeader: '📋 Assembly Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Place the fulcrum firmly on the ground.',
+                    step2Text: '2. Place the wooden plank on the fulcrum.',
+                    step3Text: '3. Place heavy rock on the left end.',
+                    step4Text: '4. Apply downward force on the right end.',
+                    resultTitle: 'Lever Status:',
+                    diaryHeader: 'Assembly Stages',
+                    finalConclusionBadge: '✅ Result: Lifted easily',
+                    cmpSub: 'Lever Analysis',
+                    cmpTitle: 'How does fulcrum position affect the lifting force?',
+                    cmpDesc: 'Observe the force (red arrow) in the 4 cases below:',
+                    cupATitle: 'Fulcrum in the middle',
+                    cupARes: '✅ <strong>Normal:</strong> Effort arm equals load arm. Required force equals the weight of the object.',
+                    cupBTitle: 'Fulcrum near the load',
+                    cupBRes: '✨ <strong>Very small force:</strong> Long effort arm. Only a small force is needed to lift the heavy load.',
+                    cupCTitle: 'Fulcrum far from load',
+                    cupCRes: '❌ <strong>Very large force:</strong> Short effort arm. Requires massive effort to lift the load, very tiring.',
+                    cupDTitle: 'Direct lift without lever',
+                    cupDRes: '⚠️ <strong>Extremely heavy:</strong> Must bear the full weight of the object with no mechanical advantage.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonLevers();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonLevers();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

@@ -584,6 +584,7 @@ model ExploreMaterial {
   typeLabelVi     String   @default("Mô hình 3D")
   typeLabelEn     String   @default("3D Model")
   modelType       String   @default("sphere")
+  uploadedModelUrl String?
   thumbnailUrl    String?
   curriculum      String   @default("GDPT 2018")
   textbook        String   @default("Kết Nối Tri Thức")

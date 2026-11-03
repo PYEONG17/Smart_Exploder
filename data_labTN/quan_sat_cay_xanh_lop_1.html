@@ -3,836 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quan Sát Cây Xanh - Lớp 1 | Nhận Biết Bộ Phận & Sự Phát Triển</title>
-    <!-- Tailwind CSS -->
+    <title>Lab 1: Hạt Nảy Mầm (Bean Seed Germination)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Quicksand & Nunito for friendly Grade 1 typography -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
         * {
             font-family: 'Nunito', system-ui, -apple-system, sans-serif;
             user-select: none;
+            box-sizing: border-box;
         }
-
         body {
-            background: linear-gradient(180deg, #e0f2fe 0%, #dcfce7 100%);
+            background: linear-gradient(180deg, #dcfce7 0%, #f0fdf4 60%, #fef9c3 100%);
             min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
             display: flex;
-             flex-direction: column;
+            flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 12px 0 24px 0;
             overflow-x: auto;
         }
-
         /* STRICT 896px -> 906px CONTAINER MANDATE */
-        .app-shell {
+        .app-frame {
             width: 900px;
             min-width: 896px;
             max-width: 906px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 28px;
-            border: 4px solid #34d399;
-            box-shadow: 0 18px 40px -10px rgba(5, 150, 105, 0.22), 0 0 0 6px rgba(255, 255, 255, 0.7);
+            border-radius: 22px;
+            border: 4px solid #16a34a;
+            box-shadow: 0 18px 40px -12px rgba(22, 163, 74, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
             overflow: hidden;
         }
 
-        /* Animations */
-        @keyframes floatSlow {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
-        }
-        .animate-float { animation: floatSlow 3s ease-in-out infinite; }
-
-        @keyframes swayLeaf {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(3deg); }
-        }
-        .sway-anim {
-            transform-origin: center bottom;
-            animation: swayLeaf 3.2s ease-in-out infinite;
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
         }
 
-        @keyframes pulseHotspot {
-            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.6)); }
-            50% { transform: scale(1.07); filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.95)); }
-        }
-        .hotspot-active {
-            animation: pulseHotspot 1.6s ease-in-out infinite;
-        }
-
-        @keyframes dropFall {
-            0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(85px) scale(1.1); opacity: 0; }
-        }
-        .water-drop {
-            animation: dropFall 0.75s ease-in forwards;
-        }
-
-        @keyframes sunRaySpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .spin-slow {
-            transform-origin: center;
-            animation: sunRaySpin 18s linear infinite;
-        }
-
-        /* Custom playful buttons */
         .btn-kid {
-            transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
         }
-        .btn-kid:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
         }
-        .btn-kid:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.16);
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
         }
 
-        .part-zone {
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 999px;
+            background: #bbf7d0;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #16a34a;
+            border: 3px solid #ffffff;
             cursor: pointer;
-            transition: filter 0.2s ease, transform 0.2s ease;
-        }
-        .part-zone:hover {
-            filter: brightness(1.12) drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
         }
 
-        /* Custom Scrollbar for Observation Log */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
-        ::-webkit-scrollbar-thumb { background: #34d399; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 99px; }
     </style>
 </head>
 <body>
 
-    <!-- MAIN 900px (896px - 906px) CONTAINER -->
-    <div class="app-shell">
+    <!-- MAIN 900PX APPLICATION CONTAINER (896px -> 906px) -->
+    <div class="app-frame">
 
         <!-- ==========================================
-             TOP HEADER BAR (Kid-Friendly & Bilingual)
+             TOP HEADER BAR (Mục tiêu & Thanh công cụ)
              ========================================== -->
-        <header class="bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 px-5 py-3.5 text-white flex items-center justify-between border-b-4 border-emerald-600">
-            <!-- Left: Title & Badge -->
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-white text-emerald-600 flex items-center justify-center shadow-md border-2 border-emerald-200 animate-float">
-                    <span class="text-3xl">🌱</span>
+        <header class="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-emerald-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-emerald-600 flex items-center justify-center shadow border-2 border-emerald-200 shrink-0 text-2xl">
+                    🌱
                 </div>
-                <div>
+                <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <span class="bg-amber-300 text-amber-950 text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wide shadow-sm" data-i18n="gradeBadge">
-                            Tự nhiên & Xã hội - Lớp 1
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Sinh Học & Tự Nhiên
                         </span>
-                        <span class="bg-white/20 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                            900px Interactive
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Quan sát sự phát triển của thực vật
                         </span>
                     </div>
-                    <h1 class="text-xl font-black tracking-tight mt-0.5 drop-shadow-sm" data-i18n="appTitle">
-                        Quan Sát Cây Xanh: Bộ Phận & Sự Phát Triển
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab 1: Hạt Nảy Mầm (Thí Nghiệm Đậu Xanh Trên Bông Gòn)
                     </h1>
                 </div>
             </div>
 
-            <!-- Right: Stars Counter, Sound & Language Toggle -->
-            <div class="flex items-center gap-2.5">
-                <!-- Star Score Pill -->
-                <div class="bg-amber-400 text-amber-950 px-3.5 py-1.5 rounded-2xl font-black text-sm flex items-center gap-1.5 shadow-sm border-2 border-amber-200">
-                    <span class="text-lg">⭐</span>
-                    <span id="star-count">0</span>
-                    <span class="text-xs font-extrabold" data-i18n="starsLabel">Sao</span>
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
                 </div>
-
-                <!-- Sound Toggle -->
-                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-2xl border-2 border-white/40" title="Bật/Tắt âm thanh">
-                    <i data-lucide="volume-2" id="sound-icon" class="w-5 h-5"></i>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
                 </button>
-
-                <!-- Bilingual Toggle -->
-                <button onclick="toggleLanguage()" class="btn-kid bg-white text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-2xl font-extrabold text-xs flex items-center gap-1.5 border-2 border-emerald-200">
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-emerald-700 hover:bg-emerald-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-emerald-200">
                     <span>🇻🇳/🇬🇧</span>
-                    <span id="lang-btn-text">Tiếng Việt</span>
+                    <span id="lang-label">VI</span>
                 </button>
             </div>
         </header>
 
         <!-- ==========================================
-             NAVIGATION TABS (3 ACTIVITIES)
+             NAVIGATION TABS (3 MODES)
              ========================================== -->
-        <nav class="bg-emerald-50/90 px-5 py-2.5 border-b-2 border-emerald-100 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2.5 flex-1">
-                <button onclick="switchTab('parts')" id="tab-parts" class="btn-kid flex-1 py-2.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-emerald-500 text-white border-2 border-emerald-600">
-                    <span class="text-lg">🔍</span>
-                    <span data-i18n="tab1">1. Nhận Biết Bộ Phận Cây</span>
-                </button>
-                <button onclick="switchTab('growth')" id="tab-growth" class="btn-kid flex-1 py-2.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
-                    <span class="text-lg">🌻</span>
-                    <span data-i18n="tab2">2. Cây Lớn Lên & Ghi Sổ</span>
-                </button>
-                <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid flex-1 py-2.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
-                    <span class="text-lg">🏆</span>
-                    <span data-i18n="tab3">3. Đố Vui Lớp 1</span>
-                </button>
-            </div>
+        <nav class="bg-emerald-50 px-3.5 py-2 border-b-2 border-emerald-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-emerald-600 text-white border-2 border-emerald-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Thực Hành 5 Bước & Quan Sát 7 Ngày</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Thử Nghiệm 4 Cốc Đối Chứng</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Kết Quả & Đố Vui</span>
+            </button>
         </nav>
 
         <!-- ==========================================
-             MAIN WORKSPACE BODY (FITS CLEANLY IN 900PX)
+             MAIN CONTENT AREA (STRICT 900PX FIT)
              ========================================== -->
-        <main class="p-5 bg-gradient-to-b from-white to-emerald-50/40">
+        <main class="p-3 bg-gradient-to-b from-white to-emerald-50/30">
 
             <!-- ==========================================
-                 TAB 1: NHẬN BIẾT BỘ PHẬN CỦA CÂY (PLANT PARTS)
+                 VIEW 1: THỰC HÀNH THÍ NGHIỆM HẠT NẢY MẦM
                  ========================================== -->
-            <section id="view-parts" class="grid grid-cols-12 gap-5 items-stretch">
+            <section id="view-lab" class="space-y-3">
 
-                <!-- Left Interactive Plant Diagram (7 Columns = ~490px) -->
-                <div class="col-span-7 bg-gradient-to-b from-sky-200 via-sky-100 to-amber-100 rounded-3xl border-4 border-emerald-200 relative overflow-hidden shadow-inner flex flex-col justify-between" style="height: 490px;">
+                <div class="lab-two-col">
 
-                    <!-- Top Mode Switcher inside Canvas -->
-                    <div class="z-10 p-3 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b-2 border-emerald-100">
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="setPartsMode('explore')" id="mode-explore-btn" class="px-3 py-1.5 rounded-xl font-extrabold text-xs bg-emerald-500 text-white shadow-sm transition flex items-center gap-1">
-                                <i data-lucide="search" class="w-3.5 h-3.5"></i>
-                                <span data-i18n="modeExplore">Bấm vào cây để xem</span>
-                            </button>
-                            <button onclick="setPartsMode('match')" id="mode-match-btn" class="px-3 py-1.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-700 hover:bg-amber-100 transition flex items-center gap-1">
-                                <i data-lucide="puzzle" class="w-3.5 h-3.5 text-amber-500"></i>
-                                <span data-i18n="modeMatch">Trò chơi gắn nhãn (0/5)</span>
-                            </button>
+                    <!-- LEFT COLUMN (465px): Interactive Visual Chamber Canvas -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-emerald-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-emerald-200 truncate">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span id="day-pill-badge" class="bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 font-black text-xs px-2.5 py-0.5 rounded-full">
+                                    📅 Ngày 1 / 7
+                                </span>
+                            </div>
                         </div>
-                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full" id="parts-progress-badge">
-                            Đã khám phá: 1/5
-                        </span>
+
+                        <!-- Dedicated HTML5 Canvas (465x345) - Cup on Left, Clean Callout Labels on Right -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="beanCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Timeline Controls (For Step 5: Quan sát mỗi ngày) -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlayDays()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự chạy 7 ngày</span>
+                                </button>
+                            </div>
+
+                            <!-- Day 1 to Day 7 Quick Buttons -->
+                            <div class="flex items-center gap-1" id="day-buttons-row">
+                                <span class="text-[10px] font-bold text-slate-400 mr-0.5" data-i18n="dayLabel">Ngày:</span>
+                                <button onclick="selectDay(1)" id="dbtn-1" class="w-6 h-6 rounded-md font-black text-xs bg-amber-400 text-slate-950">1</button>
+                                <button onclick="selectDay(2)" id="dbtn-2" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">2</button>
+                                <button onclick="selectDay(3)" id="dbtn-3" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">3</button>
+                                <button onclick="selectDay(4)" id="dbtn-4" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">4</button>
+                                <button onclick="selectDay(5)" id="dbtn-5" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">5</button>
+                                <button onclick="selectDay(6)" id="dbtn-6" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">6</button>
+                                <button onclick="selectDay(7)" id="dbtn-7" class="w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600">7</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Interactive SVG Tomato/Apple Tree with 5 Distinct Clickable Parts -->
-                    <div class="relative flex-1 w-full h-full flex items-center justify-center">
-                        <svg id="plantPartsSvg" viewBox="0 0 500 420" class="w-full h-full">
-                            <defs>
-                                <linearGradient id="soilGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#92400e"/>
-                                    <stop offset="40%" stop-color="#78350f"/>
-                                    <stop offset="100%" stop-color="#451a03"/>
-                                </linearGradient>
-                                <linearGradient id="stemGrad" x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stop-color="#15803d"/>
-                                    <stop offset="50%" stop-color="#22c55e"/>
-                                    <stop offset="100%" stop-color="#166534"/>
-                                </linearGradient>
-                            </defs>
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 5 Interactive Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-amber-50/60 rounded-2xl p-3 border-2 border-emerald-200 flex flex-col justify-between" style="height: 455px;">
 
-                            <!-- Sun & Clouds Decoration -->
-                            <g class="spin-slow" style="transform-origin: 65px 55px;">
-                                <circle cx="65" cy="55" r="24" fill="#facc15" />
-                                <circle cx="65" cy="55" r="31" fill="none" stroke="#fde047" stroke-width="4" stroke-dasharray="6 6" />
-                            </g>
-                            <g opacity="0.85">
-                                <ellipse cx="410" cy="50" rx="35" ry="16" fill="#ffffff" />
-                                <ellipse cx="390" cy="55" rx="22" ry="13" fill="#ffffff" />
-                                <ellipse cx="430" cy="55" rx="24" ry="12" fill="#ffffff" />
-                            </g>
-
-                            <!-- Grass Surface Line -->
-                            <path d="M 0 295 Q 125 288 250 295 T 500 295 L 500 310 L 0 310 Z" fill="#4ade80" />
-                            <!-- Underground Soil Cross Section -->
-                            <rect x="0" y="302" width="500" height="120" fill="url(#soilGrad)" />
-                            <!-- Soil pebbles -->
-                            <circle cx="80" cy="340" r="5" fill="#b45309" opacity="0.6"/>
-                            <circle cx="420" cy="365" r="7" fill="#b45309" opacity="0.6"/>
-                            <circle cx="140" cy="390" r="4" fill="#d97706" opacity="0.5"/>
-                            <circle cx="360" cy="335" r="5" fill="#d97706" opacity="0.5"/>
-
-                            <!-- ==========================================
-                                 1. RỄ CÂY (ROOTS) - Clickable Group
-                                 ========================================== -->
-                            <g id="svg-part-root" onclick="handlePartClick('root')" class="part-zone">
-                                <path d="M 245 298 Q 245 345 210 385 M 250 298 Q 252 355 255 405 M 255 298 Q 265 345 305 385 M 235 330 Q 195 345 165 365 M 262 332 Q 305 345 340 362 M 225 360 Q 200 385 185 402 M 275 358 Q 295 385 315 400"
-                                      stroke="#fde68a" stroke-width="7" stroke-linecap="round" fill="none" />
-                                <path d="M 245 298 Q 245 345 210 385 M 250 298 Q 252 355 255 405 M 255 298 Q 265 345 305 385"
-                                      stroke="#f59e0b" stroke-width="3" stroke-linecap="round" fill="none" />
-                                <!-- Invisible wider hit area for Grade 1 kids -->
-                                <rect x="160" y="302" width="185" height="108" fill="transparent" />
-                            </g>
-
-                            <!-- ==========================================
-                                 2. THÂN CÂY (STEM) - Clickable Group
-                                 ========================================== -->
-                            <g id="svg-part-stem" onclick="handlePartClick('stem')" class="part-zone">
-                                <!-- Main central stem -->
-                                <path d="M 242 302 C 242 230 244 160 246 95 L 256 95 C 258 160 260 230 258 302 Z" fill="url(#stemGrad)" />
-                                <!-- Left and right branches -->
-                                <path d="M 248 225 Q 200 205 165 185" stroke="#16a34a" stroke-width="10" stroke-linecap="round" fill="none" />
-                                <path d="M 254 195 Q 305 175 340 155" stroke="#16a34a" stroke-width="10" stroke-linecap="round" fill="none" />
-                                <path d="M 248 145 Q 205 125 175 110" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none" />
-                                <path d="M 253 130 Q 295 110 325 95" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none" />
-                            </g>
-
-                            <!-- ==========================================
-                                 3. LÁ CÂY (LEAVES) - Clickable Group
-                                 ========================================== -->
-                            <g id="svg-part-leaf" onclick="handlePartClick('leaf')" class="part-zone">
-                                <!-- Left big leaf -->
-                                <g transform="translate(155, 180) rotate(-18)">
-                                    <path d="M 0 0 C -35 -28 -75 -15 -85 5 C -75 25 -35 32 0 0 Z" fill="#22c55e" stroke="#15803d" stroke-width="2.5"/>
-                                    <path d="M -5 0 L -72 4" stroke="#86efac" stroke-width="2.5" stroke-linecap="round"/>
-                                </g>
-                                <!-- Right big leaf -->
-                                <g transform="translate(335, 152) rotate(15)">
-                                    <path d="M 0 0 C 35 -28 75 -15 85 5 C 75 25 35 32 0 0 Z" fill="#22c55e" stroke="#15803d" stroke-width="2.5"/>
-                                    <path d="M 5 0 L 72 4" stroke="#86efac" stroke-width="2.5" stroke-linecap="round"/>
-                                </g>
-                                <!-- Top crown leaves -->
-                                <g transform="translate(250, 95)">
-                                    <path d="M 0 0 C -25 -40 0 -70 0 -75 C 0 -70 25 -40 0 0 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
-                                    <path d="M 0 -5 L 0 -62" stroke="#dcfce7" stroke-width="2" stroke-linecap="round"/>
-                                </g>
-                                <!-- Upper Left leaf -->
-                                <g transform="translate(175, 110) rotate(-25)">
-                                    <path d="M 0 0 C -30 -22 -60 -12 -70 4 C -60 20 -30 25 0 0 Z" fill="#4ade80" stroke="#16a34a" stroke-width="2.5"/>
-                                    <path d="M -5 0 L -56 3" stroke="#dcfce7" stroke-width="2" stroke-linecap="round"/>
-                                </g>
-                            </g>
-
-                            <!-- ==========================================
-                                 4. HOA (FLOWERS) - Clickable Group
-                                 ========================================== -->
-                            <g id="svg-part-flower" onclick="handlePartClick('flower')" class="part-zone">
-                                <!-- Flower 1 (Top Right Branch) -->
-                                <g transform="translate(332, 92)">
-                                    <circle cx="0" cy="-14" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="13" cy="-4" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="8" cy="11" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="-8" cy="11" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="-13" cy="-4" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="0" cy="0" r="9" fill="#f97316" />
-                                </g>
-                                <!-- Flower 2 (Upper Left) -->
-                                <g transform="translate(205, 82) scale(0.85)">
-                                    <circle cx="0" cy="-14" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="13" cy="-4" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="8" cy="11" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="-8" cy="11" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="-13" cy="-4" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
-                                    <circle cx="0" cy="0" r="9" fill="#f97316" />
-                                </g>
-                            </g>
-
-                            <!-- ==========================================
-                                 5. QUẢ (FRUITS) - Clickable Group
-                                 ========================================== -->
-                            <g id="svg-part-fruit" onclick="handlePartClick('fruit')" class="part-zone">
-                                <!-- Ripe Red Fruit Left -->
-                                <g transform="translate(192, 212)">
-                                    <circle cx="0" cy="0" r="22" fill="#ef4444" stroke="#b91c1c" stroke-width="2.5"/>
-                                    <ellipse cx="-7" cy="-7" rx="5" ry="3" fill="#fca5a5" transform="rotate(-30 -7 -7)"/>
-                                    <path d="M -6 -20 L 0 -26 L 6 -20" stroke="#15803d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-                                </g>
-                                <!-- Ripe Red Fruit Right -->
-                                <g transform="translate(302, 192)">
-                                    <circle cx="0" cy="0" r="24" fill="#ef4444" stroke="#b91c1c" stroke-width="2.5"/>
-                                    <ellipse cx="-8" cy="-8" rx="6" ry="3.5" fill="#fca5a5" transform="rotate(-30 -8 -8)"/>
-                                    <path d="M -6 -22 L 0 -28 L 6 -22" stroke="#15803d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-                                </g>
-                            </g>
-
-                            <!-- ==========================================
-                                 CALLOUT LINES & INTERACTIVE TAG BADGES ON SVG
-                                 ========================================== -->
-                            <!-- 1. Flower Tag Box (Top Right) -->
-                            <line x1="348" y1="92" x2="395" y2="92" stroke="#eab308" stroke-width="2.5" stroke-dasharray="4 3"/>
-                            <g onclick="handleTagSlotClick('flower')" class="cursor-pointer">
-                                <rect id="slot-box-flower" x="395" y="74" width="94" height="36" rx="12" fill="#ffffff" stroke="#eab308" stroke-width="3"/>
-                                <text id="slot-text-flower" x="442" y="97" text-anchor="middle" font-size="14" font-weight="900" fill="#854d0e">🌸 Hoa</text>
-                            </g>
-
-                            <!-- 2. Leaf Tag Box (Top Left) -->
-                            <line x1="125" y1="168" x2="88" y2="132" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="4 3"/>
-                            <g onclick="handleTagSlotClick('leaf')" class="cursor-pointer">
-                                <rect id="slot-box-leaf" x="12" y="110" width="94" height="36" rx="12" fill="#ffffff" stroke="#16a34a" stroke-width="3"/>
-                                <text id="slot-text-leaf" x="59" y="133" text-anchor="middle" font-size="14" font-weight="900" fill="#166534">🍃 Lá</text>
-                            </g>
-
-                            <!-- 3. Fruit Tag Box (Middle Right) -->
-                            <line x1="326" y1="195" x2="395" y2="195" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="4 3"/>
-                            <g onclick="handleTagSlotClick('fruit')" class="cursor-pointer">
-                                <rect id="slot-box-fruit" x="395" y="177" width="94" height="36" rx="12" fill="#ffffff" stroke="#ef4444" stroke-width="3"/>
-                                <text id="slot-text-fruit" x="442" y="200" text-anchor="middle" font-size="14" font-weight="900" fill="#991b1b">🍅 Quả</text>
-                            </g>
-
-                            <!-- 4. Stem Tag Box (Lower Left) -->
-                            <line x1="242" y1="255" x2="106" y2="255" stroke="#15803d" stroke-width="2.5" stroke-dasharray="4 3"/>
-                            <g onclick="handleTagSlotClick('stem')" class="cursor-pointer">
-                                <rect id="slot-box-stem" x="12" y="237" width="94" height="36" rx="12" fill="#ffffff" stroke="#15803d" stroke-width="3"/>
-                                <text id="slot-text-stem" x="59" y="260" text-anchor="middle" font-size="14" font-weight="900" fill="#14532d">🌿 Thân</text>
-                            </g>
-
-                            <!-- 5. Root Tag Box (Bottom Right in Soil) -->
-                            <line x1="295" y1="365" x2="385" y2="365" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4 3"/>
-                            <g onclick="handleTagSlotClick('root')" class="cursor-pointer">
-                                <rect id="slot-box-root" x="385" y="347" width="104" height="36" rx="12" fill="#ffffff" stroke="#f59e0b" stroke-width="3"/>
-                                <text id="slot-text-root" x="437" y="370" text-anchor="middle" font-size="14" font-weight="900" fill="#92400e">🌱 Rễ cây</text>
-                            </g>
-                        </svg>
-                    </div>
-                </div>
-
-                <!-- Right Information & Activity Panel (5 Columns = ~350px) -->
-                <div class="col-span-5 flex flex-col justify-between space-y-3" style="height: 490px;">
-
-                    <!-- MODE A PANEL: Flashcard Detail for Selected Plant Part -->
-                    <div id="panel-explore-card" class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-4 border-4 border-emerald-300 shadow-sm flex-1 flex flex-col justify-between">
+                        <!-- 1. Dụng cụ thí nghiệm (4 Interactive Tool Cards) -->
                         <div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-200 text-emerald-900" data-i18n="cardHeader">
-                                    Chi Tiết Bộ Phận
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Dụng Cụ Thí Nghiệm (4 món)
                                 </span>
-                                <button onclick="speakCurrentPart()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1">
-                                    <i data-lucide="volume-2" class="w-4 h-4"></i>
-                                    <span data-i18n="listenBtn">Nghe đọc</span>
-                                </button>
-                            </div>
-
-                            <!-- Large Icon + Name -->
-                            <div class="mt-3 flex items-center gap-3.5 bg-white p-3.5 rounded-2xl border-2 border-emerald-200 shadow-sm">
-                                <div id="part-emoji" class="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-4xl shrink-0">
-                                    🌱
-                                </div>
-                                <div>
-                                    <h2 id="part-title" class="text-2xl font-black text-emerald-900">Rễ Cây (Roots)</h2>
-                                    <p id="part-pos" class="text-xs font-extrabold text-amber-700 bg-amber-100 inline-block px-2 py-0.5 rounded-lg mt-1">
-                                        📍 Nằm dưới mặt đất
-                                    </p>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Kid-friendly Role Description -->
-                            <div class="mt-3 bg-white/90 p-3.5 rounded-2xl border-2 border-emerald-100 space-y-2">
-                                <div class="text-xs font-black text-emerald-700 uppercase" data-i18n="roleLabel">🌟 Nhiệm vụ của bộ phận này:</div>
-                                <p id="part-desc" class="text-sm font-bold text-slate-700 leading-relaxed">
-                                    Rễ cây đâm sâu xuống đất giúp giữ cho cây đứng vững không bị đổ và hút nước nuôi cây lớn lên!
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Quick Part Selector Buttons for Grade 1 -->
-                        <div>
-                            <div class="text-xs font-extrabold text-slate-500 mb-2" data-i18n="quickPickLabel">👇 Bấm chọn nhanh 5 bộ phận:</div>
-                            <div class="grid grid-cols-5 gap-1.5">
-                                <button onclick="handlePartClick('root')" id="qbtn-root" class="btn-kid py-2 rounded-xl bg-amber-100 border-2 border-amber-400 text-amber-950 font-black text-xs flex flex-col items-center">
-                                    <span class="text-lg">🌱</span>
-                                    <span data-i18n="nameRoot">Rễ</span>
-                                </button>
-                                <button onclick="handlePartClick('stem')" id="qbtn-stem" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-xs flex flex-col items-center">
-                                    <span class="text-lg">🌿</span>
-                                    <span data-i18n="nameStem">Thân</span>
-                                </button>
-                                <button onclick="handlePartClick('leaf')" id="qbtn-leaf" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-xs flex flex-col items-center">
-                                    <span class="text-lg">🍃</span>
-                                    <span data-i18n="nameLeaf">Lá</span>
-                                </button>
-                                <button onclick="handlePartClick('flower')" id="qbtn-flower" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-xs flex flex-col items-center">
-                                    <span class="text-lg">🌸</span>
-                                    <span data-i18n="nameFlower">Hoa</span>
-                                </button>
-                                <button onclick="handlePartClick('fruit')" id="qbtn-fruit" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-xs flex flex-col items-center">
-                                    <span class="text-lg">🍅</span>
-                                    <span data-i18n="nameFruit">Quả</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MODE B PANEL: Interactive Labeling Game (Hidden unless Mode = match) -->
-                    <div id="panel-match-game" class="hidden bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-4 border-4 border-amber-300 shadow-sm flex-1 flex flex-col justify-between">
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-black uppercase px-3 py-1 rounded-full bg-amber-300 text-amber-950" data-i18n="matchHeader">
-                                    Thử Thách Gắn Nhãn
-                                </span>
-                                <button onclick="resetMatchGame()" class="text-xs font-extrabold text-amber-700 hover:underline flex items-center gap-1">
-                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                                    <span data-i18n="replayMatch">Chơi lại</span>
-                                </button>
-                            </div>
-
-                            <div class="bg-white p-3.5 rounded-2xl border-2 border-amber-200">
-                                <p class="text-xs font-bold text-slate-600" data-i18n="matchInstruction">
-                                    <strong>Cách chơi:</strong> Bước 1: Bấm chọn 1 thẻ tên bên dưới. Bước 2: Bấm vào ô dấu chấm hỏi <strong>[ ? ]</strong> đúng vị trí trên cây bên trái!
-                                </p>
-                            </div>
-
-                            <!-- Selectable Word Cards -->
-                            <div class="grid grid-cols-2 gap-2.5 pt-1" id="match-cards-container">
-                                <!-- Generated dynamically via JS -->
-                            </div>
-                        </div>
-
-                        <div id="match-feedback" class="bg-white p-3 rounded-2xl border-2 border-amber-200 text-center font-extrabold text-sm text-amber-800">
-                            👆 Hãy chọn một thẻ tên bộ phận cây để bắt đầu!
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- ==========================================
-                 TAB 2: QUAN SÁT & GHI NHẬN SỰ PHÁT TRIỂN (PLANT GROWTH & LOG)
-                 ========================================== -->
-            <section id="view-growth" class="hidden space-y-4">
-
-                <!-- Top Row: Interactive Growth Stage Canvas (Left 7 cols) + Care Controls & Meters (Right 5 cols) -->
-                <div class="grid grid-cols-12 gap-5 items-stretch">
-
-                    <!-- Left: Animated Plant Growth Stage + Height Ruler (7 cols) -->
-                    <div class="col-span-7 bg-gradient-to-b from-sky-200 via-sky-100 to-amber-100 rounded-3xl border-4 border-emerald-300 relative overflow-hidden flex flex-col justify-between" style="height: 360px;">
-
-                        <!-- Stage Banner Top -->
-                        <div class="z-10 px-4 py-2.5 bg-white/85 backdrop-blur-sm border-b-2 border-emerald-100 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span id="stage-day-badge" class="bg-emerald-600 text-white font-black text-xs px-3 py-1 rounded-full">
-                                    NGÀY 1 (Giai đoạn 1/5)
-                                </span>
-                                <span id="stage-name-title" class="font-black text-sm text-emerald-950">
-                                    1. Gieo hạt xuống đất ẩm
-                                </span>
-                            </div>
-                            <span id="height-readout-pill" class="bg-amber-300 text-amber-950 font-black text-xs px-2.5 py-1 rounded-full border border-amber-400">
-                                📏 Cao: 0 cm
-                            </span>
-                        </div>
-
-                        <!-- SVG Stage Canvas with Virtual Centimeter Ruler -->
-                        <div class="relative flex-1 w-full h-full">
-                            <svg id="growthSvg" viewBox="0 0 500 295" class="w-full h-full">
-                                <!-- Animated Sun when Sunshine button clicked -->
-                                <g id="growth-sun-group" class="transition-all duration-500">
-                                    <circle cx="75" cy="52" r="26" fill="#facc15" />
-                                    <circle cx="75" cy="52" r="35" fill="none" stroke="#fde047" stroke-width="5" stroke-dasharray="8 6" class="spin-slow" style="transform-origin: 75px 52px;" />
-                                    <!-- Sunbeams overlay (shown on boost) -->
-                                    <polygon id="sun-beam-poly" points="95,65 210,230 310,230" fill="rgba(253, 224, 71, 0.25)" class="hidden" />
-                                </g>
-
-                                <!-- Animated Watering Can & Drops (shown when watering) -->
-                                <g id="watering-anim-group" class="hidden">
-                                    <g transform="translate(320, 35) rotate(-25)">
-                                        <rect x="0" y="0" width="46" height="34" rx="8" fill="#38bdf8" stroke="#0284c7" stroke-width="2.5"/>
-                                        <path d="M 0 10 L -26 22 L -22 28 L 0 22 Z" fill="#0284c7"/>
-                                        <path d="M 46 6 C 62 6 62 28 46 28" stroke="#0284c7" stroke-width="4" fill="none"/>
-                                    </g>
-                                    <circle cx="275" cy="85" r="4.5" fill="#0ea5e9" class="water-drop" />
-                                    <circle cx="255" cy="95" r="4.5" fill="#38bdf8" class="water-drop" style="animation-delay: 0.15s" />
-                                    <circle cx="290" cy="100" r="4.5" fill="#0ea5e9" class="water-drop" style="animation-delay: 0.3s" />
-                                </g>
-
-                                <!-- Soil & Grass Mound -->
-                                <path d="M 0 225 Q 150 220 260 225 T 500 225 L 500 240 L 0 240 Z" fill="#4ade80" />
-                                <rect x="0" y="230" width="500" height="70" fill="#78350f" />
-
-                                <!-- ==========================================
-                                     VIRTUAL RULER ON LEFT (0cm to 20cm)
-                                     ========================================== -->
-                                <g transform="translate(135, 30)">
-                                    <rect x="0" y="0" width="28" height="200" rx="4" fill="#fef9c3" stroke="#eab308" stroke-width="2" />
-                                    <!-- Tick marks every 5cm (200px = 20cm -> 10px per cm) -->
-                                    <line x1="18" y1="200" x2="28" y2="200" stroke="#854d0e" stroke-width="2"/>
-                                    <text x="14" y="198" text-anchor="end" font-size="9" font-weight="800" fill="#854d0e">0cm</text>
-
-                                    <line x1="18" y1="150" x2="28" y2="150" stroke="#854d0e" stroke-width="2"/>
-                                    <text x="14" y="153" text-anchor="end" font-size="9" font-weight="800" fill="#854d0e">5</text>
-
-                                    <line x1="18" y1="100" x2="28" y2="100" stroke="#854d0e" stroke-width="2"/>
-                                    <text x="14" y="103" text-anchor="end" font-size="9" font-weight="800" fill="#854d0e">10</text>
-
-                                    <line x1="18" y1="50" x2="28" y2="50" stroke="#854d0e" stroke-width="2"/>
-                                    <text x="14" y="53" text-anchor="end" font-size="9" font-weight="800" fill="#854d0e">15</text>
-
-                                    <line x1="18" y1="0" x2="28" y2="0" stroke="#854d0e" stroke-width="2"/>
-                                    <text x="14" y="9" text-anchor="end" font-size="9" font-weight="800" fill="#854d0e">20</text>
-
-                                    <!-- Dynamic Height Marker Arrow -->
-                                    <g id="ruler-marker" transform="translate(28, 200)">
-                                        <line x1="0" y1="0" x2="115" y2="0" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 3"/>
-                                        <polygon points="0,0 -8,-5 -8,5" fill="#ef4444"/>
-                                    </g>
-                                </g>
-
-                                <!-- ==========================================
-                                     5 DYNAMIC PLANT STAGES GROUP
-                                     ========================================== -->
-                                <!-- STAGE 1: Seed in Soil (0cm above ground) -->
-                                <g id="g-stage-1">
-                                    <ellipse cx="265" cy="252" rx="14" ry="10" fill="#fbbf24" stroke="#b45309" stroke-width="2.5" transform="rotate(-12 265 252)"/>
-                                    <text x="265" y="282" text-anchor="middle" font-size="12" font-weight="900" fill="#fde68a">Hạt giống nằm trong đất ẩm</text>
-                                </g>
-
-                                <!-- STAGE 2: Sprouting Root & Shoot (3cm -> y=200) -->
-                                <g id="g-stage-2" class="hidden">
-                                    <!-- Small white/amber root going down -->
-                                    <path d="M 265 248 Q 265 272 248 288 M 265 255 Q 278 275 285 288" stroke="#fde68a" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-                                    <!-- Green shoot arch emerging -->
-                                    <path d="M 265 245 Q 265 210 265 200" stroke="#22c55e" stroke-width="6" stroke-linecap="round" fill="none"/>
-                                    <ellipse cx="256" cy="200" rx="10" ry="5" fill="#4ade80" transform="rotate(-20 256 200)"/>
-                                    <ellipse cx="274" cy="200" rx="10" ry="5" fill="#4ade80" transform="rotate(20 274 200)"/>
-                                    <!-- Seed coat still attached -->
-                                    <ellipse cx="265" cy="248" rx="10" ry="7" fill="#d97706"/>
-                                </g>
-
-                                <!-- STAGE 3: Young Seedling with 4 Leaves (9cm -> y=140) -->
-                                <g id="g-stage-3" class="hidden sway-anim" style="transform-origin: 265px 230px;">
-                                    <path d="M 265 232 Q 260 265 235 288 M 265 232 Q 268 270 270 292 M 265 245 Q 285 268 300 285" stroke="#fde68a" stroke-width="5" stroke-linecap="round" fill="none"/>
-                                    <path d="M 265 232 L 265 140" stroke="#16a34a" stroke-width="7" stroke-linecap="round"/>
-                                    <!-- 4 Leaves -->
-                                    <ellipse cx="240" cy="185" rx="22" ry="9" fill="#22c55e" transform="rotate(-20 240 185)"/>
-                                    <ellipse cx="290" cy="180" rx="22" ry="9" fill="#22c55e" transform="rotate(20 290 180)"/>
-                                    <ellipse cx="245" cy="148" rx="18" ry="8" fill="#4ade80" transform="rotate(-25 245 148)"/>
-                                    <ellipse cx="285" cy="148" rx="18" ry="8" fill="#4ade80" transform="rotate(25 285 148)"/>
-                                </g>
-
-                                <!-- STAGE 4: Mature Plant with Flowers (15cm -> y=80) -->
-                                <g id="g-stage-4" class="hidden sway-anim" style="transform-origin: 265px 230px;">
-                                    <!-- Rich roots -->
-                                    <path d="M 265 232 Q 250 268 220 290 M 265 232 Q 265 270 265 292 M 265 232 Q 285 265 310 290" stroke="#fde68a" stroke-width="6" stroke-linecap="round" fill="none"/>
-                                    <!-- Stem & branches -->
-                                    <path d="M 265 232 L 265 80" stroke="#15803d" stroke-width="9" stroke-linecap="round"/>
-                                    <path d="M 265 175 L 220 150 M 265 160 L 310 135" stroke="#16a34a" stroke-width="6" stroke-linecap="round"/>
-                                    <!-- Leaves -->
-                                    <ellipse cx="215" cy="150" rx="26" ry="11" fill="#22c55e" transform="rotate(-15 215 150)"/>
-                                    <ellipse cx="315" cy="135" rx="26" ry="11" fill="#22c55e" transform="rotate(15 315 135)"/>
-                                    <ellipse cx="235" cy="110" rx="22" ry="9" fill="#4ade80" transform="rotate(-20 235 110)"/>
-                                    <ellipse cx="295" cy="105" rx="22" ry="9" fill="#4ade80" transform="rotate(20 295 105)"/>
-                                    <ellipse cx="265" cy="75" rx="10" ry="18" fill="#4ade80"/>
-                                    <!-- Yellow Flowers -->
-                                    <g transform="translate(222, 128) scale(0.7)">
-                                        <circle cx="0" cy="-12" r="9" fill="#fef08a"/><circle cx="12" cy="0" r="9" fill="#fef08a"/><circle cx="0" cy="12" r="9" fill="#fef08a"/><circle cx="-12" cy="0" r="9" fill="#fef08a"/>
-                                        <circle cx="0" cy="0" r="7" fill="#f97316"/>
-                                    </g>
-                                    <g transform="translate(308, 112) scale(0.75)">
-                                        <circle cx="0" cy="-12" r="9" fill="#fef08a"/><circle cx="12" cy="0" r="9" fill="#fef08a"/><circle cx="0" cy="12" r="9" fill="#fef08a"/><circle cx="-12" cy="0" r="9" fill="#fef08a"/>
-                                        <circle cx="0" cy="0" r="7" fill="#f97316"/>
-                                    </g>
-                                </g>
-
-                                <!-- STAGE 5: Fruiting Tree (18cm -> y=50) -->
-                                <g id="g-stage-5" class="hidden sway-anim" style="transform-origin: 265px 230px;">
-                                    <path d="M 265 232 Q 245 268 210 290 M 265 232 Q 265 275 265 292 M 265 232 Q 290 265 320 290" stroke="#fde68a" stroke-width="6.5" stroke-linecap="round" fill="none"/>
-                                    <path d="M 265 232 L 265 55" stroke="#15803d" stroke-width="10" stroke-linecap="round"/>
-                                    <path d="M 265 180 L 215 150 M 265 165 L 315 135 M 265 115 L 225 90 M 265 110 L 305 85" stroke="#16a34a" stroke-width="6.5" stroke-linecap="round"/>
-                                    <!-- Lush Leaves -->
-                                    <ellipse cx="205" cy="150" rx="26" ry="11" fill="#22c55e" transform="rotate(-15 205 150)"/>
-                                    <ellipse cx="325" cy="135" rx="26" ry="11" fill="#22c55e" transform="rotate(15 325 135)"/>
-                                    <ellipse cx="215" cy="88" rx="22" ry="10" fill="#4ade80" transform="rotate(-20 215 88)"/>
-                                    <ellipse cx="315" cy="85" rx="22" ry="10" fill="#4ade80" transform="rotate(20 315 85)"/>
-                                    <ellipse cx="265" cy="50" rx="12" ry="20" fill="#4ade80"/>
-                                    <!-- Red Ripe Fruits -->
-                                    <circle cx="228" cy="162" r="14" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
-                                    <circle cx="302" cy="148" r="15" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
-                                    <circle cx="240" cy="105" r="13" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
-                                    <!-- 1 Flower still blooming -->
-                                    <g transform="translate(298, 78) scale(0.65)">
-                                        <circle cx="0" cy="-12" r="9" fill="#fef08a"/><circle cx="12" cy="0" r="9" fill="#fef08a"/><circle cx="0" cy="12" r="9" fill="#fef08a"/><circle cx="-12" cy="0" r="9" fill="#fef08a"/>
-                                        <circle cx="0" cy="0" r="7" fill="#f97316"/>
-                                    </g>
-                                </g>
-                            </svg>
-                        </div>
-
-                        <!-- Bottom 5-Stage Timeline Stepper -->
-                        <div class="bg-white/95 px-3 py-2 border-t-2 border-emerald-100 grid grid-cols-5 gap-1.5">
-                            <button onclick="setGrowthStage(1)" id="stbtn-1" class="py-1.5 px-2 rounded-xl font-black text-[11px] bg-emerald-500 text-white shadow-sm flex items-center justify-center gap-1">
-                                <span>1. Hạt</span>
-                            </button>
-                            <button onclick="setGrowthStage(2)" id="stbtn-2" class="py-1.5 px-2 rounded-xl font-black text-[11px] bg-slate-100 text-slate-600 hover:bg-emerald-100 flex items-center justify-center gap-1">
-                                <span>2. Nảy mầm</span>
-                            </button>
-                            <button onclick="setGrowthStage(3)" id="stbtn-3" class="py-1.5 px-2 rounded-xl font-black text-[11px] bg-slate-100 text-slate-600 hover:bg-emerald-100 flex items-center justify-center gap-1">
-                                <span>3. Cây con</span>
-                            </button>
-                            <button onclick="setGrowthStage(4)" id="stbtn-4" class="py-1.5 px-2 rounded-xl font-black text-[11px] bg-slate-100 text-slate-600 hover:bg-emerald-100 flex items-center justify-center gap-1">
-                                <span>4. Ra hoa</span>
-                            </button>
-                            <button onclick="setGrowthStage(5)" id="stbtn-5" class="py-1.5 px-2 rounded-xl font-black text-[11px] bg-slate-100 text-slate-600 hover:bg-emerald-100 flex items-center justify-center gap-1">
-                                <span>5. Kết quả</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Right: Kid Care Action Buttons & Meters (5 cols) -->
-                    <div class="col-span-5 bg-gradient-to-br from-emerald-50 to-amber-50 rounded-3xl p-4 border-4 border-emerald-200 flex flex-col justify-between" style="height: 360px;">
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <h3 class="font-black text-base text-emerald-950 flex items-center gap-1.5">
-                                    <span>🚿</span>
-                                    <span data-i18n="careTitle">Bé Chăm Sóc Cây Xanh</span>
-                                </h3>
-                                <button onclick="resetGrowthSim()" class="text-xs font-extrabold text-emerald-700 hover:underline" data-i18n="plantNewBtn">
-                                    Trồng lại từ hạt
-                                </button>
-                            </div>
-
-                            <!-- Care Progress Bars (Water & Sunlight) -->
-                            <div class="bg-white p-3 rounded-2xl border-2 border-emerald-100 space-y-2.5">
-                                <div>
-                                    <div class="flex justify-between text-xs font-black mb-1">
-                                        <span class="text-sky-600 flex items-center gap-1">💧 <span data-i18n="waterBar">Độ ẩm nước tưới</span></span>
-                                        <span id="water-pct" class="text-sky-600">50%</span>
-                                    </div>
-                                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                        <div id="water-bar-fill" class="h-full bg-sky-400 transition-all duration-300" style="width: 50%"></div>
-                                    </div>
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <div onclick="triggerToolClick('cup')" id="tool-cup" class="cursor-pointer bg-emerald-100 border-2 border-emerald-500 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">🥛</div>
+                                    <div class="font-black text-[11px] text-emerald-950 mt-1" data-i18n="toolCup">Cốc nhựa</div>
+                                    <div id="tool-status-cup" class="text-[9px] font-extrabold text-emerald-700">✓ Đã có</div>
                                 </div>
-
-                                <div>
-                                    <div class="flex justify-between text-xs font-black mb-1">
-                                        <span class="text-amber-600 flex items-center gap-1">☀️ <span data-i18n="sunBar">Ánh nắng mặt trời</span></span>
-                                        <span id="sun-pct" class="text-amber-600">50%</span>
-                                    </div>
-                                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                        <div id="sun-bar-fill" class="h-full bg-amber-400 transition-all duration-300" style="width: 50%"></div>
-                                    </div>
+                                <div onclick="triggerToolClick('cotton')" id="tool-cotton" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">☁️</div>
+                                    <div class="font-black text-[11px] text-slate-800 mt-1" data-i18n="toolCotton">Bông gòn</div>
+                                    <div id="tool-status-cotton" class="text-[9px] font-extrabold text-amber-600">Bấm Bước 1</div>
+                                </div>
+                                <div onclick="triggerToolClick('bean')" id="tool-bean" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">🫘</div>
+                                    <div class="font-black text-[11px] text-slate-800 mt-1" data-i18n="toolBean">Hạt đậu xanh</div>
+                                    <div id="tool-status-bean" class="text-[9px] font-extrabold text-slate-400">Bước 2</div>
+                                </div>
+                                <div onclick="triggerToolClick('water')" id="tool-water" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">💧</div>
+                                    <div class="font-black text-[11px] text-slate-800 mt-1" data-i18n="toolWater">Nước tưới</div>
+                                    <div id="tool-status-water" class="text-[9px] font-extrabold text-slate-400">Bước 3</div>
                                 </div>
                             </div>
 
-                            <!-- Care Action Buttons (Tưới Nước & Chiếu Nắng) -->
-                            <div class="grid grid-cols-2 gap-2.5">
-                                <button onclick="careForPlant('water')" class="btn-kid py-3 px-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-black text-sm flex flex-col items-center justify-center gap-1 border-2 border-sky-600">
-                                    <span class="text-2xl">🚿</span>
-                                    <span data-i18n="btnWater">Tưới Nước Cho Cây</span>
+                            <!-- 2. Các bước thực hiện (5 Interactive Steps) -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-emerald-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 5):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <!-- Step 1 -->
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Cho bông vào cốc.</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
                                 </button>
-                                <button onclick="careForPlant('sun')" class="btn-kid py-3 px-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-sm flex flex-col items-center justify-center gap-1 border-2 border-amber-500">
-                                    <span class="text-2xl">☀️</span>
-                                    <span data-i18n="btnSun">Chiếu Nắng Ấm</span>
+
+                                <!-- Step 2 -->
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Đặt hạt đậu lên bông.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <!-- Step 3 -->
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-sky-500 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Tưới nước vừa đủ.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <!-- Step 4 -->
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-amber-500 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Đặt nơi có ánh sáng.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <!-- Step 5 -->
+                                <button onclick="executeStep(5)" id="step-btn-5" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-purple-600 text-white font-black text-xs flex items-center justify-center shrink-0">5</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step5Text">5. Quan sát mỗi ngày (Ngày 1 → 7).</span>
+                                    <span id="step-badge-5" class="text-xs font-bold text-slate-400">🔒</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Record to Observation Log Button -->
-                        <div class="space-y-2">
-                            <p id="growth-status-msg" class="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-3 py-2 rounded-xl text-center">
-                                💡 Hãy bấm Tưới Nước và Chiếu Nắng để cây lớn lên nhé!
+                        <!-- 3. Kết quả quan sát từng ngày (Live Result Card) -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-emerald-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-emerald-700 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Kết quả quan sát:</span>
+                                </span>
+                                <span id="height-badge" class="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                    📏 Cao: 0.0 cm
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Cho bông vào cốc</strong> (hoặc bấm vào hình Bông gòn) để bắt đầu thí nghiệm!
                             </p>
-                            <button onclick="recordObservationStage()" class="btn-kid w-full py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm flex items-center justify-center gap-2 border-2 border-emerald-700">
-                                <i data-lucide="notebook-pen" class="w-4 h-4"></i>
-                                <span data-i18n="recordLogBtn">Ghi Nhận Giai Đoạn Này Vào Sổ</span>
-                            </button>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- Bottom Row: Student Observation Diary Table (Sổ Tay Quan Sát Của Em) -->
-                <div class="bg-white rounded-3xl p-4 border-4 border-amber-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-2.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">📒</span>
-                            <h3 class="font-black text-base text-slate-800" data-i18n="diaryTitle">
-                                Sổ Tay Ghi Nhận Sự Phát Triển Của Cây (Lớp 1)
+                <!-- Bottom Row: 7-Day Progression Strip (Sổ Quan Sát Hằng Ngày) -->
+                <div class="bg-amber-50/90 rounded-2xl p-2.5 border-2 border-amber-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Nhật Ký Quan Sát Hạt Đậu Xanh Nảy Mầm (Bấm vào từng ngày để xem chi tiết: Hạt nứt vỏ, mọc rễ và lá)
                             </h3>
                         </div>
-                        <span class="text-xs font-bold text-slate-500" data-i18n="diaryHint">
-                            Quan sát chiều cao (cm), số lá và bộ phận mới xuất hiện
+                        <span class="text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết quả: Hạt nứt vỏ, mọc rễ và lá
                         </span>
                     </div>
 
-                    <div class="overflow-x-auto max-h-40">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr class="bg-amber-100/80 text-amber-950 font-black uppercase">
-                                    <th class="py-2 px-3 rounded-l-xl" data-i18n="thStage">Giai đoạn</th>
-                                    <th class="py-2 px-3" data-i18n="thDay">Thời gian</th>
-                                    <th class="py-2 px-3" data-i18n="thHeight">Chiều cao cây</th>
-                                    <th class="py-2 px-3" data-i18n="thLeaves">Số lá</th>
-                                    <th class="py-2 px-3" data-i18n="thPartsSeen">Bộ phận quan sát thấy</th>
-                                    <th class="py-2 px-3 rounded-r-xl" data-i18n="thNote">Nhận xét của em</th>
-                                </tr>
-                            </thead>
-                            <tbody id="growth-log-tbody" class="divide-y divide-slate-100 font-bold text-slate-700">
-                                <!-- Populated via JS -->
-                            </tbody>
-                        </table>
+                    <div class="grid grid-cols-7 gap-1.5" id="diary-cards-grid">
+                        <!-- Dynamically populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 CỐC ĐỐI CHỨNG (CONTROL EXPERIMENT)
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-emerald-50 to-sky-50 p-3.5 rounded-2xl border-2 border-emerald-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-emerald-700 bg-emerald-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Tìm hiểu nguyên nhân khoa học
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Vì sao cần "Tưới nước vừa đủ" (Bước 3) và "Đặt nơi có ánh sáng" (Bước 4)?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Hãy quan sát kết quả của 4 cốc đậu xanh sau <strong>7 ngày</strong> trong các điều kiện khác nhau:
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-xs font-black text-slate-700" data-i18n="cmpDayLabel">Xem ngày thứ:</span>
+                        <input id="cmp-day-slider" type="range" min="1" max="7" value="7" oninput="renderComparisonCups()" class="w-28">
+                        <span id="cmp-day-val" class="bg-emerald-600 text-white font-black text-xs px-2.5 py-1 rounded-lg">Ngày 7</span>
+                    </div>
+                </div>
+
+                <!-- 4 Comparison Cups Grid -->
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Cup A: Standard -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-emerald-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC A (Chuẩn)</span>
+                                <span class="text-xs">💧 Vừa đủ + ☀️ Sáng</span>
+                            </div>
+                            <h4 class="font-black text-xs text-emerald-950 mt-1.5" data-i18n="cupATitle">Đủ nước & Có ánh sáng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-emerald-800 bg-emerald-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Tốt nhất:</strong> Hạt nứt vỏ, mọc rễ khỏe, thân thẳng, lá màu xanh tươi.
+                        </p>
+                    </div>
+
+                    <!-- Cup B: Dry (No Water) -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">CỐC B (Khô)</span>
+                                <span class="text-xs">🚫 Không tưới nước</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Bông khô + Có ánh sáng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-amber-900 bg-amber-50 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ❌ <strong>Không nảy mầm:</strong> Thiếu nước, hạt đậu khô cứng, không thể nứt vỏ.
+                        </p>
+                    </div>
+
+                    <!-- Cup C: Flooded (Too much water) -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-sky-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-sky-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC C (Ngập nước)</span>
+                                <span class="text-xs">🌊 Đổ ngập nước</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Ngập úng nước + Sáng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-sky-900 bg-sky-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            ⚠️ <strong>Hạt bị thối/úng:</strong> Ngập nước làm thiếu không khí (O₂), rễ không mọc được.
+                        </p>
+                    </div>
+
+                    <!-- Cup D: In Darkness -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-purple-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-purple-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC D (Tối)</span>
+                                <span class="text-xs">🌑 Đặt trong bóng tối</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Đủ nước + Trong tủ tối</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-purple-900 bg-purple-50 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ⚠️ <strong>Lá vàng úa:</strong> Hạt vẫn mọc rễ và vươn cao nhưng thân yếu, lá có màu vàng nhạt.
+                        </p>
                     </div>
                 </div>
             </section>
 
             <!-- ==========================================
-                 TAB 3: ĐỐ VUI NHẬN BIẾT LỚP 1 (MINI QUIZ)
+                 VIEW 3: TÓM TẮT KẾT QUẢ & ĐỐ VUI KIỂM TRA
                  ========================================== -->
             <section id="view-quiz" class="hidden">
-                <div class="bg-gradient-to-br from-amber-50 via-white to-emerald-50 rounded-3xl p-6 border-4 border-emerald-300 shadow-sm max-w-3xl mx-auto space-y-5">
-                    <div class="flex items-center justify-between border-b-2 border-emerald-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-3xl">🎯</span>
+                <div class="lab-two-col">
+
+                    <!-- Left (465px): Lab Report Summary Sheet -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 border-2 border-emerald-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-emerald-200 pb-2">
+                            <span class="text-2xl">📋</span>
                             <div>
-                                <span class="text-xs font-black uppercase text-emerald-600" id="quiz-progress-text">CÂU HỎI 1 / 4</span>
-                                <h3 class="text-lg font-black text-slate-800" data-i18n="quizHeader">Đố Vui: Nhà Thực Vật Học Nhí</h3>
+                                <span class="text-[10px] font-black uppercase text-emerald-700">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-emerald-950">Tóm Tắt Lab 1: Hạt Nảy Mầm</h3>
                             </div>
                         </div>
-                        <button onclick="resetQuiz()" class="btn-kid px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1">
-                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                            <span data-i18n="quizReset">Làm lại</span>
-                        </button>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-700">🎯 1. Mục tiêu thí nghiệm:</div>
+                            <p class="text-xs font-bold text-slate-700">Quan sát sự phát triển của thực vật từ hạt đậu xanh.</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-700">🧰 2. Dụng cụ cần chuẩn bị:</div>
+                            <div class="grid grid-cols-2 gap-1.5 pt-1 text-xs font-bold text-slate-700">
+                                <div>• 🫘 Hạt đậu xanh</div>
+                                <div>• ☁️ Bông gòn</div>
+                                <div>• 🥛 Cốc nhựa trong suốt</div>
+                                <div>• 💧 Nước sạch</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-700">👣 3. Các bước tiến hành:</div>
+                            <ol class="text-xs font-bold text-slate-700 space-y-0.5 list-decimal list-inside">
+                                <li>Cho bông vào cốc.</li>
+                                <li>Đặt hạt đậu lên bông.</li>
+                                <li>Tưới nước vừa đủ (giữ bông ẩm).</li>
+                                <li>Đặt nơi có ánh sáng.</li>
+                                <li>Quan sát mỗi ngày.</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-amber-900">🌱 4. Kết quả thí nghiệm:</div>
+                            <p class="text-xs font-black text-emerald-900">
+                                Hạt nứt vỏ, mọc rễ trắng đâm xuống bông ẩm và vươn thân mọc lá xanh tươi!
+                            </p>
+                        </div>
                     </div>
 
-                    <!-- Question Box -->
-                    <div class="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm text-center space-y-2">
-                        <div id="quiz-emoji" class="text-5xl mb-2">🌱</div>
-                        <h4 id="quiz-question" class="text-xl font-black text-slate-800">
-                            Bộ phận nào nằm dưới mặt đất, giúp hút nước nuôi cây và giữ cây đứng vững?
-                        </h4>
+                    <!-- Right (395px): Interactive 4-Question Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🫘</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
                     </div>
 
-                    <!-- 4 Visual Answer Choices -->
-                    <div id="quiz-options" class="grid grid-cols-2 gap-3.5">
-                        <!-- Populated via JS -->
-                    </div>
-
-                    <!-- Quiz Feedback Bar -->
-                    <div id="quiz-feedback" class="hidden p-3.5 rounded-2xl font-black text-sm text-center"></div>
                 </div>
             </section>
 
         </main>
     </div>
 
-    <!-- APPLICATION LOGIC -->
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & BIOLOGICAL SIMULATION
+         ========================================== -->
     <script>
         lucide.createIcons();
 
         // ==========================================
-        // 1. WEB AUDIO SYNTHESIZER (Kid-friendly Chimes)
+        // 1. WEB AUDIO API SOUND EFFECTS
         // ==========================================
         let soundEnabled = true;
         let audioCtx = null;
 
-        function playTone(freq = 523.25, type = 'sine', duration = 0.18) {
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
             if (!soundEnabled) return;
             try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = type;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
                 osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                gain.connect(ctx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + duration);
+                osc.stop(ctx.currentTime + duration);
             } catch (e) {}
         }
 
-        function playSuccessSound() {
-            playTone(523.25, 'triangle', 0.12);
-            setTimeout(() => playTone(659.25, 'triangle', 0.12), 100);
-            setTimeout(() => playTone(783.99, 'triangle', 0.25), 200);
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
         }
 
-        function playErrorSound() {
-            playTone(240, 'sawtooth', 0.22);
+        function playWaterSound() {
+            playTone(380, 'sine', 0.09);
+            setTimeout(() => playTone(540, 'sine', 0.11), 80);
         }
 
         function toggleSound() {
@@ -843,613 +566,1095 @@
         }
 
         // ==========================================
-        // 2. STATE & PLANT PART DATA (GRADE 1 LEVEL)
+        // 2. EXPERIMENT STATE & 7-DAY DATA
         // ==========================================
         let currentLang = 'vi';
-        let stars = 0;
-        let currentPartKey = 'root';
-        let partsMode = 'explore'; // 'explore' | 'match'
-        let exploredParts = new Set(['root']);
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
 
-        // Matching game state
-        let selectedMatchPart = null;
-        let matchedSet = new Set();
-
-        const plantPartsData = {
-            root: {
-                emoji: '🌱',
-                slotLabelVi: '🌱 Rễ cây',
-                slotLabelEn: '🌱 Roots',
-                titleVi: 'Rễ Cây (Roots)',
-                titleEn: 'Roots (Rễ Cây)',
-                posVi: '📍 Nằm dưới mặt đất',
-                posEn: '📍 Underground in the soil',
-                descVi: 'Rễ cây đâm sâu xuống lòng đất giúp hút nước, muối khoáng nuôi cây và giữ cho cây đứng vững trước gió!',
-                descEn: 'Roots grow underground to drink water and nutrients from the soil and hold the plant steady!'
-            },
-            stem: {
-                emoji: '🌿',
-                slotLabelVi: '🌿 Thân',
-                slotLabelEn: '🌿 Stem',
-                titleVi: 'Thân Cây (Stem)',
-                titleEn: 'Stem (Thân Cây)',
-                posVi: '📍 Nằm trên mặt đất, nối rễ với lá',
-                posEn: '📍 Above ground, supports the plant',
-                descVi: 'Thân cây nâng đỡ lá, hoa, quả và làm cầu nối vận chuyển nước từ rễ lên khắp các cành lá.',
-                descEn: 'The stem holds up the leaves, flowers, and fruits, carrying water from the roots to the top!'
-            },
-            leaf: {
-                emoji: '🍃',
-                slotLabelVi: '🍃 Lá',
-                slotLabelEn: '🍃 Leaf',
-                titleVi: 'Lá Cây (Leaves)',
-                titleEn: 'Leaves (Lá Cây)',
-                posVi: '📍 Mọc trên cành và thân cây',
-                posEn: '📍 Grows on branches & stem',
-                descVi: 'Lá cây thường có màu xanh lục, giúp cây đón ánh nắng mặt trời để chế tạo thức ăn và thở!',
-                descEn: 'Green leaves catch warm sunlight and fresh air to make food for the plant!'
-            },
-            flower: {
-                emoji: '🌸',
-                slotLabelVi: '🌸 Hoa',
-                slotLabelEn: '🌸 Flower',
-                titleVi: 'Hoa (Flowers)',
-                titleEn: 'Flowers (Hoa)',
-                posVi: '📍 Nở trên cành cây',
-                posEn: '📍 Blooms on the branches',
-                descVi: 'Hoa có màu sắc rực rỡ và hương thơm thu hút ong bướm. Khi hoa tàn sẽ kết thành quả!',
-                descEn: 'Colorful flowers attract bees and butterflies, and later grow into delicious fruits!'
-            },
-            fruit: {
-                emoji: '🍅',
-                slotLabelVi: '🍅 Quả',
-                slotLabelEn: '🍅 Fruit',
-                titleVi: 'Quả (Fruits)',
-                titleEn: 'Fruits (Quả)',
-                posVi: '📍 Kết từ hoa sau khi nở',
-                posEn: '📍 Develops from flowers',
-                descVi: 'Quả chín ngọt lành dùng làm thức ăn bổ dưỡng. Bên trong quả có chứa hạt giống để gieo thành cây mới!',
-                descEn: 'Ripe fruits protect the seeds inside so new baby plants can grow!'
-            }
+        const labState = {
+            step: 0,           // 0: Empty cup, 1: Cotton in, 2: Beans on cotton, 3: Watered, 4: Sunlight on, 5: Daily observation
+            day: 1,            // 1 to 7
+            cottonAnim: 0,     // 0 -> 1
+            beanAnim: 0,       // 0 -> 1
+            waterMoisture: 0,  // 0 -> 1
+            sunlight: 0,       // 0 -> 1
+            waterDrops: []
         };
 
-        // ==========================================
-        // 3. TAB 1 LOGIC: EXPLORE & MATCH PLANT PARTS
-        // ==========================================
-        function addStars(amount) {
-            stars += amount;
-            document.getElementById('star-count').textContent = stars;
-        }
-
-        function handlePartClick(partKey) {
-            if (partsMode === 'match') {
-                handleTagSlotClick(partKey);
-                return;
-            }
-
-            currentPartKey = partKey;
-            if (!exploredParts.has(partKey)) {
-                exploredParts.add(partKey);
-                addStars(1);
-            }
-            playTone(620, 'sine', 0.16);
-            updatePartsExploreUI();
-        }
-
-        function updatePartsExploreUI() {
-            const info = plantPartsData[currentPartKey];
-            document.getElementById('part-emoji').textContent = info.emoji;
-            document.getElementById('part-title').textContent = currentLang === 'vi' ? info.titleVi : info.titleEn;
-            document.getElementById('part-pos').textContent = currentLang === 'vi' ? info.posVi : info.posEn;
-            document.getElementById('part-desc').textContent = currentLang === 'vi' ? info.descVi : info.descEn;
-
-            document.getElementById('parts-progress-badge').textContent =
-                currentLang === 'vi'
-                    ? `Đã khám phá: ${exploredParts.size}/5`
-                    : `Explored: ${exploredParts.size}/5`;
-
-            // Highlight quick buttons & SVG group
-            ['root', 'stem', 'leaf', 'flower', 'fruit'].forEach(k => {
-                const qbtn = document.getElementById(`qbtn-${k}`);
-                const svgGroup = document.getElementById(`svg-part-${k}`);
-                if (k === currentPartKey) {
-                    qbtn.className = 'btn-kid py-2 rounded-xl bg-amber-200 border-2 border-amber-500 text-amber-950 font-black text-xs flex flex-col items-center scale-105';
-                    svgGroup.classList.add('hotspot-active');
-                } else {
-                    qbtn.className = 'btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-xs flex flex-col items-center';
-                    svgGroup.classList.remove('hotspot-active');
-                }
-            });
-        }
-
-        function speakCurrentPart() {
-            const info = plantPartsData[currentPartKey];
-            playSuccessSound();
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(
-                    currentLang === 'vi'
-                        ? `${info.slotLabelVi}. ${info.descVi}`
-                        : `${info.titleEn}. ${info.descEn}`
-                );
-                utter.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
-                utter.rate = 0.95;
-                window.speechSynthesis.speak(utter);
-            }
-        }
-
-        function setPartsMode(mode) {
-            partsMode = mode;
-            const expBtn = document.getElementById('mode-explore-btn');
-            const matBtn = document.getElementById('mode-match-btn');
-            const expPanel = document.getElementById('panel-explore-card');
-            const matPanel = document.getElementById('panel-match-game');
-
-            if (mode === 'explore') {
-                expBtn.className = 'px-3 py-1.5 rounded-xl font-extrabold text-xs bg-emerald-500 text-white shadow-sm transition flex items-center gap-1';
-                matBtn.className = 'px-3 py-1.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-700 hover:bg-amber-100 transition flex items-center gap-1';
-                expPanel.classList.remove('hidden');
-                matPanel.classList.add('hidden');
-                // Restore all labels on SVG
-                ['root', 'stem', 'leaf', 'flower', 'fruit'].forEach(k => {
-                    const textEl = document.getElementById(`slot-text-${k}`);
-                    textEl.textContent = currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn;
-                });
-            } else {
-                matBtn.className = 'px-3 py-1.5 rounded-xl font-extrabold text-xs bg-amber-500 text-white shadow-sm transition flex items-center gap-1';
-                expBtn.className = 'px-3 py-1.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-700 hover:bg-emerald-100 transition flex items-center gap-1';
-                expPanel.classList.add('hidden');
-                matPanel.classList.remove('hidden');
-                resetMatchGame();
-            }
-        }
-
-        function resetMatchGame() {
-            matchedSet.clear();
-            selectedMatchPart = null;
-            updateMatchModeSVG();
-            renderMatchCards();
-            document.getElementById('match-feedback').textContent =
-                currentLang === 'vi'
-                    ? '👆 Bước 1: Hãy bấm chọn một thẻ tên bên trên!'
-                    : '👆 Step 1: Click a word card above!';
-        }
-
-        function updateMatchModeSVG() {
-            ['root', 'stem', 'leaf', 'flower', 'fruit'].forEach(k => {
-                const textEl = document.getElementById(`slot-text-${k}`);
-                const boxEl = document.getElementById(`slot-box-${k}`);
-                if (matchedSet.has(k)) {
-                    textEl.textContent = currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn;
-                    boxEl.setAttribute('fill', '#dcfce7');
-                } else {
-                    textEl.textContent = '❓ [ Bấm gắn ]';
-                    boxEl.setAttribute('fill', '#fef9c3');
-                }
-            });
-            document.querySelector('#mode-match-btn span').textContent =
-                currentLang === 'vi'
-                    ? `Trò chơi gắn nhãn (${matchedSet.size}/5)`
-                    : `Labeling Game (${matchedSet.size}/5)`;
-        }
-
-        function renderMatchCards() {
-            const container = document.getElementById('match-cards-container');
-            container.innerHTML = '';
-            ['root', 'stem', 'leaf', 'flower', 'fruit'].forEach(k => {
-                const isDone = matchedSet.has(k);
-                const isSelected = selectedMatchPart === k;
-                const btn = document.createElement('button');
-                btn.disabled = isDone;
-                btn.onclick = () => {
-                    selectedMatchPart = k;
-                    playTone(580, 'sine', 0.12);
-                    renderMatchCards();
-                    document.getElementById('match-feedback').textContent =
-                        currentLang === 'vi'
-                            ? `👉 Đang cầm thẻ "${plantPartsData[k].slotLabelVi}". Hãy bấm vào ô [❓] đúng trên cây!`
-                            : `👉 Holding "${plantPartsData[k].slotLabelEn}". Click the matching [❓] box on the plant!`;
-                };
-
-                if (isDone) {
-                    btn.className = 'py-3 px-3 rounded-2xl bg-emerald-100 border-2 border-emerald-400 text-emerald-800 font-black text-sm opacity-60 flex items-center justify-center gap-1.5';
-                    btn.innerHTML = `<span>✅</span> <span>${currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn}</span>`;
-                } else if (isSelected) {
-                    btn.className = 'btn-kid py-3 px-3 rounded-2xl bg-amber-400 border-3 border-amber-700 text-amber-950 font-black text-sm scale-105 flex items-center justify-center gap-1.5';
-                    btn.innerHTML = `<span>👉</span> <span>${currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn}</span>`;
-                } else {
-                    btn.className = 'btn-kid py-3 px-3 rounded-2xl bg-white hover:bg-amber-100 border-2 border-amber-300 text-slate-800 font-black text-sm flex items-center justify-center gap-1.5';
-                    btn.innerHTML = `<span>${currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn}</span>`;
-                }
-                container.appendChild(btn);
-            });
-        }
-
-        function handleTagSlotClick(slotKey) {
-            if (partsMode !== 'match') {
-                handlePartClick(slotKey);
-                return;
-            }
-            if (!selectedMatchPart) {
-                playErrorSound();
-                document.getElementById('match-feedback').textContent =
-                    currentLang === 'vi'
-                        ? '⚠️ Em hãy bấm chọn 1 thẻ tên ở khung bên phải trước nhé!'
-                        : '⚠️ Please pick a word card on the right panel first!';
-                return;
-            }
-
-            if (selectedMatchPart === slotKey) {
-                matchedSet.add(slotKey);
-                selectedMatchPart = null;
-                addStars(2);
-                playSuccessSound();
-                updateMatchModeSVG();
-                renderMatchCards();
-
-                if (matchedSet.size === 5) {
-                    document.getElementById('match-feedback').textContent =
-                        currentLang === 'vi'
-                            ? '🎉 XUẤT SẮC! Em đã gắn đúng cả 5 bộ phận của cây (+10 Sao)!'
-                            : '🎉 AWESOME! You labeled all 5 plant parts correctly!';
-                } else {
-                    document.getElementById('match-feedback').textContent =
-                        currentLang === 'vi'
-                            ? '🌟 Đúng rồi! Giỏi quá! Hãy chọn thẻ tiếp theo nhé!'
-                            : '🌟 Correct! Great job! Pick the next card!';
-                }
-            } else {
-                playErrorSound();
-                document.getElementById('match-feedback').textContent =
-                    currentLang === 'vi'
-                        ? '❌ Chưa đúng vị trí rồi, em quan sát kỹ bộ phận đó và thử lại nhé!'
-                        : '❌ Not quite right! Look closely at the plant part and try again!';
-            }
-        }
-
-        // ==========================================
-        // 4. TAB 2 LOGIC: PLANT GROWTH & OBSERVATION LOG
-        // ==========================================
-        let currentStage = 1;
-        let waterLevel = 50;
-        let sunLevel = 50;
-        let recordedStages = new Set();
-
-        const growthStageData = {
+        const dayData = {
             1: {
-                dayVi: 'Ngày 1', dayEn: 'Day 1',
-                titleVi: '1. Gieo hạt giống xuống đất ẩm', titleEn: '1. Plant Seed in Moist Soil',
-                heightCm: 0, rulerY: 200, leaves: 0,
-                partsVi: '🌰 Hạt giống', partsEn: '🌰 Seed',
-                noteVi: 'Hạt nằm yên dưới đất ẩm chờ nảy mầm.', noteEn: 'Seed rests in moist soil.'
+                heightCm: 0.5,
+                shortVi: 'Hút nước',
+                shortEn: 'Absorb',
+                titleVi: 'Ngày 1: Hạt đậu hút nước trương phồng',
+                titleEn: 'Day 1: Seeds absorb water & swell',
+                descVi: '<strong>Ngày 1:</strong> Hạt đậu xanh nằm trên lớp bông ẩm, hút nước và trương phồng to hơn lúc đầu.',
+                descEn: '<strong>Day 1:</strong> Mung bean seeds absorb water from the moist cotton and swell up.',
+                calloutsVi: [
+                    { y: 262, text: '🫘 Hạt đậu hút nước phồng lên', color: '#fde047' },
+                    { y: 298, text: '☁️ Bông gòn giữ ẩm (70%)', color: '#38bdf8' }
+                ]
             },
             2: {
-                dayVi: 'Ngày 4', dayEn: 'Day 4',
-                titleVi: '2. Hạt nảy mầm & mọc rễ', titleEn: '2. Seed Sprouts Root & Shoot',
-                heightCm: 3, rulerY: 170, leaves: 2,
-                partsVi: '🌱 Rễ mầm, Mầm lá', partsEn: '🌱 Tiny Root & Shoot',
-                noteVi: 'Rễ đâm xuống đất, mầm xanh nhú lên mặt đất.', noteEn: 'Roots grow down, green shoot pops up.'
+                heightCm: 1.2,
+                shortVi: 'Nứt vỏ',
+                shortEn: 'Crack coat',
+                titleVi: 'Ngày 2: Hạt nứt vỏ, nhú mầm rễ trắng',
+                titleEn: 'Day 2: Seed coat cracks, white radicle appears',
+                descVi: '<strong>Ngày 2 (Hạt nứt vỏ):</strong> Lớp vỏ xanh của hạt đậu nứt ra, một chiếc <strong>rễ mầm trắng nhỏ</strong> bắt đầu nhú xuống bông!',
+                descEn: '<strong>Day 2:</strong> The green seed coat cracks open and a tiny white primary root (radicle) emerges!',
+                calloutsVi: [
+                    { y: 252, text: '💥 Hạt đậu bắt đầu nứt vỏ', color: '#fde047' },
+                    { y: 286, text: '🌱 Nhú mầm rễ trắng nhỏ', color: '#86efac' }
+                ]
             },
             3: {
-                dayVi: 'Ngày 9', dayEn: 'Day 9',
-                titleVi: '3. Cây con vươn cao, ra nhiều lá', titleEn: '3. Young Seedling Grows Leaves',
-                heightCm: 9, rulerY: 110, leaves: 4,
-                partsVi: '🌱 Rễ, 🌿 Thân, 🍃 Lá', partsEn: '🌱 Root, 🌿 Stem, 🍃 Leaves',
-                noteVi: 'Thân cây cao lên, lá xanh xòe ra đón nắng.', noteEn: 'Stem grows taller with 4 green leaves.'
+                heightCm: 2.8,
+                shortVi: 'Mọc rễ dài',
+                shortEn: 'Root grows',
+                titleVi: 'Ngày 3: Rễ cái mọc dài cắm sâu vào bông',
+                titleEn: 'Day 3: Roots grow deep into the wet cotton',
+                descVi: '<strong>Ngày 3 (Mọc rễ):</strong> Rễ cái mọc dài nhanh chóng và cắm sâu vào lớp bông ẩm để hút nước nuôi mầm.',
+                descEn: '<strong>Day 3:</strong> The root grows longer and pushes deep into the moist cotton to drink water.',
+                calloutsVi: [
+                    { y: 238, text: '🌱 Thân mầm bắt đầu nhô lên', color: '#86efac' },
+                    { y: 295, text: '🌿 Rễ mọc dài đâm vào bông', color: '#fde047' }
+                ]
             },
             4: {
-                dayVi: 'Ngày 15', dayEn: 'Day 15',
-                titleVi: '4. Cây trưởng thành và nở hoa', titleEn: '4. Mature Plant Blooms Flowers',
-                heightCm: 15, rulerY: 50, leaves: 6,
-                partsVi: '🌱 Rễ, 🌿 Thân, 🍃 Lá, 🌸 Hoa', partsEn: '🌱 Root, 🌿 Stem, 🍃 Leaf, 🌸 Flower',
-                noteVi: 'Cây ra những bông hoa màu vàng rực rỡ.', noteEn: 'Bright yellow flowers bloom on branches.'
+                heightCm: 5.2,
+                shortVi: 'Vươn mầm',
+                shortEn: 'Stem arches',
+                titleVi: 'Ngày 4: Thân mầm vươn lên, đội vỏ hạt',
+                titleEn: 'Day 4: Hypocotyl stem arches upward',
+                descVi: '<strong>Ngày 4:</strong> Thân mầm cong hình móc câu rồi vươn cao lên, nâng hai lá mầm và vỏ hạt lên khỏi mặt bông.',
+                descEn: '<strong>Day 4:</strong> The young stem arches upward, lifting the cotyledons and cracked seed coat.',
+                calloutsVi: [
+                    { y: 192, text: '🫘 Hai lá mầm & vỏ hạt nứt', color: '#fde047' },
+                    { y: 235, text: '🌿 Thân mầm vươn cao (5.2cm)', color: '#4ade80' },
+                    { y: 298, text: '🌱 Rễ con bắt đầu mọc thêm', color: '#93c5fd' }
+                ]
             },
             5: {
-                dayVi: 'Ngày 22', dayEn: 'Day 22',
-                titleVi: '5. Hoa kết thành quả chín đỏ', titleEn: '5. Flowers Turn into Ripe Fruits',
-                heightCm: 18, rulerY: 20, leaves: 8,
-                partsVi: 'Đủ 5 bộ phận: Rễ, Thân, Lá, Hoa, 🍅 Quả', partsEn: 'All 5 parts: Root, Stem, Leaf, Flower, 🍅 Fruit',
-                noteVi: 'Từ hoa đã kết thành những quả chín đỏ chứa hạt!', noteEn: 'Ripe red fruits grow with seeds inside!'
+                heightCm: 7.5,
+                shortVi: 'Nhú lá non',
+                shortEn: 'First leaves',
+                titleVi: 'Ngày 5: Hai lá mầm xòe ra, nhú lá non',
+                titleEn: 'Day 5: Cotyledons open & first leaves peek out',
+                descVi: '<strong>Ngày 5 (Mọc lá):</strong> Vỏ hạt rơi xuống, hai lá mầm tách ra để lộ <strong>cặp lá non xanh biếc</strong> đầu tiên đón ánh sáng!',
+                descEn: '<strong>Day 5:</strong> The seed coat drops off and two bright green baby leaves unfold toward the light!',
+                calloutsVi: [
+                    { y: 152, text: '🍃 Cặp lá non nhú ra đón nắng', color: '#4ade80' },
+                    { y: 205, text: '🌿 Thân mầm đứng thẳng (7.5cm)', color: '#86efac' },
+                    { y: 298, text: '🌱 Hệ rễ bám chặt vào bông', color: '#fde047' }
+                ]
+            },
+            6: {
+                heightCm: 9.8,
+                shortVi: 'Lá xòe rộng',
+                shortEn: 'Leaves expand',
+                titleVi: 'Ngày 6: Lá thật xòe rộng xanh tươi',
+                titleEn: 'Day 6: True green leaves expand',
+                descVi: '<strong>Ngày 6:</strong> Nhờ có nước vừa đủ và ánh sáng, hai lá thật xòe rộng màu xanh đậm, thân cây vươn cao gần miệng cốc.',
+                descEn: '<strong>Day 6:</strong> With water and sunlight, the true green leaves expand wide and perform photosynthesis.',
+                calloutsVi: [
+                    { y: 118, text: '🍃 Lá thật xòe rộng xanh tươi', color: '#4ade80' },
+                    { y: 195, text: '🌿 Thân cây cứng cáp (9.8cm)', color: '#86efac' },
+                    { y: 298, text: '🌱 Rễ chùm phát triển mạnh', color: '#fde047' }
+                ]
+            },
+            7: {
+                heightCm: 11.5,
+                shortVi: 'Cây hoàn chỉnh',
+                shortEn: 'Full seedling',
+                titleVi: 'Ngày 7: Cây đậu xanh hoàn chỉnh (Rễ, Thân, Lá)',
+                titleEn: 'Day 7: Complete Mung Bean Plant (Roots, Stem, Leaves)',
+                descVi: '🎉 <strong>KẾT QUẢ NGÀY 7:</strong> Từ hạt đậu ban đầu đã <strong>nứt vỏ, mọc rễ chùm trắng và vươn thân ra lá xanh tươi</strong> cao 11.5 cm!',
+                descEn: '🎉 <strong>DAY 7 RESULT:</strong> The bean seed cracked its coat, grew branching roots, a tall stem, and lush green leaves (11.5 cm)!',
+                calloutsVi: [
+                    { y: 92,  text: '🍃 Lá xanh tươi quang hợp', color: '#4ade80' },
+                    { y: 178, text: '🌿 Thân cây vươn cao 11.5cm', color: '#86efac' },
+                    { y: 298, text: '🌱 Rễ chùm hút nước trong bông', color: '#fde047' }
+                ]
             }
         };
 
-        function setGrowthStage(st) {
-            currentStage = st;
-            const d = growthStageData[st];
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
 
-            // Toggle SVG groups
-            for (let i = 1; i <= 5; i++) {
-                const g = document.getElementById(`g-stage-${i}`);
-                const btn = document.getElementById(`stbtn-${i}`);
-                if (i === st) {
-                    g.classList.remove('hidden');
-                    btn.className = 'py-1.5 px-2 rounded-xl font-black text-[11px] bg-emerald-500 text-white shadow-sm flex items-center justify-center gap-1 scale-105';
-                } else {
-                    g.classList.add('hidden');
-                    btn.className = 'py-1.5 px-2 rounded-xl font-black text-[11px] bg-slate-100 text-slate-600 hover:bg-emerald-100 flex items-center justify-center gap-1';
+        // ==========================================
+        // 3. INTERACTIVE STEPS & TOOL TRAY LOGIC
+        // ==========================================
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'cup') {
+                playTone(500, 'sine', 0.1);
+            } else if (toolKey === 'cotton') {
+                executeStep(1);
+            } else if (toolKey === 'bean') {
+                if (labState.step < 1) executeStep(1);
+                executeStep(2);
+            } else if (toolKey === 'water') {
+                if (labState.step < 2) {
+                    executeStep(1);
+                    executeStep(2);
+                }
+                executeStep(3);
+            }
+        }
+
+        function executeStep(targetStep) {
+            // Ensure sequential execution if user clicks a later step directly
+            if (targetStep >= 1 && labState.step < 1) {
+                labState.step = 1;
+                labState.cottonAnim = 0.1;
+            }
+            if (targetStep >= 2 && labState.step < 2) {
+                labState.step = 2;
+                labState.beanAnim = 0.1;
+            }
+            if (targetStep >= 3 && labState.step < 3) {
+                labState.step = 3;
+                spawnWaterDrops();
+            }
+            if (targetStep >= 4 && labState.step < 4) {
+                labState.step = 4;
+            }
+            if (targetStep === 5) {
+                labState.step = 5;
+                if (labState.day === 1) {
+                    toggleAutoPlayDays(true);
                 }
             }
 
-            // Update Top Banners & Ruler Marker
-            document.getElementById('stage-day-badge').textContent =
-                currentLang === 'vi' ? `${d.dayVi} (Giai đoạn ${st}/5)` : `${d.dayEn} (Stage ${st}/5)`;
-            document.getElementById('stage-name-title').textContent =
-                currentLang === 'vi' ? d.titleVi : d.titleEn;
-            document.getElementById('height-readout-pill').textContent =
-                currentLang === 'vi' ? `📏 Cao: ${d.heightCm} cm` : `📏 Height: ${d.heightCm} cm`;
-
-            document.getElementById('ruler-marker').setAttribute('transform', `translate(28, ${d.rulerY})`);
-        }
-
-        function careForPlant(type) {
-            if (type === 'water') {
-                waterLevel = Math.min(100, waterLevel + 50);
-                playTone(440, 'sine', 0.15);
-                const wGroup = document.getElementById('watering-anim-group');
-                wGroup.classList.remove('hidden');
-                setTimeout(() => wGroup.classList.add('hidden'), 900);
+            if (targetStep === 3) {
+                playWaterSound();
+                spawnWaterDrops();
             } else {
-                sunLevel = Math.min(100, sunLevel + 50);
-                playTone(587.33, 'triangle', 0.18);
-                const beam = document.getElementById('sun-beam-poly');
-                beam.classList.remove('hidden');
-                setTimeout(() => beam.classList.add('hidden'), 900);
+                playChime();
             }
 
-            updateCareBars();
+            addScore(2);
+            updateLabUI();
+        }
 
-            // If both water & sun reach 100%, advance to next growth stage!
-            if (waterLevel >= 100 && sunLevel >= 100) {
-                if (currentStage < 5) {
-                    setTimeout(() => {
-                        waterLevel = 40;
-                        sunLevel = 40;
-                        updateCareBars();
-                        setGrowthStage(currentStage + 1);
-                        recordObservationStage(true);
-                        addStars(2);
-                        playSuccessSound();
-                        document.getElementById('growth-status-msg').textContent =
-                            currentLang === 'vi'
-                                ? `🎉 Tuyệt vời! Cây đã lớn lên Giai đoạn ${currentStage} và tự động ghi vào sổ!`
-                                : `🎉 Awesome! The plant grew to Stage ${currentStage} and was logged!`;
-                    }, 550);
+        function spawnWaterDrops() {
+            const cx = 172;
+            for (let i = 0; i < 12; i++) {
+                labState.waterDrops.push({
+                    x: cx - 42 + (i % 4) * 28 + (Math.random() * 8 - 4),
+                    y: 75 + Math.floor(i / 4) * 22,
+                    vy: 2.5 + Math.random() * 1.2
+                });
+            }
+        }
+
+        function selectDay(d) {
+            if (labState.step < 4) {
+                // Auto-complete setup steps 1-4 so student can immediately observe any day
+                labState.step = 5;
+                labState.cottonAnim = 1;
+                labState.beanAnim = 1;
+                labState.waterMoisture = 1;
+                labState.sunlight = 1;
+            } else {
+                labState.step = 5;
+            }
+            labState.day = d;
+            playTone(460 + d * 45, 'triangle', 0.12);
+            updateLabUI();
+        }
+
+        function toggleAutoPlayDays(forceStart = false) {
+            if (autoPlayTimer && !forceStart) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+            if (autoPlayTimer) clearInterval(autoPlayTimer);
+
+            // Ensure steps 1-4 are ready
+            labState.step = 5;
+            labState.cottonAnim = 1;
+            labState.beanAnim = 1;
+            labState.waterMoisture = 1;
+            labState.sunlight = 1;
+            if (labState.day >= 7) labState.day = 1;
+            updateLabUI();
+            updateAutoPlayButton(true);
+
+            autoPlayTimer = setInterval(() => {
+                if (labState.day < 7) {
+                    labState.day++;
+                    playTone(480 + labState.day * 45, 'sine', 0.12);
+                    updateLabUI();
                 } else {
-                    document.getElementById('growth-status-msg').textContent =
-                        currentLang === 'vi'
-                            ? '🍅 Cây đã trưởng thành và ra quả chín đỏ! Em hãy xem bảng Sổ Tay bên dưới nhé!'
-                            : '🍅 Your plant is fully grown with ripe fruits! Check your Observation Log below!';
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                    playChime();
+                }
+            }, 1350);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Tự chạy 7 ngày' : '▶ Auto 7 Days';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            labState.day = 1;
+            labState.cottonAnim = 0;
+            labState.beanAnim = 0;
+            labState.waterMoisture = 0;
+            labState.sunlight = 0;
+            labState.waterDrops = [];
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const d = labState.day;
+            const dInfo = dayData[d];
+
+            // Top status bar
+            const stepTitlesVi = [
+                'Cốc nhựa trong suốt đã sẵn sàng',
+                'Bước 1: Đã cho bông gòn vào đáy cốc',
+                'Bước 2: Đã đặt 3 hạt đậu xanh lên bông',
+                'Bước 3: Đã tưới nước vừa đủ ẩm bông (70%)',
+                'Bước 4: Đã đặt cốc nơi có ánh sáng mặt trời',
+                dInfo.titleVi
+            ];
+            document.getElementById('status-step-badge').textContent =
+                st === 0 ? (currentLang === 'vi' ? 'CHUẨN BỊ' : 'READY') : (st < 5 ? `BƯỚC ${st}/5` : `NGÀY ${d}/7`);
+            document.getElementById('status-step-title').textContent = stepTitlesVi[st];
+            document.getElementById('day-pill-badge').textContent =
+                currentLang === 'vi' ? `📅 Ngày ${d} / 7` : `📅 Day ${d} / 7`;
+
+            // Update Tool Tray Cards
+            const cottonCard = document.getElementById('tool-cotton');
+            const beanCard = document.getElementById('tool-bean');
+            const waterCard = document.getElementById('tool-water');
+            cottonCard.className = st >= 1
+                ? 'cursor-pointer bg-emerald-100 border-2 border-emerald-500 rounded-xl p-1.5 text-center transition'
+                : 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1.5 text-center transition pulse-next';
+            document.getElementById('tool-status-cotton').textContent = st >= 1 ? '✓ Đã cho vào' : '👉 Bấm chọn';
+
+            beanCard.className = st >= 2
+                ? 'cursor-pointer bg-emerald-100 border-2 border-emerald-500 rounded-xl p-1.5 text-center transition'
+                : (st === 1 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1.5 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition');
+            document.getElementById('tool-status-bean').textContent = st >= 2 ? '✓ Đã đặt hạt' : (st === 1 ? '👉 Bấm chọn' : 'Bước 2');
+
+            waterCard.className = st >= 3
+                ? 'cursor-pointer bg-sky-100 border-2 border-sky-500 rounded-xl p-1.5 text-center transition'
+                : (st === 2 ? 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1.5 text-center transition pulse-next' : 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition');
+            document.getElementById('tool-status-water').textContent = st >= 3 ? '✓ Đủ ẩm 70%' : (st === 2 ? '👉 Bấm tưới' : 'Bước 3');
+
+            // Update 5 Step Buttons
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                if (i < st || (st === 5 && i <= 5)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
                 }
             }
-        }
 
-        function updateCareBars() {
-            document.getElementById('water-pct').textContent = `${waterLevel}%`;
-            document.getElementById('water-bar-fill').style.width = `${waterLevel}%`;
-            document.getElementById('sun-pct').textContent = `${sunLevel}%`;
-            document.getElementById('sun-bar-fill').style.width = `${sunLevel}%`;
-        }
-
-        function recordObservationStage(silent = false) {
-            const st = currentStage;
-            const d = growthStageData[st];
-            if (!silent) {
-                playSuccessSound();
-                addStars(1);
+            // Day 1..7 Buttons
+            for (let i = 1; i <= 7; i++) {
+                const dbtn = document.getElementById(`dbtn-${i}`);
+                if (i === d && st >= 4) {
+                    dbtn.className = 'w-6 h-6 rounded-md font-black text-xs bg-amber-400 text-slate-950 scale-110 shadow';
+                } else if (i <= d && st >= 4) {
+                    dbtn.className = 'w-6 h-6 rounded-md font-black text-xs bg-emerald-600 text-white';
+                } else {
+                    dbtn.className = 'w-6 h-6 rounded-md font-black text-xs bg-slate-700 text-slate-300 hover:bg-slate-600';
+                }
             }
-            recordedStages.add(st);
-            renderObservationTable();
+
+            // Observation Result Box
+            const obsEl = document.getElementById('observation-desc');
+            const hBadge = document.getElementById('height-badge');
+            if (st === 0) {
+                hBadge.textContent = '📏 Cao: 0.0 cm';
+                obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Cho bông vào cốc</strong> để lót lớp bông gòn xuống đáy cốc nhựa!';
+            } else if (st === 1) {
+                hBadge.textContent = '☁️ Đã có bông';
+                obsEl.innerHTML = 'Đã lót bông gòn trắng vào đáy cốc. Tiếp theo hãy bấm <strong>Bước 2: Đặt hạt đậu lên bông</strong>!';
+            } else if (st === 2) {
+                hBadge.textContent = '🫘 3 hạt đậu xanh';
+                obsEl.innerHTML = 'Đã đặt 3 hạt đậu xanh lên mặt bông khô. Tiếp theo hãy bấm <strong>Bước 3: Tưới nước vừa đủ</strong> để hạt có nước hút ẩm!';
+            } else if (st === 3) {
+                hBadge.textContent = '💧 Độ ẩm: 70%';
+                obsEl.innerHTML = 'Bông gòn đã thấm nước vừa đủ ẩm. Tiếp theo hãy bấm <strong>Bước 4: Đặt nơi có ánh sáng</strong>!';
+            } else {
+                hBadge.textContent = `📏 Cao: ${dInfo.heightCm} cm`;
+                obsEl.innerHTML = currentLang === 'vi' ? dInfo.descVi : dInfo.descEn;
+            }
+
+            renderDiaryStrip();
         }
 
-        function renderObservationTable() {
-            const tbody = document.getElementById('growth-log-tbody');
-            tbody.innerHTML = '';
-            Array.from(recordedStages).sort((a, b) => a - b).forEach(st => {
-                const d = growthStageData[st];
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-amber-50/70 transition';
-                tr.innerHTML = `
-                    <td class="py-2 px-3 font-black text-emerald-700">#${st}</td>
-                    <td class="py-2 px-3">${currentLang === 'vi' ? d.dayVi : d.dayEn}</td>
-                    <td class="py-2 px-3 font-black text-amber-700">${d.heightCm} cm</td>
-                    <td class="py-2 px-3">${d.leaves} ${currentLang === 'vi' ? 'lá' : 'leaves'}</td>
-                    <td class="py-2 px-3 text-emerald-800">${currentLang === 'vi' ? d.partsVi : d.partsEn}</td>
-                    <td class="py-2 px-3 text-slate-600">${currentLang === 'vi' ? d.noteVi : d.noteEn}</td>
+        function renderDiaryStrip() {
+            const grid = document.getElementById('diary-cards-grid');
+            grid.innerHTML = '';
+            const stageIcons = ['🫘', '💥', '🌱', '🌿', '🍃', '🌿', '🪴'];
+            for (let i = 1; i <= 7; i++) {
+                const info = dayData[i];
+                const isActive = (labState.step >= 4 && labState.day === i);
+                const isPassed = (labState.step >= 4 && i < labState.day);
+                const card = document.createElement('button');
+                card.onclick = () => selectDay(i);
+                if (isActive) {
+                    card.className = 'btn-kid p-1.5 rounded-xl bg-emerald-600 text-white border-2 border-emerald-800 text-center flex flex-col items-center';
+                } else if (isPassed) {
+                    card.className = 'btn-kid p-1.5 rounded-xl bg-emerald-100 text-emerald-950 border-2 border-emerald-300 text-center flex flex-col items-center';
+                } else {
+                    card.className = 'btn-kid p-1.5 rounded-xl bg-white hover:bg-amber-50 text-slate-700 border border-slate-200 text-center flex flex-col items-center';
+                }
+                card.innerHTML = `
+                    <span class="text-[10px] font-black opacity-85">${currentLang === 'vi' ? 'Ngày ' + i : 'Day ' + i}</span>
+                    <span class="text-base my-0.5">${stageIcons[i - 1]}</span>
+                    <span class="text-[10px] font-extrabold leading-tight">${currentLang === 'vi' ? info.shortVi : info.shortEn}</span>
+                    <span class="text-[9px] font-bold opacity-75 mt-0.5">${info.heightCm}cm</span>
                 `;
-                tbody.appendChild(tr);
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 4. HTML5 CANVAS RENDERER (465x345 - ZERO OVERLAP)
+        // ==========================================
+        const beanCanvas = document.getElementById('beanCanvas');
+        const bCtx = beanCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            beanCanvas.width = 465 * dpr;
+            beanCanvas.height = 345 * dpr;
+            bCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // Draw non-overlapping right-side callout badge
+        function drawRightCallout(ctx, targetX, targetY, pillX, pillY, text, borderColor) {
+            ctx.save();
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(targetX, targetY);
+            ctx.lineTo(pillX, pillY + 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = borderColor;
+            ctx.beginPath();
+            ctx.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, 162, 24, 7);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '800 10.5px Nunito, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, pillX + 7, pillY + 12.5);
+            ctx.restore();
+        }
+
+        // Core Reusable Mung Bean Plant Renderer (Used for main cup and 4 comparison cups)
+        function drawBeanSeedling(ctx, x, baseY, day, options = {}) {
+            const isDry = options.isDry || false;
+            const isFlooded = options.isFlooded || false;
+            const isDark = options.isDark || false;
+            const scale = options.scale || 1;
+
+            ctx.save();
+            ctx.translate(x, baseY);
+            ctx.scale(scale, scale);
+
+            if (isDry) {
+                // Remains a small hard mung bean
+                ctx.fillStyle = '#15803d';
+                ctx.strokeStyle = '#14532d';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(0, -4, 8, 5.5, -0.15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#fef9c3';
+                ctx.fillRect(-3, -5, 4, 1.5);
+                ctx.restore();
+                return;
+            }
+
+            if (isFlooded) {
+                // Swollen pale decaying seed, tiny stunted root
+                ctx.fillStyle = '#a16207';
+                ctx.beginPath();
+                ctx.ellipse(0, -5, 10, 7, 0.1, 0, Math.PI * 2);
+                ctx.fill();
+                if (day >= 3) {
+                    ctx.strokeStyle = '#fde68a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(2, -2);
+                    ctx.quadraticCurveTo(6, 6, 3, 12);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                return;
+            }
+
+            const stemColor = isDark ? '#fef08a' : '#4ade80';
+            const leafColor = isDark ? '#facc15' : '#16a34a';
+            const leafLight = isDark ? '#fef08a' : '#22c55e';
+
+            // 1. ROOTS (Day 2 -> 7)
+            if (day >= 2) {
+                const rootLen = Math.min(44, (day - 1) * 8);
+                ctx.strokeStyle = '#fef3c7';
+                ctx.lineWidth = day >= 4 ? 3 : 2.2;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(0, -2);
+                ctx.quadraticCurveTo(-3, rootLen * 0.5, 2, rootLen);
+                ctx.stroke();
+
+                // Lateral roots (Day 3+)
+                if (day >= 3) {
+                    ctx.lineWidth = 1.5;
+                    const branches = Math.min(6, day - 1);
+                    for (let b = 1; b <= branches; b++) {
+                        const ry = (rootLen / (branches + 1)) * b;
+                        const dir = b % 2 === 0 ? 1 : -1;
+                        ctx.beginPath();
+                        ctx.moveTo(0, ry);
+                        ctx.quadraticCurveTo(dir * 10, ry + 4, dir * (14 + b * 2), ry + 9);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // 2. HYPOCOTYL STEM (Day 3 -> 7)
+            const heightsPx = [0, 4, 14, 42, 82, 118, 148, 172];
+            let stemH = heightsPx[day] || 0;
+            if (isDark && day >= 4) stemH *= 1.18; // Etiolation (taller, spindly in dark)
+
+            if (day >= 3) {
+                ctx.strokeStyle = stemColor;
+                ctx.lineWidth = isDark ? 3.2 : 4.5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(0, -3);
+                if (day === 3 || day === 4) {
+                    // Arching hypocotyl hook
+                    ctx.quadraticCurveTo(-8, -stemH * 0.7, 4, -stemH);
+                } else {
+                    ctx.quadraticCurveTo(-3, -stemH * 0.5, 0, -stemH);
+                }
+                ctx.stroke();
+            }
+
+            // 3. SEED COAT & COTYLEDONS & TRUE LEAVES
+            if (day === 1) {
+                // Swollen mung bean
+                ctx.fillStyle = '#16a34a';
+                ctx.strokeStyle = '#14532d';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(0, -5, 9.5, 6.8, -0.1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-3, -6, 5, 1.8);
+            } else if (day === 2 || day === 3) {
+                // Cracked seed coat showing cream cotyledon inside
+                ctx.fillStyle = '#fef9c3';
+                ctx.beginPath();
+                ctx.ellipse(0, -6 - (day === 3 ? 8 : 0), 9, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Split green seed hull
+                ctx.fillStyle = '#15803d';
+                ctx.beginPath();
+                ctx.arc(-2, -7 - (day === 3 ? 8 : 0), 6.5, 0.4, Math.PI * 1.3);
+                ctx.fill();
+            } else if (day === 4) {
+                // Lifted cotyledons + hanging seed hull
+                ctx.fillStyle = '#bef264';
+                ctx.beginPath();
+                ctx.ellipse(-4, -stemH, 7, 4.5, -0.4, 0, Math.PI * 2);
+                ctx.ellipse(5, -stemH, 7, 4.5, 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                // Cracking brown/green coat on tip
+                ctx.fillStyle = '#166534';
+                ctx.beginPath();
+                ctx.ellipse(7, -stemH + 2, 5, 3.5, 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (day >= 5) {
+                // Cotyledons on stem side
+                ctx.fillStyle = '#a3e635';
+                ctx.beginPath();
+                ctx.ellipse(-6, -stemH * 0.72, 5.5, 3, -0.3, 0, Math.PI * 2);
+                ctx.ellipse(6, -stemH * 0.72, 5.5, 3, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                //Dropped seed coat on cotton surface
+                ctx.fillStyle = '#3f6212';
+                ctx.beginPath();
+                ctx.ellipse(12, -3, 5, 3, 0.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pair of True Leaves at top (-stemH)
+                const leafLen = day === 5 ? 16 : (day === 6 ? 24 : 30);
+                const leafWid = day === 5 ? 7 : (day === 6 ? 10 : 12);
+
+                [-1, 1].forEach(dir => {
+                    ctx.save();
+                    ctx.translate(0, -stemH);
+                    ctx.rotate(dir * 0.55);
+                    ctx.fillStyle = dir === -1 ? leafColor : leafLight;
+                    ctx.strokeStyle = isDark ? '#ca8a04' : '#14532d';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.ellipse((dir * leafLen) / 2, -2, leafLen / 2, leafWid / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Central vein
+                    ctx.strokeStyle = isDark ? '#fef9c3' : '#bbf7d0';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -2);
+                    ctx.lineTo(dir * (leafLen - 4), -2);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
+
+            ctx.restore();
+        }
+
+        function renderMainLabCanvas(timestamp) {
+            if (activeTab === 'lab') {
+                const w = 465;
+                const h = 345;
+                bCtx.clearRect(0, 0, w, h);
+
+                // Smooth animations
+                if (labState.step >= 1) labState.cottonAnim = Math.min(1, labState.cottonAnim + 0.06);
+                if (labState.step >= 2) labState.beanAnim = Math.min(1, labState.beanAnim + 0.06);
+                if (labState.step >= 3) labState.waterMoisture = Math.min(1, labState.waterMoisture + 0.04);
+                if (labState.step >= 4) labState.sunlight = Math.min(1, labState.sunlight + 0.04);
+
+                // 1. Background Lab Table
+                bCtx.fillStyle = '#1e293b';
+                bCtx.fillRect(0, h - 32, w, 32);
+                bCtx.fillStyle = '#334155';
+                bCtx.fillRect(0, h - 32, w, 4);
+
+                // 2. Sunlight Window Beam (Step 4+)
+                if (labState.sunlight > 0.01) {
+                    bCtx.save();
+                    bCtx.globalAlpha = labState.sunlight;
+                    // Sun at top-left (x=42, y=42)
+                    bCtx.fillStyle = '#facc15';
+                    bCtx.beginPath();
+                    bCtx.arc(42, 42, 20, 0, Math.PI * 2);
+                    bCtx.fill();
+
+                    const sunGrad = bCtx.createLinearGradient(42, 42, 240, 290);
+                    sunGrad.addColorStop(0, 'rgba(253, 224, 71, 0.32)');
+                    sunGrad.addColorStop(1, 'rgba(253, 224, 71, 0.0)');
+                    bCtx.fillStyle = sunGrad;
+                    bCtx.beginPath();
+                    bCtx.moveTo(55, 28);
+                    bCtx.lineTo(275, 110);
+                    bCtx.lineTo(255, 315);
+                    bCtx.lineTo(30, 80);
+                    bCtx.closePath();
+                    bCtx.fill();
+                    bCtx.restore();
+                }
+
+                // Cup Geometry (Centered at cx=172 so Right Side x=292..458 is 100% free for labels)
+                const cx = 172;
+                const cupTopY = 92;
+                const cupBotY = 316;
+                const cupTopW = 166;
+                const cupBotW = 132;
+                const cottonSurfaceY = 266;
+
+                // 3. Centimeter Ruler on Left of Cup (x=54)
+                const rulerX = 52;
+                const rulerH = 180; // 12 cm -> 15px per cm
+                const rulerTopY = cottonSurfaceY - rulerH;
+                bCtx.save();
+                bCtx.fillStyle = '#fef9c3';
+                bCtx.strokeStyle = '#ca8a04';
+                bCtx.lineWidth = 1.5;
+                bCtx.beginPath();
+                bCtx.roundRect(rulerX, rulerTopY, 24, rulerH, 4);
+                bCtx.fill();
+                bCtx.stroke();
+
+                bCtx.fillStyle = '#713f12';
+                bCtx.strokeStyle = '#713f12';
+                bCtx.font = '800 8.5px Nunito, sans-serif';
+                bCtx.textAlign = 'right';
+                for (let cm = 0; cm <= 12; cm += 2) {
+                    const ty = cottonSurfaceY - cm * 15;
+                    bCtx.beginPath();
+                    bCtx.moveTo(rulerX + 16, ty);
+                    bCtx.lineTo(rulerX + 24, ty);
+                    bCtx.stroke();
+                    bCtx.fillText(`${cm}`, rulerX + 14, ty + 3);
+                }
+                bCtx.restore();
+
+                // 4. Clear Plastic Cup Back Wall
+                bCtx.save();
+                bCtx.beginPath();
+                bCtx.moveTo(cx - cupTopW / 2, cupTopY);
+                bCtx.lineTo(cx - cupBotW / 2, cupBotY);
+                bCtx.quadraticCurveTo(cx, cupBotY + 8, cx + cupBotW / 2, cupBotY);
+                bCtx.lineTo(cx + cupTopW / 2, cupTopY);
+                bCtx.closePath();
+                bCtx.fillStyle = 'rgba(241, 245, 249, 0.08)';
+                bCtx.fill();
+                bCtx.restore();
+
+                // 5. Cotton Wool Layer at Bottom of Cup (Step 1+)
+                if (labState.cottonAnim > 0.01) {
+                    const dropOffset = (1 - labState.cottonAnim) * -90;
+                    bCtx.save();
+                    bCtx.translate(0, dropOffset);
+
+                    // Cotton color changes from dry white to moist light-blue when watered
+                    const r = Math.round(248 - labState.waterMoisture * 48);
+                    const g = Math.round(250 - labState.waterMoisture * 18);
+                    const b = Math.round(252);
+                    bCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    bCtx.strokeStyle = labState.waterMoisture > 0.3 ? '#7dd3fc' : '#cbd5e1';
+                    bCtx.lineWidth = 1.5;
+
+                    // Fluffy cotton cloud puffs inside bottom of cup
+                    const puffs = [
+                        { ox: -44, oy: 274, r: 22 },
+                        { ox: -16, oy: 270, r: 25 },
+                        { ox: 16,  oy: 270, r: 25 },
+                        { ox: 44,  oy: 274, r: 22 },
+                        { ox: -32, oy: 296, r: 24 },
+                        { ox: 0,   oy: 296, r: 26 },
+                        { ox: 32,  oy: 296, r: 24 }
+                    ];
+                    puffs.forEach(pf => {
+                        bCtx.beginPath();
+                        bCtx.arc(cx + pf.ox, pf.oy, pf.r, 0, Math.PI * 2);
+                        bCtx.fill();
+                        bCtx.stroke();
+                    });
+                    bCtx.restore();
+                }
+
+                // 6. Three Mung Bean Seeds / Growing Plants (Step 2+)
+                if (labState.beanAnim > 0.01) {
+                    const beanDrop = (1 - labState.beanAnim) * -80;
+                    const activeDay = labState.step >= 4 ? labState.day : 1;
+                    bCtx.save();
+                    bCtx.translate(0, beanDrop);
+                    drawBeanSeedling(bCtx, cx - 36, cottonSurfaceY, activeDay, { scale: 0.92 });
+                    drawBeanSeedling(bCtx, cx,      cottonSurfaceY, activeDay, { scale: 1.0 });
+                    drawBeanSeedling(bCtx, cx + 36, cottonSurfaceY, activeDay, { scale: 0.95 });
+                    bCtx.restore();
+                }
+
+                // 7. Animated Water Droplets (Step 3)
+                for (let i = labState.waterDrops.length - 1; i >= 0; i--) {
+                    const wd = labState.waterDrops[i];
+                    wd.y += wd.vy;
+                    bCtx.fillStyle = '#38bdf8';
+                    bCtx.beginPath();
+                    bCtx.arc(wd.x, wd.y, 4, 0, Math.PI * 2);
+                    bCtx.fill();
+                    if (wd.y >= cottonSurfaceY) {
+                        labState.waterDrops.splice(i, 1);
+                    }
+                }
+
+                // 8. Clear Plastic Cup Rim & Gloss Outline
+                bCtx.save();
+                bCtx.strokeStyle = 'rgba(226, 232, 240, 0.78)';
+                bCtx.lineWidth = 3;
+                bCtx.beginPath();
+                bCtx.moveTo(cx - cupTopW / 2, cupTopY);
+                bCtx.lineTo(cx - cupBotW / 2, cupBotY);
+                bCtx.quadraticCurveTo(cx, cupBotY + 8, cx + cupBotW / 2, cupBotY);
+                bCtx.lineTo(cx + cupTopW / 2, cupTopY);
+                bCtx.stroke();
+
+                // Top plastic lip
+                bCtx.beginPath();
+                bCtx.ellipse(cx, cupTopY, cupTopW / 2 + 2, 7, 0, 0, Math.PI * 2);
+                bCtx.stroke();
+                bCtx.restore();
+
+                // ==========================================
+                // 9. RIGHT-ALIGNED CALLOUT LABELS (X=295..457, NO OVERLAP)
+                // ==========================================
+                const pillX = 294;
+                if (labState.step === 0) {
+                    drawRightCallout(bCtx, cx + cupTopW / 2, 180, pillX, 168, '🥛 Cốc nhựa trong suốt', '#94a3b8');
+                } else if (labState.step === 1) {
+                    drawRightCallout(bCtx, cx + 45, 285, pillX, 273, '☁️ Bước 1: Bông gòn khô', '#f8fafc');
+                } else if (labState.step === 2) {
+                    drawRightCallout(bCtx, cx + 36, 260, pillX, 232, '🫘 Bước 2: Hạt đậu xanh', '#4ade80');
+                    drawRightCallout(bCtx, cx + 45, 292, pillX, 278, '☁️ Lớp bông gòn lót đáy', '#cbd5e1');
+                } else if (labState.step === 3) {
+                    drawRightCallout(bCtx, cx + 36, 260, pillX, 232, '🫘 Hạt đậu bắt đầu hút ẩm', '#fde047');
+                    drawRightCallout(bCtx, cx + 45, 292, pillX, 278, '💧 Bước 3: Bông ẩm vừa đủ', '#38bdf8');
+                } else if (labState.step >= 4) {
+                    drawRightCallout(bCtx, cx + 30, 52, pillX, 40, '☀️ Bước 4: Ánh sáng mặt trời', '#facc15');
+                    const dCallouts = dayData[labState.day].calloutsVi;
+                    dCallouts.forEach(c => {
+                        drawRightCallout(bCtx, cx + 36, c.y, pillX, c.y - 12, c.text, c.color);
+                    });
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 5. TAB 2: 4 COMPARISON CUPS RENDERER
+        // ==========================================
+        function renderComparisonCups() {
+            const cmpDay = parseInt(document.getElementById('cmp-day-slider').value, 10);
+            document.getElementById('cmp-day-val').textContent = currentLang === 'vi' ? `Ngày ${cmpDay}` : `Day ${cmpDay}`;
+
+            const configs = [
+                { id: 'cmpCanvasA', isDry: false, isFlooded: false, isDark: false, hasSun: true },
+                { id: 'cmpCanvasB', isDry: true,  isFlooded: false, isDark: false, hasSun: true },
+                { id: 'cmpCanvasC', isDry: false, isFlooded: true,  isDark: false, hasSun: true },
+                { id: 'cmpCanvasD', isDry: false, isFlooded: false, isDark: true,  hasSun: false }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 176;
+                ctx.clearRect(0, 0, w, h);
+
+                // Sun indicator if lit
+                if (cfg.hasSun) {
+                    ctx.fillStyle = '#facc15';
+                    ctx.beginPath();
+                    ctx.arc(24, 22, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                const cx = w / 2;
+                const topY = 48, botY = 164;
+                const cottonY = 136;
+
+                // Cotton layer
+                ctx.fillStyle = cfg.isDry ? '#f8fafc' : '#bae6fd';
+                [-26, 0, 26].forEach(ox => {
+                    ctx.beginPath();
+                    ctx.arc(cx + ox, cottonY + 12, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Flooded water overlay for Cup C
+                if (cfg.isFlooded) {
+                    ctx.fillStyle = 'rgba(14, 165, 233, 0.55)';
+                    ctx.fillRect(cx - 46, 96, 92, 66);
+                }
+
+                // Draw 2 seedlings inside mini cup
+                drawBeanSeedling(ctx, cx - 16, cottonY, cmpDay, {
+                    isDry: cfg.isDry,
+                    isFlooded: cfg.isFlooded,
+                    isDark: cfg.isDark,
+                    scale: 0.55
+                });
+                drawBeanSeedling(ctx, cx + 16, cottonY, cmpDay, {
+                    isDry: cfg.isDry,
+                    isFlooded: cfg.isFlooded,
+                    isDark: cfg.isDark,
+                    scale: 0.58
+                });
+
+                // Mini Cup Outline
+                ctx.strokeStyle = 'rgba(226, 232, 240, 0.75)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - 52, topY);
+                ctx.lineTo(cx - 42, botY);
+                ctx.lineTo(cx + 42, botY);
+                ctx.lineTo(cx + 52, topY);
+                ctx.stroke();
             });
         }
 
-        function resetGrowthSim() {
-            waterLevel = 50;
-            sunLevel = 50;
-            updateCareBars();
-            recordedStages.clear();
-            setGrowthStage(1);
-            recordObservationStage(true);
-        }
-
         // ==========================================
-        // 5. TAB 3 LOGIC: GRADE 1 MINI-QUIZ
+        // 6. TAB 3: QUIZ LOGIC
         // ==========================================
-        let quizIndex = 0;
-        const quizQuestions = [
+        let quizIdx = 0;
+        const quizList = [
             {
-                emoji: '🌱',
-                qVi: '1. Bộ phận nào nằm dưới mặt đất, giúp cây hút nước và đứng vững?',
-                qEn: '1. Which part grows underground to drink water and hold the plant steady?',
-                optionsVi: ['🌱 Rễ cây', '🌸 Hoa', '🍅 Quả', '🍃 Lá cây'],
-                optionsEn: ['🌱 Roots', '🌸 Flower', '🍅 Fruit', '🍃 Leaves'],
-                correct: 0
+                icon: '🧰',
+                qVi: '1. Để thực hiện thí nghiệm "Lab 1: Hạt nảy mầm", chúng ta cần chuẩn bị 4 dụng cụ nào?',
+                qEn: '1. Which 4 items are needed for Lab 1: Bean Seed Germination?',
+                optsVi: [
+                    'Hạt đậu xanh, Bông gòn, Cốc nhựa, Nước',
+                    'Hạt sỏi đá, Cốc sắt, Dầu ăn, Lửa',
+                    'Cát khô, Hộp kín, Nước sôi, Đá lạnh',
+                    'Chỉ cần hạt đậu xanh và chiếc bàn'
+                ],
+                optsEn: [
+                    'Mung bean seeds, Cotton wool, Plastic cup, Water',
+                    'Pebbles, Iron cup, Cooking oil, Fire',
+                    'Dry sand, Closed box, Boiling water, Ice',
+                    'Only mung beans on a dry table'
+                ],
+                ans: 0
             },
             {
-                emoji: '☀️',
-                qVi: '2. Bộ phận nào có màu xanh lục, giúp cây đón ánh nắng mặt trời?',
-                qEn: '2. Which green part catches warm sunlight for the plant?',
-                optionsVi: ['🌰 Hạt giống', '🍃 Lá cây', '🌱 Rễ cây', '🍅 Quả chín'],
-                optionsEn: ['🌰 Seed', '🍃 Green Leaves', '🌱 Roots', '🍅 Ripe Fruit'],
-                correct: 1
+                icon: '👣',
+                qVi: '2. Thứ tự các bước thực hiện thí nghiệm Hạt nảy mầm nào sau đây là ĐÚNG?',
+                qEn: '2. What is the correct 5-step procedure for the experiment?',
+                optsVi: [
+                    '1. Đổ đầy nước → 2. Cho hạt → 3. Cất vào tủ tối',
+                    '1. Cho bông vào cốc → 2. Đặt hạt đậu lên bông → 3. Tưới nước vừa đủ → 4. Đặt nơi có ánh sáng → 5. Quan sát mỗi ngày',
+                    '1. Đặt hạt đậu → 2. Không tưới nước → 3. Quan sát',
+                    '1. Cho bông vào cốc → 2. Đổ nước ngập đầy cốc'
+                ],
+                optsEn: [
+                    '1. Fill with water → 2. Add seeds → 3. Put in dark box',
+                    '1. Cotton in cup → 2. Beans on cotton → 3. Water just enough → 4. Place in light → 5. Observe daily',
+                    '1. Add beans → 2. Never water → 3. Observe',
+                    '1. Put cotton → 2. Flood cup with boiling water'
+                ],
+                ans: 1
             },
             {
-                emoji: '🌻',
-                qVi: '3. Thứ tự lớn lên đúng của cây xanh từ khi gieo hạt là gì?',
-                qEn: '3. What is the correct order of plant growth?',
-                optionsVi: [
-                    'Ra quả → Nảy mầm → Gieo hạt',
-                    'Gieo hạt → Nảy mầm → Cây con → Ra hoa → Kết quả',
-                    'Ra hoa → Gieo hạt → Mọc rễ',
-                    'Cây lớn → Hạt giống → Nảy mầm'
+                icon: '🌱',
+                qVi: '3. Sau các ngày quan sát, kết quả hạt đậu xanh phát triển như thế nào?',
+                qEn: '3. What is the final result of the mung bean seed germination?',
+                optsVi: [
+                    'Hạt đậu biến mất hoàn toàn trong bông',
+                    'Hạt đậu giữ nguyên không thay đổi gì',
+                    'Hạt nứt vỏ, mọc rễ và lá xanh tươi',
+                    'Hạt chỉ nở hoa ngay lập tức mà không có rễ'
                 ],
-                optionsEn: [
-                    'Fruit → Sprout → Seed',
-                    'Seed → Sprout → Seedling → Flower → Fruit',
-                    'Flower → Seed → Root',
-                    'Tree → Seed → Sprout'
+                optsEn: [
+                    'The seed disappears completely',
+                    'Nothing changes at all',
+                    'The seed cracks its coat, grows roots and green leaves',
+                    'It blooms flowers immediately without roots'
                 ],
-                correct: 1
+                ans: 2
             },
             {
-                emoji: '🚿',
-                qVi: '4. Để cây xanh lớn nhanh và khỏe mạnh, em cần làm gì?',
-                qEn: '4. What does a green plant need to grow healthy and strong?',
-                optionsVi: [
-                    'Tưới nước và cho cây đón ánh nắng mặt trời',
-                    'Bứt lá và bẻ cành cây',
-                    'Cất cây vào trong tủ tối kín',
-                    'Không bao giờ tưới nước cho cây'
+                icon: '💧',
+                qVi: '4. Vì sao ở Bước 3 chúng ta chỉ "Tưới nước vừa đủ" mà không đổ nước ngập đầy cốc?',
+                qEn: '4. Why do we "Water just enough" in Step 3 instead of flooding the cup?',
+                optsVi: [
+                    'Vì đổ ngập nước sẽ làm hạt thiếu không khí (O₂) và bị úng thối',
+                    'Vì hạt đậu không thích chạm vào nước',
+                    'Vì nước làm bông gòn biến thành đá',
+                    'Để cốc nhẹ hơn dễ bê đi'
                 ],
-                optionsEn: [
-                    'Water the plant and give it sunlight',
-                    'Pull off its leaves and branches',
-                    'Hide it inside a dark closet',
-                    'Never give it any water'
+                optsEn: [
+                    'Flooding deprives the seed of air (O₂) and causes it to rot',
+                    'Seeds never need any water',
+                    'Water turns cotton into rock',
+                    'To keep the cup light'
                 ],
-                correct: 0
+                ans: 0
             }
         ];
 
         function renderQuiz() {
-            const q = quizQuestions[quizIndex];
-            document.getElementById('quiz-progress-text').textContent =
-                currentLang === 'vi' ? `CÂU HỎI ${quizIndex + 1} / ${quizQuestions.length}` : `QUESTION ${quizIndex + 1} / ${quizQuestions.length}`;
-            document.getElementById('quiz-emoji').textContent = q.emoji;
-            document.getElementById('quiz-question').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
 
-            const optsEl = document.getElementById('quiz-options');
-            optsEl.innerHTML = '';
-            const opts = currentLang === 'vi' ? q.optionsVi : q.optionsEn;
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
 
-            opts.forEach((optText, idx) => {
+            opts.forEach((txt, idx) => {
                 const btn = document.createElement('button');
-                btn.className = 'btn-kid p-4 rounded-2xl bg-white hover:bg-emerald-50 border-3 border-slate-200 text-slate-800 font-black text-sm text-left flex items-center gap-3';
-                btn.innerHTML = `<span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${optText}</span>`;
-                btn.onclick = () => checkQuizAnswer(idx);
-                optsEl.appendChild(btn);
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
             });
 
-            document.getElementById('quiz-feedback').classList.add('hidden');
+            document.getElementById('quiz-msg-box').classList.add('hidden');
         }
 
-        function checkQuizAnswer(idx) {
-            const q = quizQuestions[quizIndex];
-            const fb = document.getElementById('quiz-feedback');
-            fb.classList.remove('hidden');
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
 
-            if (idx === q.correct) {
-                playSuccessSound();
-                addStars(3);
-                fb.className = 'p-3.5 rounded-2xl font-black text-sm text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
-                fb.textContent = currentLang === 'vi'
-                    ? '🎉 Chính xác! Em giỏi quá (+3 Sao)! Đang chuyển câu tiếp theo...'
-                    : '🎉 Correct! Great job (+3 Stars)! Moving to next question...';
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Em nắm vững bài thực hành rất tốt (+3 Điểm)!'
+                    : '🎉 Correct! Great job (+3 Points)!';
                 setTimeout(() => {
-                    quizIndex = (quizIndex + 1) % quizQuestions.length;
+                    quizIdx = (quizIdx + 1) % quizList.length;
                     renderQuiz();
-                }, 1400);
+                }, 1300);
             } else {
-                playErrorSound();
-                fb.className = 'p-3.5 rounded-2xl font-black text-sm text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
-                fb.textContent = currentLang === 'vi'
-                    ? '🤔 Chưa đúng rồi! Em hãy suy nghĩ và chọn lại đáp án khác nhé!'
-                    : '🤔 Not quite! Try another answer!';
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, em xem lại bảng tóm tắt bên trái rồi chọn lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet on the left and try again!';
             }
         }
 
         function resetQuiz() {
-            quizIndex = 0;
+            quizIdx = 0;
             renderQuiz();
         }
 
         // ==========================================
-        // 6. NAVIGATION & BILINGUAL SWITCH
+        // 7. TAB NAVIGATION & BILINGUAL TOGGLE
         // ==========================================
         function switchTab(tabKey) {
-            playTone(500, 'sine', 0.1);
-            ['parts', 'growth', 'quiz'].forEach(k => {
-                const view = document.getElementById(`view-${k}`);
-                const btn = document.getElementById(`tab-${k}`);
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
                 if (k === tabKey) {
-                    view.classList.remove('hidden');
-                    btn.className = 'btn-kid flex-1 py-2.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-emerald-500 text-white border-2 border-emerald-600';
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-emerald-600 text-white border-2 border-emerald-700';
                 } else {
-                    view.classList.add('hidden');
-                    btn.className = 'btn-kid flex-1 py-2.5 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200';
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200';
                 }
             });
+            if (tabKey === 'compare') {
+                renderComparisonCups();
+            }
         }
 
         function toggleLanguage() {
             currentLang = currentLang === 'vi' ? 'en' : 'vi';
-            document.getElementById('lang-btn-text').textContent = currentLang === 'vi' ? 'Tiếng Việt' : 'English';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
 
             const dict = {
                 vi: {
-                    gradeBadge: 'Tự nhiên & Xã hội - Lớp 1',
-                    appTitle: 'Quan Sát Cây Xanh: Bộ Phận & Sự Phát Triển',
-                    starsLabel: 'Sao',
-                    tab1: '1. Nhận Biết Bộ Phận Cây',
-                    tab2: '2. Cây Lớn Lên & Ghi Sổ',
-                    tab3: '3. Đố Vui Lớp 1',
-                    modeExplore: 'Bấm vào cây để xem',
-                    cardHeader: 'Chi Tiết Bộ Phận',
-                    listenBtn: 'Nghe đọc',
-                    roleLabel: '🌟 Nhiệm vụ của bộ phận này:',
-                    quickPickLabel: '👇 Bấm chọn nhanh 5 bộ phận:',
-                    nameRoot: 'Rễ', nameStem: 'Thân', nameLeaf: 'Lá', nameFlower: 'Hoa', nameFruit: 'Quả',
-                    careTitle: 'Bé Chăm Sóc Cây Xanh',
-                    plantNewBtn: 'Trồng lại từ hạt',
-                    waterBar: 'Độ ẩm nước tưới',
-                    sunBar: 'Ánh nắng mặt trời',
-                    btnWater: 'Tưới Nước Cho Cây',
-                    btnSun: 'Chiếu Nắng Ấm',
-                    recordLogBtn: 'Ghi Nhận Giai Đoạn Này Vào Sổ',
-                    diaryTitle: 'Sổ Tay Ghi Nhận Sự Phát Triển Của Cây (Lớp 1)',
-                    diaryHint: 'Quan sát chiều cao (cm), số lá và bộ phận mới xuất hiện',
-                    thStage: 'Giai đoạn', thDay: 'Thời gian', thHeight: 'Chiều cao cây', thLeaves: 'Số lá', thPartsSeen: 'Bộ phận quan sát thấy', thNote: 'Nhận xét của em'
+                    labBadge: 'Thực Hành Sinh Học & Tự Nhiên',
+                    goalPill: '🎯 Mục tiêu: Quan sát sự phát triển của thực vật',
+                    appTitle: 'Lab 1: Hạt Nảy Mầm (Thí Nghiệm Đậu Xanh Trên Bông Gòn)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành 5 Bước & Quan Sát 7 Ngày',
+                    tab2: '2. Thử Nghiệm 4 Cốc Đối Chứng',
+                    tab3: '3. Tóm Tắt Kết Quả & Đố Vui',
+                    autoObsBtn: '▶ Tự chạy 7 ngày',
+                    dayLabel: 'Ngày:',
+                    toolsHeader: '🧰 Dụng Cụ Thí Nghiệm (4 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolCup: 'Cốc nhựa',
+                    toolCotton: 'Bông gòn',
+                    toolBean: 'Hạt đậu xanh',
+                    toolWater: 'Nước tưới',
+                    stepsHeader: '📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 5):',
+                    step1Text: '1. Cho bông vào cốc.',
+                    step2Text: '2. Đặt hạt đậu lên bông.',
+                    step3Text: '3. Tưới nước vừa đủ.',
+                    step4Text: '4. Đặt nơi có ánh sáng.',
+                    step5Text: '5. Quan sát mỗi ngày (Ngày 1 → 7).',
+                    resultTitle: 'Kết quả quan sát:',
+                    diaryHeader: 'Nhật Ký Quan Sát Hạt Đậu Xanh Nảy Mầm (Bấm vào từng ngày để xem chi tiết)',
+                    finalConclusionBadge: '✅ Kết quả: Hạt nứt vỏ, mọc rễ và lá'
                 },
                 en: {
-                    gradeBadge: 'Grade 1 Science & STEM',
-                    appTitle: 'Observe Green Plants: Parts & Growth',
-                    starsLabel: 'Stars',
-                    tab1: '1. Explore Plant Parts',
-                    tab2: '2. Plant Growth & Log',
-                    tab3: '3. Fun Quiz',
-                    modeExplore: 'Click plant to explore',
-                    cardHeader: 'Plant Part Details',
+                    labBadge: 'Hands-on Biology Lab',
+                    goalPill: '🎯 Goal: Observe Plant Growth & Development',
+                    appTitle: 'Lab 1: Seed Germination (Mung Beans on Cotton Wool)',
+                    starsUnit: 'Pts',
+                    tab1: '1. 5-Step Lab & 7-Day Observation',
+                    tab2: '2. 4 Control Cups Comparison',
+                    tab3: '3. Lab Summary & Quiz',
+                    autoObsBtn: '▶ Auto 7 Days',
+                    dayLabel: 'Day:',
+                    toolsHeader: '🧰 Lab Tools & Materials (4 items)',
                     listenBtn: 'Listen',
-                    roleLabel: '🌟 What does this part do?',
-                    quickPickLabel: '👇 Quick pick 5 plant parts:',
-                    nameRoot: 'Root', nameStem: 'Stem', nameLeaf: 'Leaf', nameFlower: 'Flower', nameFruit: 'Fruit',
-                    careTitle: 'Care for Your Plant',
-                    plantNewBtn: 'Replant Seed',
-                    waterBar: 'Soil Water Moisture',
-                    sunBar: 'Warm Sunlight',
-                    btnWater: 'Water the Plant',
-                    btnSun: 'Give Sunlight',
-                    recordLogBtn: 'Record Stage in My Notebook',
-                    diaryTitle: 'My Plant Growth Observation Notebook',
-                    diaryHint: 'Observe height (cm), leaf count & new plant parts',
-                    thStage: 'Stage', thDay: 'Day', thHeight: 'Plant Height', thLeaves: 'Leaves', thPartsSeen: 'Parts Observed', thNote: 'My Observation'
+                    resetBtn: 'Reset',
+                    toolCup: 'Plastic Cup',
+                    toolCotton: 'Cotton Wool',
+                    toolBean: 'Mung Beans',
+                    toolWater: 'Water',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 5):',
+                    step1Text: '1. Put cotton wool into the cup.',
+                    step2Text: '2. Place mung bean seeds on the cotton.',
+                    step3Text: '3. Water just enough (keep moist).',
+                    step4Text: '4. Place in a well-lit area.',
+                    step5Text: '5. Observe every day (Day 1 → 7).',
+                    resultTitle: 'Observation Result:',
+                    diaryHeader: '7-Day Germination Log (Click any day to inspect roots, stem & leaves)',
+                    finalConclusionBadge: '✅ Result: Seed cracks coat, grows roots & leaves'
                 }
             }[currentLang];
 
@@ -1458,27 +1663,20 @@
                 if (dict[k]) el.textContent = dict[k];
             });
 
-            updatePartsExploreUI();
-            if (partsMode === 'explore') {
-                ['root', 'stem', 'leaf', 'flower', 'fruit'].forEach(k => {
-                    document.getElementById(`slot-text-${k}`).textContent =
-                        currentLang === 'vi' ? plantPartsData[k].slotLabelVi : plantPartsData[k].slotLabelEn;
-                });
-            } else {
-                updateMatchModeSVG();
-                renderMatchCards();
-            }
-            setGrowthStage(currentStage);
-            renderObservationTable();
+            updateLabUI();
+            renderComparisonCups();
             renderQuiz();
         }
 
-        // Initialize on load
+        // ==========================================
+        // 8. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
         window.onload = function () {
-            updatePartsExploreUI();
-            setGrowthStage(1);
-            recordObservationStage(true);
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonCups();
             renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
         };
     </script>
 </body>

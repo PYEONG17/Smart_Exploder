@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 4: Không Khí Chiếm Chỗ (Air Takes Up Space)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #e0f2fe 0%, #f0fdf4 60%, #fef9c3 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #0284c7;
+            box-shadow: 0 18px 40px -12px rgba(2, 132, 199, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #0284c7; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-sky-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-sky-600 flex items-center justify-center shadow border-2 border-sky-200 shrink-0 text-2xl">
+                    🌬️
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Khoa Học Tự Nhiên
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Chứng minh không khí chiếm chỗ
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab 4: Không Khí Chiếm Chỗ (Cốc Giấy Khô & Chậu Nước)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-sky-700 hover:bg-sky-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-sky-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-sky-50 px-3.5 py-2 border-b-2 border-sky-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-600 text-white border-2 border-sky-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Thực Hành 4 Bước Thí Nghiệm</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Thử Nghiệm 4 Cốc Đối Chứng</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Kết Quả & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-sky-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: THỰC HÀNH THÍ NGHIỆM
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Chamber Canvas -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-sky-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-sky-200 truncate" data-i18n="statusReady">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Xem tự động 4 bước</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 4 Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-sky-50 to-amber-50/60 rounded-2xl p-3 border-2 border-sky-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-sky-900 bg-sky-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Dụng Cụ Thí Nghiệm (3 món)
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tools Grid -->
+                            <div class="grid grid-cols-3 gap-2 mb-2.5">
+                                <div onclick="triggerToolClick('bowl')" id="tool-bowl" class="cursor-pointer bg-sky-100 border-2 border-sky-500 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">🌊</div>
+                                    <div class="font-black text-[11px] text-sky-950 mt-1" data-i18n="toolBowl">Chậu nước</div>
+                                    <div id="tool-status-bowl" class="text-[9px] font-extrabold text-sky-700">✓ Sẵn sàng</div>
+                                </div>
+                                <div onclick="triggerToolClick('cup')" id="tool-cup" class="cursor-pointer bg-sky-100 border-2 border-sky-500 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">🥛</div>
+                                    <div class="font-black text-[11px] text-slate-800 mt-1" data-i18n="toolCup">Cốc thủy tinh</div>
+                                    <div id="tool-status-cup" class="text-[9px] font-extrabold text-sky-700">✓ Sẵn sàng</div>
+                                </div>
+                                <div onclick="triggerToolClick('paper')" id="tool-paper" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1.5 text-center transition hover:scale-105">
+                                    <div class="text-lg leading-none">🧻</div>
+                                    <div class="font-black text-[11px] text-slate-800 mt-1" data-i18n="toolPaper">Khăn giấy</div>
+                                    <div id="tool-status-paper" class="text-[9px] font-extrabold text-amber-600">Bấm Bước 1</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-sky-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-sky-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Nhét chặt giấy khô vào đáy cốc.</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Úp ngược cốc thẳng đứng xuống.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Nhấn chìm cốc ngập vào chậu nước.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Nhấc cốc lên và kiểm tra giấy.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-sky-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-sky-700 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Nhét giấy vào đáy cốc</strong> để bắt đầu thí nghiệm!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: 4 Stages Strip -->
+                <div class="bg-amber-50/90 rounded-2xl p-2.5 border-2 border-amber-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết luận: Không khí chiếm không gian
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 CỐC ĐỐI CHỨNG
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-sky-50 to-indigo-50 p-3.5 rounded-2xl border-2 border-sky-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-sky-700 bg-sky-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích khoa học
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Điều gì xảy ra trong các trường hợp khác nhau?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Hãy quan sát kết quả của 4 trường hợp nhấn chìm cốc:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Cup A: Standard -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-sky-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-sky-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC A (Chuẩn)</span>
+                                <span class="text-xs">↕️ Úp thẳng</span>
+                            </div>
+                            <h4 class="font-black text-xs text-sky-950 mt-1.5" data-i18n="cupATitle">Úp thẳng đứng & nhét chặt</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-sky-800 bg-sky-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Giấy khô ráo:</strong> Không khí chiếm chỗ trong cốc, ngăn không cho nước tràn vào.
+                        </p>
+                    </div>
+
+                    <!-- Cup B: Tilted -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-rose-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC B (Nghiêng)</span>
+                                <span class="text-xs">↗️ Úp nghiêng</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Úp nghiêng cốc khi nhúng</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-rose-900 bg-rose-50 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ❌ <strong>Giấy bị ướt:</strong> Không khí thoát ra ngoài tạo bong bóng, nước tràn vào thế chỗ.
+                        </p>
+                    </div>
+
+                    <!-- Cup C: Hole in bottom -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">CỐC C (Thủng)</span>
+                                <span class="text-xs">🕳️ Lủng đáy</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Cốc bị thủng lỗ ở đáy</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-amber-900 bg-amber-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            ❌ <strong>Giấy bị ướt:</strong> Không khí xì ra qua lỗ thủng ở đáy, nước dâng lên ngập giấy.
+                        </p>
+                    </div>
+
+                    <!-- Cup D: Loose paper -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-purple-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-purple-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">CỐC D (Lỏng)</span>
+                                <span class="text-xs">📄 Giấy lỏng</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Nhét giấy lỏng lẻo</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-purple-900 bg-purple-50 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ⚠️ <strong>Giấy rơi rớt:</strong> Giấy không được nhét chặt sẽ rơi rớt và rớt tỏm xuống nước.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-sky-50 to-indigo-50 rounded-2xl p-4 border-2 border-sky-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-sky-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-sky-700">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-sky-950">Tóm Tắt Lab 4: Không Khí Chiếm Chỗ</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-sky-200 space-y-1">
+                            <div class="text-xs font-black text-sky-700">🎯 1. Mục tiêu thí nghiệm:</div>
+                            <p class="text-xs font-bold text-slate-700">Chứng minh rằng không khí tuy vô hình nhưng có thể chiếm không gian.</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-sky-200 space-y-1">
+                            <div class="text-xs font-black text-sky-700">🧰 2. Dụng cụ cần thiết:</div>
+                            <div class="grid grid-cols-3 gap-1 pt-1 text-xs font-bold text-slate-700">
+                                <div>• 🥛 Cốc thủy tinh</div>
+                                <div>• 🌊 Chậu đựng nước</div>
+                                <div>• 🧻 Khăn giấy khô</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-sky-200 space-y-1">
+                            <div class="text-xs font-black text-sky-700">👣 3. Các bước thực hiện:</div>
+                            <ol class="text-xs font-bold text-slate-700 space-y-0.5 list-decimal list-inside">
+                                <li>Nhét chặt giấy khô vào đáy cốc.</li>
+                                <li>Úp ngược cốc thẳng đứng xuống.</li>
+                                <li>Nhấn chìm cốc ngập vào nước.</li>
+                                <li>Nhấc cốc lên và kiểm tra khăn giấy.</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-amber-900">💡 4. Kết luận khoa học:</div>
+                            <p class="text-xs font-black text-sky-900">
+                                Không khí ở trong cốc đã chiếm chỗ, không cho nước tràn vào nên khăn giấy vẫn giữ nguyên trạng thái khô ráo!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🌬️</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
+        }
+
+        function playWaterSound() {
+            playTone(320, 'sine', 0.12);
+            setTimeout(() => playTone(240, 'sine', 0.15), 90);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            step: 0,           // 0: Prep, 1: Paper stuffed, 2: Inverted, 3: Submerged, 4: Checked
+            cupAnimY: 0,       // Y position offset
+            cupAnimRot: 0,     // Rotation angle
+            currY: 0,
+            currRot: 0
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Nhét giấy', shortEn: '1. Stuff Paper', icon: '🧻' },
+            2: { shortVi: '2. Úp cốc', shortEn: '2. Invert Cup', icon: '🔄' },
+            3: { shortVi: '3. Nhấn chìm', shortEn: '3. Submerge', icon: '🌊' },
+            4: { shortVi: '4. Kiểm tra', shortEn: '4. Check', icon: '✨' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'paper' && labState.step === 0) {
+                executeStep(1);
+            }
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                playTone(550, 'sine', 0.12);
+                labState.cupAnimY = 0;
+                labState.cupAnimRot = 0;
+            } else if (targetStep === 2) {
+                playTone(450, 'triangle', 0.14);
+                labState.cupAnimY = -40;
+                labState.cupAnimRot = Math.PI; // Invert
+            } else if (targetStep === 3) {
+                playWaterSound();
+                labState.cupAnimY = 110; // Submerge into bowl
+                labState.cupAnimRot = Math.PI;
+            } else if (targetStep === 4) {
+                playChime();
+                labState.cupAnimY = -50; // Lift out
+                labState.cupAnimRot = 0; // Upright
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2100);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            labState.cupAnimY = 0;
+            labState.cupAnimRot = 0;
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const titlesVi = [
+                'Chuẩn bị dụng cụ thí nghiệm',
+                'Bước 1: Nhét chặt khăn giấy khô vào đáy cốc',
+                'Bước 2: Úp ngược cốc thẳng đứng xuống',
+                'Bước 3: Nhấn chìm cốc ngập vào chậu nước',
+                'Bước 4: Nhấc cốc lên và kiểm tra giấy'
+            ];
+
+            document.getElementById('status-step-badge').textContent = st === 0 ? 'CHUẨN BỊ' : `BƯỚC ${st}/4`;
+            document.getElementById('status-step-title').textContent = titlesVi[st];
+
+            // Tool status
+            const paperCard = document.getElementById('tool-paper');
+            paperCard.className = st >= 1
+                ? 'cursor-pointer bg-sky-100 border-2 border-sky-500 rounded-xl p-1.5 text-center transition'
+                : 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1.5 text-center transition pulse-next';
+            document.getElementById('tool-status-paper').textContent = st >= 1 ? '✓ Đã nhét' : '👉 Bấm chọn';
+
+            // 4 Steps buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-5 h-5 rounded-md bg-amber-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    icon.className = 'w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Description box
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Nhét giấy vào đáy cốc</strong> để bắt đầu thí nghiệm!';
+            if (st === 1) obsEl.innerHTML = 'Khăn giấy khô đã được nhét chặt vào đáy cốc. Bấm <strong>Bước 2</strong> để úp ngược cốc!';
+            if (st === 2) obsEl.innerHTML = 'Cốc đã được úp ngược thẳng đứng. Không khí đang bị nhốt bên trong. Bấm <strong>Bước 3</strong> để nhấn chìm!';
+            if (st === 3) obsEl.innerHTML = 'Cốc đã ngập trong nước. Chú ý: <strong>Nước không thể tràn vào trong cốc</strong> vì không khí đã chiếm chỗ!';
+            if (st === 4) obsEl.innerHTML = '🎉 <strong>KẾT QUẢ:</strong> Khăn giấy lấy ra vẫn hoàn toàn khô ráo! Chứng tỏ không khí có chiếm không gian.';
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-sky-100 text-sky-950 border-2 border-sky-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawPaper(c, isWet = false) {
+            c.save();
+            c.fillStyle = isWet ? '#94a3b8' : '#fef08a';
+            c.beginPath();
+            c.moveTo(-18, -28);
+            c.lineTo(0, -32);
+            c.lineTo(18, -25);
+            c.lineTo(22, -14);
+            c.lineTo(12, -4);
+            c.lineTo(-8, -6);
+            c.lineTo(-19, -16);
+            c.fill();
+            c.strokeStyle = isWet ? '#64748b' : '#ca8a04';
+            c.lineWidth = 1;
+            c.beginPath();
+            c.moveTo(-12,-22); c.lineTo(4,-18); c.lineTo(15,-22);
+            c.stroke();
+            c.restore();
+        }
+
+        function drawCup(c, cupX, cupY, rot, stateObj, isTab2 = false) {
+            const { step } = stateObj;
+            c.save();
+            c.translate(cupX, cupY);
+            c.rotate(rot);
+
+            const cw = 54; // top width
+            const cb = 42; // bottom width
+            const ch = 74; // height
+
+            // Draw paper if step >= 1
+            if (step >= 1 || isTab2) {
+                const isWet = stateObj.isWet || false;
+                const dropPaper = stateObj.dropPaper || false;
+                c.save();
+                if (dropPaper) c.translate(0, 50);
+                drawPaper(c, isWet);
+                c.restore();
+            }
+
+            // Glass cup body
+            c.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            c.beginPath();
+            c.moveTo(-cw/2, ch/2);
+            c.lineTo(-cb/2, -ch/2);
+            c.lineTo(cb/2, -ch/2);
+            c.lineTo(cw/2, ch/2);
+            c.fill();
+
+            // Cup outline
+            c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+            c.lineWidth = 3;
+            c.beginPath();
+            c.moveTo(-cw/2, ch/2);
+            c.lineTo(-cb/2, -ch/2);
+            c.lineTo(cb/2, -ch/2);
+            c.lineTo(cw/2, ch/2);
+            c.stroke();
+
+            // Rim
+            c.beginPath();
+            c.ellipse(0, ch/2, cw/2, 4, 0, 0, Math.PI*2);
+            c.stroke();
+
+            // Hole if cup C
+            if (stateObj.hasHole) {
+                c.fillStyle = '#0f172a';
+                c.beginPath();
+                c.ellipse(0, -ch/2, 10, 3, 0, 0, Math.PI*2);
+                c.fill();
+            }
+
+            c.restore();
+        }
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath();
+            c.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 172, 24, 7);
+            c.fill();
+            c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 7, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Smooth interpolation for cup position
+                labState.currY += (labState.cupAnimY - labState.currY) * 0.1;
+                labState.currRot += (labState.cupAnimRot - labState.currRot) * 0.1;
+
+                // 1. Table
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, 310, 465, 35);
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, 310, 465, 4);
+
+                // 2. Bowl
+                const bowlX = 160;
+                const bowlY = 265;
+                const bowlW = 200;
+                const bowlH = 100;
+                const waterLvl = 225;
+
+                // Bowl back rim
+                ctx.fillStyle = '#94a3b8';
+                ctx.beginPath();
+                ctx.ellipse(bowlX, bowlY - bowlH/2, bowlW/2, 14, 0, Math.PI, 0);
+                ctx.fill();
+
+                // Water inside bowl
+                ctx.fillStyle = 'rgba(14, 165, 233, 0.45)';
+                ctx.beginPath();
+                ctx.moveTo(bowlX - bowlW/2 + 6, waterLvl);
+                ctx.lineTo(bowlX + bowlW/2 - 6, waterLvl);
+                ctx.quadraticCurveTo(bowlX + bowlW/2, bowlY + bowlH/2, bowlX, bowlY + bowlH/2);
+                ctx.quadraticCurveTo(bowlX - bowlW/2, bowlY + bowlH/2, bowlX - bowlW/2 + 6, waterLvl);
+                ctx.fill();
+
+                // Water surface ellipse
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+                ctx.beginPath();
+                ctx.ellipse(bowlX, waterLvl, bowlW/2 - 6, 10, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // Cup position
+                const baseCupY = 240;
+                const cX = bowlX;
+                const cY = baseCupY + labState.currY;
+
+                // Draw Cup
+                drawCup(ctx, cX, cY, labState.currRot, labState);
+
+                // Submerged air pocket effect (Step 3)
+                if (labState.step === 3) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(0, waterLvl, 465, 120);
+                    ctx.clip();
+
+                    // Fill water overlay
+                    ctx.fillStyle = 'rgba(2, 132, 199, 0.42)';
+                    ctx.fillRect(0, waterLvl, 465, 120);
+
+                    // Cut out air pocket inside the inverted cup
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.beginPath();
+                    const cupMouthY = cY + 37;
+                    const cupTopY = cY - 37;
+                    ctx.moveTo(cX - 26, cupMouthY);
+                    ctx.lineTo(cX - 21, cupTopY);
+                    ctx.lineTo(cX + 21, cupTopY);
+                    ctx.lineTo(cX + 26, cupMouthY);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+
+                    drawCup(ctx, cX, cY, labState.currRot, {step:0});
+                    ctx.restore();
+                }
+
+                // Bowl Front Arc
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(bowlX, bowlY - bowlH/2, bowlW/2, 0, Math.PI);
+                ctx.quadraticCurveTo(bowlX, bowlY + bowlH/2 + 18, bowlX - bowlW/2, bowlY - bowlH/2);
+                ctx.stroke();
+
+                // Callout Labels (Right side x=280..450, completely non-overlapping)
+                const pillX = 278;
+                if (labState.step === 0) {
+                    drawRightCallout(ctx, bowlX, bowlY, pillX, 150, '🌊 Chậu chứa đầy nước', '#38bdf8');
+                    drawRightCallout(ctx, cX, cY, pillX, 195, '🥛 Cốc thủy tinh rỗng', '#cbd5e1');
+                } else if (labState.step === 1) {
+                    drawRightCallout(ctx, cX, cY, pillX, 175, '🧻 Giấy khô nhét chặt đáy', '#fde047');
+                } else if (labState.step === 2) {
+                    drawRightCallout(ctx, cX, cY - 20, pillX, 150, '🔄 Úp ngược thẳng đứng', '#cbd5e1');
+                } else if (labState.step === 3) {
+                    drawRightCallout(ctx, cX, cY - 10, pillX, 125, '🌬️ Không khí chiếm chỗ', '#fde047');
+                    drawRightCallout(ctx, cX, cY + 25, pillX, 160, '💧 Nước không tràn vào', '#38bdf8');
+                } else if (labState.step === 4) {
+                    drawRightCallout(ctx, cX, cY + 20, pillX, 130, '✨ Giấy vẫn hoàn toàn khô!', '#4ade80');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: 4 COMPARISON CUPS
+        // ==========================================
+        function renderComparisonCups() {
+            const configs = [
+                { id: 'cmpCanvasA', rot: Math.PI, isWet: false, hasHole: false, dropPaper: false, bubbles: false, waterInside: false },
+                { id: 'cmpCanvasB', rot: Math.PI * 0.78, isWet: true, hasHole: false, dropPaper: false, bubbles: true, waterInside: true },
+                { id: 'cmpCanvasC', rot: Math.PI, isWet: true, hasHole: true, dropPaper: false, bubbles: true, waterInside: true },
+                { id: 'cmpCanvasD', rot: Math.PI, isWet: true, hasHole: false, dropPaper: true, bubbles: false, waterInside: false }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 176;
+                ctx.clearRect(0, 0, w, h);
+
+                const cX = w / 2;
+                const cY = 92;
+                const waterLvl = 65;
+
+                // Water background
+                ctx.fillStyle = 'rgba(14, 165, 233, 0.4)';
+                ctx.fillRect(0, waterLvl, w, h - waterLvl);
+
+                // Water inside cup if flooded
+                if (cfg.waterInside) {
+                    ctx.save();
+                    ctx.translate(cX, cY);
+                    ctx.rotate(cfg.rot);
+                    ctx.fillStyle = 'rgba(2, 132, 199, 0.6)';
+                    ctx.beginPath();
+                    ctx.moveTo(-24, 37); ctx.lineTo(-18, -10); ctx.lineTo(18, -10); ctx.lineTo(24, 37);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Draw Cup
+                drawCup(ctx, cX, cY, cfg.rot, { step: 1, isWet: cfg.isWet, dropPaper: cfg.dropPaper, hasHole: cfg.hasHole }, true);
+
+                // Bubbles for B & C
+                if (cfg.bubbles) {
+                    ctx.strokeStyle = '#bae6fd';
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.lineWidth = 1.5;
+                    [[cX-28, cY-12, 3.5], [cX-34, cY-28, 5.5], [cX+24, cY-42, 4.5], [cX, cY-52, 6]].forEach(b => {
+                        ctx.beginPath(); ctx.arc(b[0], b[1], b[2], 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                    });
+                }
+
+                // Front Water Layer (clear pocket for A & D)
+                if (!cfg.waterInside) {
+                    ctx.save();
+                    ctx.beginPath(); ctx.rect(0, waterLvl, w, h); ctx.clip();
+                    ctx.fillStyle = 'rgba(2, 132, 199, 0.25)';
+                    ctx.fillRect(0, waterLvl, w, h);
+
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.translate(cX, cY);
+                    ctx.rotate(cfg.rot);
+                    ctx.beginPath();
+                    ctx.moveTo(-27, 37); ctx.lineTo(-21, -37); ctx.lineTo(21, -37); ctx.lineTo(27, 37);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🌬️',
+                qVi: '1. Vì sao khăn giấy ở đáy cốc không bị ướt khi nhấn chìm thẳng đứng?',
+                qEn: '1. Why does the paper stay dry when submerged straight down?',
+                optsVi: [
+                    'Vì giấy có chất chống nước đặc biệt.',
+                    'Vì không khí trong cốc đã chiếm chỗ, đẩy nước không cho tràn vào.',
+                    'Vì cốc thủy tinh hút hết nước.',
+                    'Vì nước sợ giấy.'
+                ],
+                optsEn: [
+                    'The paper is waterproof.',
+                    'Air inside the cup takes up space and pushes the water away.',
+                    'The glass cup absorbs water.',
+                    'Water is afraid of paper.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '📐',
+                qVi: '2. Nếu úp nghiêng cốc khi nhấn chìm xuống nước, hiện tượng gì sẽ xảy ra?',
+                qEn: '2. What happens if you tilt the cup while submerging?',
+                optsVi: [
+                    'Khăn giấy vẫn khô ráo bình thường.',
+                    'Cốc sẽ tự nổi lên mặt nước.',
+                    'Không khí thoát ra (sủi bọt), nước tràn vào làm ướt giấy.',
+                    'Nước trong chậu biến mất.'
+                ],
+                optsEn: [
+                    'Paper stays dry.',
+                    'Cup floats automatically.',
+                    'Air escapes (bubbles), water enters and wets the paper.',
+                    'Water disappears.'
+                ],
+                ans: 2
+            },
+            {
+                icon: '🧪',
+                qVi: '3. Thí nghiệm này chứng minh điều gì về KHÔNG KHÍ?',
+                qEn: '3. What does this experiment prove about AIR?',
+                optsVi: [
+                    'Không khí có màu xanh dương.',
+                    'Không khí là vật chất và có chiếm không gian (chiếm chỗ).',
+                    'Không khí nặng hơn nước.',
+                    'Không khí chỉ có ở ngoài trời.'
+                ],
+                optsEn: [
+                    'Air is blue.',
+                    'Air is matter and takes up space.',
+                    'Air is heavier than water.',
+                    'Air only exists outdoors.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '🧻',
+                qVi: '4. Điều gì xảy ra nếu bạn không nhét chặt giấy hoặc dùng cốc bị thủng đáy?',
+                qEn: '4. What happens if paper is loose or cup has a hole at the bottom?',
+                optsVi: [
+                    'Khăn giấy sẽ bị ướt nước.',
+                    'Khăn giấy sẽ bay lên trời.',
+                    'Không có hiện tượng gì xảy ra.',
+                    'Cốc sẽ vỡ tan.'
+                ],
+                optsEn: [
+                    'Paper gets wet.',
+                    'Paper flies to the sky.',
+                    'Nothing happens.',
+                    'Cup breaks.'
+                ],
+                ans: 0
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-sky-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã nắm rất vững kiến thức (+3 Điểm)!'
+                    : '🎉 Correct! Great job (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, hãy xem lại phiếu tổng kết bên trái rồi thử lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-600 text-white border-2 border-sky-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonCups();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Khoa Học Tự Nhiên',
+                    goalPill: '🎯 Mục tiêu: Chứng minh không khí chiếm chỗ',
+                    appTitle: 'Lab 4: Không Khí Chiếm Chỗ (Cốc Giấy Khô & Chậu Nước)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành 4 Bước Thí Nghiệm',
+                    tab2: '2. Thử Nghiệm 4 Cốc Đối Chứng',
+                    tab3: '3. Tóm Tắt Kết Quả & Đố Vui',
+                    autoObsBtn: '▶ Xem tự động 4 bước',
+                    toolsHeader: '🧰 Dụng Cụ Thí Nghiệm (3 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolBowl: 'Chậu nước',
+                    toolCup: 'Cốc thủy tinh',
+                    toolPaper: 'Khăn giấy',
+                    stepsHeader: '📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):',
+                    step1Text: '1. Nhét chặt giấy khô vào đáy cốc.',
+                    step2Text: '2. Úp ngược cốc thẳng đứng xuống.',
+                    step3Text: '3. Nhấn chìm cốc ngập vào chậu nước.',
+                    step4Text: '4. Nhấc cốc lên và kiểm tra giấy.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)',
+                    finalConclusionBadge: '✅ Kết luận: Không khí chiếm không gian',
+                    cmpSub: 'Phân tích khoa học',
+                    cmpTitle: 'Điều gì xảy ra trong các trường hợp khác nhau?',
+                    cmpDesc: 'Hãy quan sát kết quả của 4 trường hợp nhấn chìm cốc:',
+                    cupATitle: 'Úp thẳng đứng & nhét chặt',
+                    cupARes: '✅ <strong>Giấy khô ráo:</strong> Không khí chiếm chỗ trong cốc, ngăn không cho nước tràn vào.',
+                    cupBTitle: 'Úp nghiêng cốc khi nhúng',
+                    cupBRes: '❌ <strong>Giấy bị ướt:</strong> Không khí thoát ra ngoài tạo bong bóng, nước tràn vào thế chỗ.',
+                    cupCTitle: 'Cốc bị thủng lỗ ở đáy',
+                    cupCRes: '❌ <strong>Giấy bị ướt:</strong> Không khí xì ra qua lỗ thủng ở đáy, nước dâng lên ngập giấy.',
+                    cupDTitle: 'Nhét giấy lỏng lẻo',
+                    cupDRes: '⚠️ <strong>Giấy rơi rớt:</strong> Giấy không được nhét chặt sẽ rơi rớt và rớt tỏm xuống nước.'
+                },
+                en: {
+                    labBadge: 'Science Lab',
+                    goalPill: '🎯 Goal: Prove air takes up space',
+                    appTitle: 'Lab 4: Air Takes Up Space (Cup & Water Experiment)',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Experiment',
+                    tab2: '2. 4 Control Scenarios',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: '▶ Auto Play 4 Steps',
+                    toolsHeader: '🧰 Tools (3 items)',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    toolBowl: 'Water Bowl',
+                    toolCup: 'Glass Cup',
+                    toolPaper: 'Dry Paper',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Stuff dry paper into cup bottom.',
+                    step2Text: '2. Invert cup straight down.',
+                    step3Text: '3. Submerge cup completely in water.',
+                    step4Text: '4. Lift cup and check paper.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Experiment Stages',
+                    finalConclusionBadge: '✅ Conclusion: Air takes up space',
+                    cmpSub: 'Scientific Analysis',
+                    cmpTitle: 'What happens in different scenarios?',
+                    cmpDesc: 'Observe 4 cup submersion cases:',
+                    cupATitle: 'Straight Down & Stuffed',
+                    cupARes: '✅ <strong>Paper dry:</strong> Trapped air takes up space, preventing water from entering.',
+                    cupBTitle: 'Tilted Submersion',
+                    cupBRes: '❌ <strong>Paper wet:</strong> Air escapes as bubbles, letting water rush in.',
+                    cupCTitle: 'Hole at Bottom',
+                    cupCRes: '❌ <strong>Paper wet:</strong> Air leaks out through the hole, letting water rise.',
+                    cupDTitle: 'Loosely Stuffed Paper',
+                    cupDRes: '⚠️ <strong>Paper drops:</strong> Loose paper falls out directly into the water.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonCups();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonCups();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

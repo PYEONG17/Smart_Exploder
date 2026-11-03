@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng Tuần Hoàn Nước & Tạo Mưa Nhân Tạo - Lớp 2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Nunito for friendly Grade 2 typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 55%, #dcfce7 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px 0 24px 0;
+            margin: 0;
+            overflow-x: auto;
+        }
+
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-shell {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 24px;
+            border: 4px solid #0284c7;
+            box-shadow: 0 18px 40px -12px rgba(2, 132, 199, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+        }
+
+        /* Fixed Two-Column Workspace Grid to Prevent Any Text/Element Collision */
+        .lab-grid {
+            display: grid;
+            grid-template-columns: 468px 384px;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        /* Playful Kid Buttons */
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.17);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes floatCloud {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-float { animation: floatCloud 3.2s ease-in-out infinite; }
+
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .spin-slow {
+            transform-origin: center;
+            animation: spinSlow 22s linear infinite;
+        }
+
+        @keyframes pulseStep {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-active { animation: pulseStep 1.6s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900px (896px - 906px) CONTAINER -->
+    <div class="app-shell">
+
+        <!-- ==========================================
+             COMPACT TOP HEADER BAR (No Text Wrapping)
+             ========================================== -->
+        <header class="bg-gradient-to-r from-sky-600 via-blue-600 to-cyan-600 px-4 py-3 text-white flex items-center justify-between border-b-4 border-sky-700">
+            <!-- Left: Icon & Title -->
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-sky-600 flex items-center justify-center shadow border-2 border-sky-200 shrink-0 animate-float">
+                    <span class="text-2xl">🌧️</span>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="gradeBadge">
+                            Tự nhiên & Xã hội - Lớp 2
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            STEM 900px
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Vòng Tuần Hoàn Nước & Tạo "Mưa Nhân Tạo"
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right: Stars, Sound & Language -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span class="text-base">⭐</span>
+                    <span id="star-count" class="text-sm">0</span>
+                    <span data-i18n="starsLabel">Sao</span>
+                </div>
+
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-sky-700 hover:bg-sky-50 px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-sky-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-btn-text">Tiếng Việt</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 ACTIVITIES)
+             ========================================== -->
+        <nav class="bg-sky-50 px-4 py-2 border-b-2 border-sky-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('cup')" id="tab-cup" class="btn-kid py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-500 text-white border-2 border-sky-600">
+                <span class="text-base">🧊</span>
+                <span data-i18n="tab1">1. Thí Nghiệm Tạo "Mưa Nhân Tạo"</span>
+            </button>
+            <button onclick="switchTab('cycle')" id="tab-cycle" class="btn-kid py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span class="text-base">🌦️</span>
+                <span data-i18n="tab2">2. Vòng Tuần Hoàn Nước Tự Nhiên</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200">
+                <span class="text-base">🏆</span>
+                <span data-i18n="tab3">3. Đố Vui Lớp 2</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN WORKSPACE BODY (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-4 bg-gradient-to-b from-white to-sky-50/40">
+
+            <!-- ==========================================
+                 TAB 1: THÍ NGHIỆM TẠO "MƯA NHÂN TẠO"
+                 ========================================== -->
+            <section id="view-cup" class="space-y-3.5">
+
+                <!-- Fixed 468px + 384px Grid (Zero Overlap) -->
+                <div class="lab-grid">
+
+                    <!-- LEFT COLUMN (468px): Visual Simulation Stage -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-sky-400 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 436px;">
+
+                        <!-- Top Status Strip -->
+                        <div class="px-3.5 py-2 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="cup-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="cup-stage-label" class="font-extrabold text-xs text-sky-200 truncate">
+                                    Cốc thủy tinh trong suốt
+                                </span>
+                            </div>
+
+                            <!-- Raindrop Counter Badge -->
+                            <div class="flex items-center gap-1.5 bg-sky-500/20 border border-sky-400/40 px-2.5 py-0.5 rounded-full text-xs font-black text-sky-300 shrink-0">
+                                <span>💧</span>
+                                <span data-i18n="rainCountLabel">Giọt mưa:</span>
+                                <span id="rain-drop-counter" class="text-amber-300 text-sm">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Dedicated HTML5 Canvas (468px x 350px) - Clean Left Cup + Right Callout Labels -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="rainCupCanvas" width="468" height="350" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Condition Switcher Bar -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <span class="text-[11px] font-extrabold text-slate-300 whitespace-nowrap" data-i18n="whatIfLabel">
+                                🔬 Thử điều kiện:
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleWaterTemp()" id="toggle-temp-btn" class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-rose-500 text-white border border-rose-300 flex items-center gap-1 transition">
+                                    <span>🌡️</span>
+                                    <span id="temp-btn-label">Nước ấm (55°C)</span>
+                                </button>
+                                <button onclick="toggleIceState()" id="toggle-ice-btn" class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950 border border-cyan-200 flex items-center gap-1 transition">
+                                    <span>🧊</span>
+                                    <span id="ice-btn-label">Có đá lạnh (0°C)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (384px): Step-by-Step Controls & Explanation -->
+                    <div class="bg-gradient-to-br from-sky-50 to-indigo-50 rounded-2xl p-3.5 border-2 border-sky-200 flex flex-col justify-between" style="height: 436px;">
+
+                        <!-- Header + Audio/Reset -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-sky-200 text-sky-900" data-i18n="stepsHeader">
+                                    Các Bước Làm Thí Nghiệm
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="speakCurrentCupStep()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2.5 py-1 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetCupExperiment()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1" title="Làm lại từ đầu">
+                                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                        <span data-i18n="resetShort">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 4 Compact Non-Overlapping Step Buttons -->
+                            <div class="space-y-1.5">
+                                <!-- Step 1 -->
+                                <button onclick="runCupStep(1)" id="cstep-1" class="btn-kid w-full p-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-rose-500 text-white font-black text-xs flex items-center justify-center shrink-0">1</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-black text-xs text-slate-900 leading-tight" data-i18n="s1Title">Đổ nước ấm (55°C) vào cốc</div>
+                                        <div class="text-[11px] font-bold text-slate-600 leading-tight mt-0.5" data-i18n="s1Sub">Nước ấm bốc hơi thành hơi nước bay lên</div>
+                                    </div>
+                                    <span id="cstep-icon-1" class="text-sm shrink-0">👉</span>
+                                </button>
+
+                                <!-- Step 2 -->
+                                <button onclick="runCupStep(2)" id="cstep-2" class="btn-kid w-full p-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-sky-500 text-white font-black text-xs flex items-center justify-center shrink-0">2</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-black text-xs text-slate-900 leading-tight" data-i18n="s2Title">Bọc kín miệng cốc bằng màng bọc</div>
+                                        <div class="text-[11px] font-bold text-slate-600 leading-tight mt-0.5" data-i18n="s2Sub">Giữ hơi nước ở lại bên trong cốc</div>
+                                    </div>
+                                    <span id="cstep-icon-2" class="text-sm shrink-0">🔒</span>
+                                </button>
+
+                                <!-- Step 3 -->
+                                <button onclick="runCupStep(3)" id="cstep-3" class="btn-kid w-full p-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-cyan-500 text-white font-black text-xs flex items-center justify-center shrink-0">3</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-black text-xs text-slate-900 leading-tight" data-i18n="s3Title">Đặt đá viên lạnh (0°C) lên màng bọc</div>
+                                        <div class="text-[11px] font-bold text-slate-600 leading-tight mt-0.5" data-i18n="s3Sub">Làm lạnh màng bọc giống bầu trời cao</div>
+                                    </div>
+                                    <span id="cstep-icon-3" class="text-sm shrink-0">🔒</span>
+                                </button>
+
+                                <!-- Step 4 -->
+                                <button onclick="runCupStep(4)" id="cstep-4" class="btn-kid w-full p-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0">4</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-black text-xs text-slate-900 leading-tight" data-i18n="s4Title">Quan sát ngưng tụ & mưa nhân tạo rơi!</div>
+                                        <div class="text-[11px] font-bold text-slate-600 leading-tight mt-0.5" data-i18n="s4Sub">Giọt nước lớn dần và rơi xuống cốc</div>
+                                    </div>
+                                    <span id="cstep-icon-4" class="text-sm shrink-0">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Explanation Box (Fixed Height, Never Overflows) -->
+                        <div class="bg-white p-3 rounded-xl border-2 border-sky-200 shadow-sm">
+                            <div class="text-[11px] font-black text-sky-700 uppercase flex items-center gap-1 mb-1">
+                                <span>💡</span>
+                                <span data-i18n="explainHeader">Giải thích hiện tượng:</span>
+                            </div>
+                            <p id="cup-explanation-text" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1</strong> để bắt đầu đổ nước ấm vào cốc thủy tinh nhé!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Observation Checklist (3 Clean Cards) -->
+                <div class="bg-amber-50/90 rounded-2xl p-3 border-2 border-amber-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-lg">📝</span>
+                            <h3 class="font-black text-xs sm:text-sm text-slate-800" data-i18n="logTitle">
+                                Phiếu Quan Sát Thí Nghiệm & Liên Hệ Tự Nhiên (Bấm để đánh dấu ✅)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-extrabold text-amber-900 bg-amber-200 px-2.5 py-0.5 rounded-full" id="checklist-progress">
+                            Đã ghi nhận: 0/3 hiện tượng
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <!-- Card 1 -->
+                        <div onclick="checkObservation(1)" id="obs-card-1" class="cursor-pointer bg-white hover:bg-amber-50 p-2.5 rounded-xl border-2 border-slate-200 transition flex items-start gap-2">
+                            <div id="obs-check-1" class="w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5"></div>
+                            <div class="min-w-0">
+                                <div class="font-black text-xs text-rose-600" data-i18n="obs1Tag">1. Bay hơi (Evaporation)</div>
+                                <div class="font-bold text-[11px] text-slate-700 leading-snug mt-0.5" data-i18n="obs1Text">
+                                    <strong>Cốc:</strong> Nước ấm bốc hơi lên.<br>
+                                    <strong>Tự nhiên:</strong> Nắng làm nước biển bay hơi.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div onclick="checkObservation(2)" id="obs-card-2" class="cursor-pointer bg-white hover:bg-amber-50 p-2.5 rounded-xl border-2 border-slate-200 transition flex items-start gap-2">
+                            <div id="obs-check-2" class="w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5"></div>
+                            <div class="min-w-0">
+                                <div class="font-black text-xs text-sky-600" data-i18n="obs2Tag">2. Ngưng tụ (Condensation)</div>
+                                <div class="font-bold text-[11px] text-slate-700 leading-snug mt-0.5" data-i18n="obs2Text">
+                                    <strong>Cốc:</strong> Hơi gặp đá lạnh đọng thành giọt.<br>
+                                    <strong>Tự nhiên:</strong> Hơi nước gặp lạnh tạo <strong>Mây</strong>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 -->
+                        <div onclick="checkObservation(3)" id="obs-card-3" class="cursor-pointer bg-white hover:bg-amber-50 p-2.5 rounded-xl border-2 border-slate-200 transition flex items-start gap-2">
+                            <div id="obs-check-3" class="w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5"></div>
+                            <div class="min-w-0">
+                                <div class="font-black text-xs text-indigo-600" data-i18n="obs3Tag">3. Mưa rơi (Precipitation)</div>
+                                <div class="font-bold text-[11px] text-slate-700 leading-snug mt-0.5" data-i18n="obs3Text">
+                                    <strong>Cốc:</strong> Giọt nước nặng rơi xuống cốc.<br>
+                                    <strong>Tự nhiên:</strong> Mây nặng hạt rơi thành <strong>Mưa</strong>!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 TAB 2: VÒNG TUẦN HOÀN NƯỚC TỰ NHIÊN (CLEAN QUADRANT SLOTS)
+                 ========================================== -->
+            <section id="view-cycle" class="hidden">
+                <div class="lab-grid">
+
+                    <!-- Left Column (468px): Nature Water Cycle SVG with Non-Overlapping Corner Slots -->
+                    <div class="bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-100 rounded-2xl border-3 border-sky-400 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 436px;">
+
+                        <!-- Top Mode Switcher -->
+                        <div class="px-3 py-2 bg-white/90 border-b border-sky-200 flex items-center justify-between shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="setCycleMode('explore')" id="cyle-exp-btn" class="px-2.5 py-1 rounded-lg font-black text-xs bg-sky-500 text-white shadow-sm">
+                                    🔍 <span data-i18n="cycleExploreBtn">Khám phá 4 bước</span>
+                                </button>
+                                <button onclick="setCycleMode('game')" id="cyle-game-btn" class="px-2.5 py-1 rounded-lg font-black text-xs bg-slate-100 text-slate-700 hover:bg-amber-100">
+                                    🧩 <span data-i18n="cycleGameBtn">Ghép nhãn (0/4)</span>
+                                </button>
+                            </div>
+                            <span class="text-[11px] font-black text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full" data-i18n="cycleLoopBadge">
+                                ♻️ Tuần hoàn khép kín
+                            </span>
+                        </div>
+
+                        <!-- Cleanly Spaced SVG Scene (468 x 390) -->
+                        <div class="relative flex-1 w-full h-full">
+                            <svg id="natureCycleSvg" viewBox="0 0 468 380" class="w-full h-full block">
+                                <defs>
+                                    <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#0284c7"/>
+                                        <stop offset="100%" stop-color="#0369a1"/>
+                                    </linearGradient>
+                                    <linearGradient id="mountGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#4ade80"/>
+                                        <stop offset="100%" stop-color="#15803d"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Sun at Top Left (x=58, y=58) -->
+                                <g onclick="selectCycleStage(1)" class="cursor-pointer">
+                                    <circle cx="58" cy="58" r="26" fill="#facc15" />
+                                    <circle cx="58" cy="58" r="34" fill="none" stroke="#fde047" stroke-width="4" stroke-dasharray="7 5" class="spin-slow" style="transform-origin: 58px 58px;" />
+                                </g>
+
+                                <!-- Mountains on Right (x=250..468) -->
+                                <path d="M 245 295 L 330 165 L 415 295 Z" fill="#16a34a" />
+                                <path d="M 305 295 L 395 145 L 475 295 Z" fill="url(#mountGrad)" />
+                                <polygon points="395,145 376,178 386,174 395,182 404,174 414,178" fill="#f8fafc" />
+
+                                <!-- Green Land & River Flowing Left into Ocean -->
+                                <path d="M 195 288 Q 310 275 468 285 L 468 380 L 195 380 Z" fill="#22c55e" />
+                                <path d="M 378 215 Q 345 255 350 282 Q 355 310 225 322 L 205 345 Q 375 328 372 285 Q 368 255 388 215 Z" fill="#38bdf8" />
+
+                                <!-- Ocean at Bottom Left (x=0..245) -->
+                                <path d="M 0 285 Q 70 278 140 285 T 245 295 L 245 380 L 0 380 Z" fill="url(#seaGrad)" />
+                                <path d="M 25 318 Q 45 312 65 318 T 105 318" stroke="#7dd3fc" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+                                <!-- Vapor Wavy Arrows Rising from Sea (x=65 & x=105) -->
+                                <g onclick="selectCycleStage(1)" class="cursor-pointer">
+                                    <path d="M 62 270 Q 54 240 66 215 Q 76 190 64 162" stroke="#0284c7" stroke-width="3.5" stroke-dasharray="5 4" fill="none" stroke-linecap="round"/>
+                                    <polygon points="64,154 58,165 70,165" fill="#0284c7"/>
+                                    <path d="M 104 270 Q 96 240 108 215 Q 118 190 106 162" stroke="#0284c7" stroke-width="3.5" stroke-dasharray="5 4" fill="none" stroke-linecap="round"/>
+                                    <polygon points="106,154 100,165 112,165" fill="#0284c7"/>
+                                </g>
+
+                                <!-- White Condensing Cloud (Top Center x=195, y=76) -->
+                                <g onclick="selectCycleStage(2)" class="cursor-pointer animate-float">
+                                    <ellipse cx="195" cy="78" rx="38" ry="20" fill="#ffffff" stroke="#bae6fd" stroke-width="2.5"/>
+                                    <ellipse cx="170" cy="84" rx="24" ry="15" fill="#ffffff" />
+                                    <ellipse cx="220" cy="84" rx="24" ry="15" fill="#ffffff" />
+                                    <!-- Arrow from White Cloud to Dark Cloud -->
+                                    <path d="M 252 78 L 288 78" stroke="#0284c7" stroke-width="3.5" stroke-linecap="round"/>
+                                    <polygon points="295,78 284,72 284,84" fill="#0284c7"/>
+                                </g>
+
+                                <!-- Dark Rain Cloud (Top Right x=368, y=72) -->
+                                <g onclick="selectCycleStage(3)" class="cursor-pointer animate-float" style="animation-delay: 1s;">
+                                    <ellipse cx="368" cy="72" rx="44" ry="22" fill="#64748b" stroke="#475569" stroke-width="2.5"/>
+                                    <ellipse cx="338" cy="78" rx="26" ry="16" fill="#64748b" />
+                                    <ellipse cx="398" cy="78" rx="26" ry="16" fill="#64748b" />
+                                    <!-- Rain Streaks -->
+                                    <g stroke="#0284c7" stroke-width="3" stroke-linecap="round">
+                                        <line x1="342" y1="102" x2="336" y2="118" />
+                                        <line x1="365" y1="106" x2="359" y2="122" />
+                                        <line x1="388" y1="102" x2="382" y2="118" />
+                                    </g>
+                                </g>
+
+                                <!-- ==========================================
+                                     4 NON-OVERLAPPING CALLOUT SLOTS
+                                     ========================================== -->
+                                <!-- Slot 1: Bay hơi (Left Middle: x=14, y=114) -->
+                                <g onclick="handleCycleSlotClick(1)" class="cursor-pointer">
+                                    <rect id="cslot-box-1" x="14" y="114" width="128" height="34" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="2.5"/>
+                                    <text id="cslot-text-1" x="78" y="136" text-anchor="middle" font-size="12" font-weight="900" fill="#0369a1">1. ♨️ Bay hơi</text>
+                                </g>
+
+                                <!-- Slot 2: Ngưng tụ tạo mây (Top Center: x=130, y=14) -->
+                                <g onclick="handleCycleSlotClick(2)" class="cursor-pointer">
+                                    <rect id="cslot-box-2" x="130" y="14" width="132" height="34" rx="10" fill="#ffffff" stroke="#0284c7" stroke-width="2.5"/>
+                                    <text id="cslot-text-2" x="196" y="36" text-anchor="middle" font-size="12" font-weight="900" fill="#0369a1">2. ☁️ Tạo mây</text>
+                                </g>
+
+                                <!-- Slot 3: Mưa rơi (Right Middle: x=322, y=126) -->
+                                <g onclick="handleCycleSlotClick(3)" class="cursor-pointer">
+                                    <rect id="cslot-box-3" x="322" y="126" width="132" height="34" rx="10" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5"/>
+                                    <text id="cslot-text-3" x="388" y="148" text-anchor="middle" font-size="12" font-weight="900" fill="#1e3a8a">3. 🌧️ Mưa rơi</text>
+                                </g>
+
+                                <!-- Slot 4: Nước chảy về biển (Bottom Right: x=265, y=334) -->
+                                <g onclick="handleCycleSlotClick(4)" class="cursor-pointer">
+                                    <rect id="cslot-box-4" x="265" y="334" width="185" height="34" rx="10" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+                                    <text id="cslot-text-4" x="357" y="356" text-anchor="middle" font-size="12" font-weight="900" fill="#065f46">4. 🌊 Chảy về biển</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (384px): Stage Details or Matching Game -->
+                    <div class="flex flex-col justify-between" style="height: 436px;">
+
+                        <!-- Explore Panel -->
+                        <div id="cycle-explore-panel" class="bg-gradient-to-br from-sky-50 to-emerald-50 rounded-2xl p-4 border-2 border-sky-200 h-full flex flex-col justify-between">
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-black uppercase px-2.5 py-1 rounded-full bg-sky-200 text-sky-900" data-i18n="cycleCardTag">
+                                        Chi Tiết Vòng Tuần Hoàn
+                                    </span>
+                                    <button onclick="speakCurrentCycleStage()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                </div>
+
+                                <div class="bg-white p-3 rounded-xl border-2 border-sky-200 flex items-center gap-3 shadow-sm">
+                                    <div id="cycle-stage-emoji" class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center text-2xl shrink-0">
+                                        ♨️
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h3 id="cycle-stage-title" class="text-base font-black text-sky-950 leading-tight">1. Bay hơi (Evaporation)</h3>
+                                        <span id="cycle-stage-sub" class="text-[11px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md inline-block mt-1">
+                                            Giống nước ấm bốc hơi trong cốc
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-3.5 rounded-xl border-2 border-emerald-100 space-y-1">
+                                    <div class="text-xs font-black text-emerald-700 uppercase" data-i18n="whatHappensLabel">🌟 Điều gì xảy ra?</div>
+                                    <p id="cycle-stage-desc" class="text-xs font-bold text-slate-700 leading-relaxed">
+                                        Mặt Trời chiếu nắng ấm làm nước ở biển, sông, hồ nóng lên và biến thành hơi nước bay lên bầu trời cao!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- 4 Quick Stage Selector Buttons -->
+                            <div>
+                                <div class="text-[11px] font-extrabold text-slate-500 mb-1.5" data-i18n="pick4StageLabel">👇 Bấm xem 4 bước tuần hoàn:</div>
+                                <div class="grid grid-cols-4 gap-1.5">
+                                    <button onclick="selectCycleStage(1)" id="cybtn-1" class="btn-kid py-2 rounded-xl bg-amber-200 border-2 border-amber-500 text-amber-950 font-black text-[11px] flex flex-col items-center">
+                                        <span class="text-base">♨️</span>
+                                        <span data-i18n="short1">Bay hơi</span>
+                                    </button>
+                                    <button onclick="selectCycleStage(2)" id="cybtn-2" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-[11px] flex flex-col items-center">
+                                        <span class="text-base">☁️</span>
+                                        <span data-i18n="short2">Tạo mây</span>
+                                    </button>
+                                    <button onclick="selectCycleStage(3)" id="cybtn-3" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-[11px] flex flex-col items-center">
+                                        <span class="text-base">🌧️</span>
+                                        <span data-i18n="short3">Mưa rơi</span>
+                                    </button>
+                                    <button onclick="selectCycleStage(4)" id="cybtn-4" class="btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-[11px] flex flex-col items-center">
+                                        <span class="text-base">🌊</span>
+                                        <span data-i18n="short4">Về biển</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Matching Game Panel -->
+                        <div id="cycle-game-panel" class="hidden bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border-2 border-amber-300 h-full flex flex-col justify-between">
+                            <div class="space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-black uppercase px-2.5 py-1 rounded-full bg-amber-300 text-amber-950" data-i18n="gameHeader">
+                                        Ghép Đúng Vòng Tuần Hoàn
+                                    </span>
+                                    <button onclick="resetCycleGame()" class="text-xs font-extrabold text-amber-800 hover:underline" data-i18n="replayBtn">
+                                        Chơi lại
+                                    </button>
+                                </div>
+                                <p class="text-xs font-bold text-slate-700 bg-white p-2.5 rounded-xl border border-amber-200" data-i18n="gameHowTo">
+                                    <strong>Cách chơi:</strong> Bấm chọn 1 thẻ bên dưới, rồi bấm vào đúng ô <strong>[ ❓ ]</strong> trên bức tranh bên trái!
+                                </p>
+                                <div id="cycle-cards-list" class="space-y-1.5"></div>
+                            </div>
+                            <div id="cycle-game-feedback" class="bg-white p-2.5 rounded-xl border-2 border-amber-200 text-center font-black text-xs text-amber-900">
+                                👆 Hãy chọn một thẻ giai đoạn để bắt đầu!
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 TAB 3: ĐỐ VUI LỚP 2 (MINI QUIZ)
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="bg-gradient-to-br from-sky-50 via-white to-amber-50 rounded-2xl p-5 border-2 border-sky-300 max-w-3xl mx-auto space-y-4">
+                    <div class="flex items-center justify-between border-b border-sky-100 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🌧️</span>
+                            <div>
+                                <span class="text-[11px] font-black uppercase text-sky-600" id="quiz-progress-text">CÂU HỎI 1 / 4</span>
+                                <h3 class="text-base font-black text-slate-800" data-i18n="quizHeader">Đố Vui: Chuyên Gia Thời Tiết Nhí Lớp 2</h3>
+                            </div>
+                        </div>
+                        <button onclick="resetQuiz()" class="btn-kid px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span data-i18n="quizReset">Làm lại</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-xl border-2 border-sky-200 text-center space-y-1.5">
+                        <div id="quiz-emoji" class="text-4xl">🧊</div>
+                        <h4 id="quiz-question" class="text-base sm:text-lg font-black text-slate-800">
+                            Trong thí nghiệm tạo mưa nhân tạo, vì sao chúng ta đặt những viên đá lạnh lên trên màng bọc thực phẩm?
+                        </h4>
+                    </div>
+
+                    <div id="quiz-options" class="grid grid-cols-2 gap-3"></div>
+
+                    <div id="quiz-feedback" class="hidden p-3 rounded-xl font-black text-xs sm:text-sm text-center"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         APPLICATION SCRIPT
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO SYNTHESIZER
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.15, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playPlopSound() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.11, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.09);
+            } catch (e) {}
+        }
+
+        function playSuccessSound() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 95);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 190);
+        }
+
+        function playErrorSound() {
+            playTone(230, 'sawtooth', 0.2);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. STATE & BILINGUAL CONTENT
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'cup';
+        let stars = 0;
+
+        const cupState = {
+            step: 0,
+            isWarmWater: true,
+            hasIce: true,
+            waterLevel: 0,
+            wrapProgress: 0,
+            iceProgress: 0,
+            rainCount: 0,
+            steamParticles: [],
+            condensationDrops: [],
+            fallingDrops: [],
+            ripples: [],
+            checkedObs: new Set()
+        };
+
+        const cupStepTexts = {
+            vi: {
+                0: {
+                    badge: 'CHUẨN BỊ',
+                    label: 'Cốc thủy tinh trong suốt',
+                    explain: 'Hãy bấm vào <strong>Bước 1</strong> ở bên phải để đổ nước ấm vào cốc thủy tinh nhé!'
+                },
+                1: {
+                    badge: 'BƯỚC 1 / 4',
+                    label: 'Đổ nước ấm (55°C) vào cốc',
+                    explain: '<strong>Hiện tượng Bay hơi:</strong> Nước ấm nóng lên và biến thành các hạt <strong>hơi nước</strong> nhỏ li ti bay lên cao!'
+                },
+                2: {
+                    badge: 'BƯỚC 2 / 4',
+                    label: 'Bọc kín miệng cốc bằng màng bọc',
+                    explain: '<strong>Màng bọc thực phẩm</strong> giữ hơi nước ở lại bên trong cốc, không thoát ra ngoài phòng.'
+                },
+                3: {
+                    badge: 'BƯỚC 3 / 4',
+                    label: 'Đặt đá viên lạnh (0°C) lên màng bọc',
+                    explain: '<strong>Đá viên lạnh</strong> làm bề mặt màng bọc lạnh đi giống như tầng không khí lạnh ở trên bầu trời cao!'
+                },
+                4: {
+                    badge: 'BƯỚC 4 / 4',
+                    label: 'Ngưng tụ & Mưa nhân tạo rơi!',
+                    explain: '🎉 <strong>KẾT QUẢ:</strong> Hơi nước gặp màng bọc lạnh thì <strong>ngưng tụ</strong> thành giọt nước lớn rồi rơi xuống thành <strong>Mưa nhân tạo</strong>!'
+                }
+            },
+            en: {
+                0: {
+                    badge: 'READY',
+                    label: 'Clear Glass Cup Setup',
+                    explain: 'Click <strong>Step 1</strong> on the right to pour warm water into the glass cup!'
+                },
+                1: {
+                    badge: 'STEP 1 / 4',
+                    label: 'Pour Warm Water (55°C) into Cup',
+                    explain: '<strong>Evaporation:</strong> Warm water heats up and turns into misty <strong>water vapor</strong> rising upward!'
+                },
+                2: {
+                    badge: 'STEP 2 / 4',
+                    label: 'Seal Top with Plastic Wrap',
+                    explain: 'The <strong>plastic wrap</strong> traps the rising water vapor inside the cup.'
+                },
+                3: {
+                    badge: 'STEP 3 / 4',
+                    label: 'Place Cold Ice Cubes (0°C) on Top',
+                    explain: '<strong>Ice cubes</strong> make the plastic wrap ceiling very cold, like the chilly sky high above!'
+                },
+                4: {
+                    badge: 'STEP 4 / 4',
+                    label: 'Condensation & Artificial Rain!',
+                    explain: '🎉 <strong>RESULT:</strong> Warm vapor hits the cold wrap, <strong>condenses</strong> into heavy drops, and falls as <strong>Artificial Rain</strong>!'
+                }
+            }
+        };
+
+        function addStars(n) {
+            stars += n;
+            document.getElementById('star-count').textContent = stars;
+        }
+
+        // ==========================================
+        // 3. TAB 1 LOGIC: RAIN CUP SIMULATION (NO TEXT OVERLAP)
+        // ==========================================
+        const cupCanvas = document.getElementById('rainCupCanvas');
+        const cupCtx = cupCanvas.getContext('2d');
+
+        function initCondensationDrops() {
+            cupState.condensationDrops = [];
+            const numSlots = 9;
+            for (let i = 0; i < numSlots; i++) {
+                cupState.condensationDrops.push({
+                    offsetX: (i - (numSlots - 1) / 2) * 17,
+                    radius: 0.5,
+                    maxRadius: 5.0 + (i % 3) * 0.8
+                });
+            }
+        }
+        initCondensationDrops();
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const cssW = 468;
+            const cssH = 350;
+            cupCanvas.width = cssW * dpr;
+            cupCanvas.height = cssH * dpr;
+            cupCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function runCupStep(targetStep) {
+            cupState.step = targetStep;
+            if (targetStep >= 1) cupState.isWarmWater = true;
+            if (targetStep >= 3) cupState.hasIce = true;
+
+            playSuccessSound();
+            addStars(1);
+            updateCupStepUI();
+        }
+
+        function resetCupExperiment() {
+            cupState.step = 0;
+            cupState.waterLevel = 0;
+            cupState.wrapProgress = 0;
+            cupState.iceProgress = 0;
+            cupState.rainCount = 0;
+            cupState.steamParticles = [];
+            cupState.fallingDrops = [];
+            cupState.ripples = [];
+            cupState.isWarmWater = true;
+            cupState.hasIce = true;
+            initCondensationDrops();
+            document.getElementById('rain-drop-counter').textContent = '0';
+            playTone(400, 'sine', 0.12);
+            updateCupStepUI();
+        }
+
+        function toggleWaterTemp() {
+            if (cupState.step < 1) {
+                runCupStep(1);
+                return;
+            }
+            cupState.isWarmWater = !cupState.isWarmWater;
+            playTone(cupState.isWarmWater ? 600 : 320, 'triangle', 0.15);
+            updateCupStepUI();
+        }
+
+        function toggleIceState() {
+            if (cupState.step < 3) {
+                runCupStep(3);
+                return;
+            }
+            cupState.hasIce = !cupState.hasIce;
+            playTone(cupState.hasIce ? 700 : 350, 'sine', 0.15);
+            updateCupStepUI();
+        }
+
+        function updateCupStepUI() {
+            const st = cupState.step;
+            const t = cupStepTexts[currentLang][st];
+            document.getElementById('cup-step-badge').textContent = t.badge;
+            document.getElementById('cup-stage-label').textContent = t.label;
+
+            const expEl = document.getElementById('cup-explanation-text');
+            if (st >= 3 && !cupState.isWarmWater) {
+                expEl.innerHTML = currentLang === 'vi'
+                    ? '❄️ <strong>Thử Nước Nguội (20°C):</strong> Nước nguội rất ít bay hơi nên hầu như không tạo được mưa!'
+                    : '❄️ <strong>Testing Cool Water (20°C):</strong> Cool water barely evaporates, so almost no rain forms!';
+            } else if (st >= 3 && !cupState.hasIce) {
+                expEl.innerHTML = currentLang === 'vi'
+                    ? '🌡️ <strong>Thử Không Có Đá:</strong> Màng bọc không đủ lạnh nên hơi nước ngưng tụ rất chậm!'
+                    : '🌡️ <strong>Testing Without Ice:</strong> Without ice to chill the wrap, vapor condenses very slowly!';
+            } else {
+                expEl.innerHTML = t.explain;
+            }
+
+            // Step buttons highlight
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`cstep-${i}`);
+                const icon = document.getElementById(`cstep-icon-${i}`);
+                if (i < st) {
+                    btn.className = 'btn-kid w-full p-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2.5';
+                    icon.textContent = '✅';
+                } else if (i === st) {
+                    btn.className = 'btn-kid w-full p-2 rounded-xl border-2 border-sky-500 bg-sky-100 text-left flex items-center gap-2.5';
+                    icon.textContent = '🌟';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full p-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2.5 pulse-active';
+                    icon.textContent = '👉';
+                } else {
+                    btn.className = 'btn-kid w-full p-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2.5 opacity-80';
+                    icon.textContent = '🔒';
+                }
+            }
+
+            // Condition Toggle Buttons
+            const tempBtn = document.getElementById('toggle-temp-btn');
+            const tempLbl = document.getElementById('temp-btn-label');
+            if (cupState.isWarmWater) {
+                tempBtn.className = 'px-2.5 py-1 rounded-lg text-[11px] font-black bg-rose-500 text-white border border-rose-300 flex items-center gap-1 transition';
+                tempLbl.textContent = currentLang === 'vi' ? 'Nước ấm (55°C)' : 'Warm Water (55°C)';
+            } else {
+                tempBtn.className = 'px-2.5 py-1 rounded-lg text-[11px] font-black bg-slate-600 text-slate-200 border border-slate-500 flex items-center gap-1 transition';
+                tempLbl.textContent = currentLang === 'vi' ? 'Nước nguội (20°C)' : 'Cool Water (20°C)';
+            }
+
+            const iceBtn = document.getElementById('toggle-ice-btn');
+            const iceLbl = document.getElementById('ice-btn-label');
+            if (cupState.hasIce && cupState.step >= 3) {
+                iceBtn.className = 'px-2.5 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950 border border-cyan-200 flex items-center gap-1 transition';
+                iceLbl.textContent = currentLang === 'vi' ? 'Có đá lạnh (0°C)' : 'With Ice (0°C)';
+            } else {
+                iceBtn.className = 'px-2.5 py-1 rounded-lg text-[11px] font-black bg-slate-600 text-slate-200 border border-slate-500 flex items-center gap-1 transition';
+                iceLbl.textContent = currentLang === 'vi' ? 'Không có đá' : 'No Ice';
+            }
+        }
+
+        function speakCurrentCupStep() {
+            const plain = document.getElementById('cup-explanation-text').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(plain);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function checkObservation(id) {
+            if (cupState.checkedObs.has(id)) {
+                cupState.checkedObs.delete(id);
+            } else {
+                cupState.checkedObs.add(id);
+                playSuccessSound();
+                addStars(1);
+            }
+            for (let i = 1; i <= 3; i++) {
+                const card = document.getElementById(`obs-card-${i}`);
+                const box = document.getElementById(`obs-check-${i}`);
+                if (cupState.checkedObs.has(i)) {
+                    card.className = 'cursor-pointer bg-emerald-50 p-2.5 rounded-xl border-2 border-emerald-400 transition flex items-start gap-2';
+                    box.className = 'w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0 mt-0.5';
+                    box.textContent = '✓';
+                } else {
+                    card.className = 'cursor-pointer bg-white hover:bg-amber-50 p-2.5 rounded-xl border-2 border-slate-200 transition flex items-start gap-2';
+                    box.className = 'w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center font-black text-xs shrink-0 mt-0.5';
+                    box.textContent = '';
+                }
+            }
+            document.getElementById('checklist-progress').textContent =
+                currentLang === 'vi'
+                    ? `Đã ghi nhận: ${cupState.checkedObs.size}/3 hiện tượng`
+                    : `Recorded: ${cupState.checkedObs.size}/3 observations`;
+        }
+
+        // Helper to draw clean callout pill on the right side of the canvas without overlapping the cup
+        function drawCalloutTag(ctx, targetX, targetY, pillX, pillY, text, bgColor, textColor, borderColor) {
+            ctx.save();
+            // Dashed leader line
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(targetX, targetY);
+            ctx.lineTo(pillX, pillY + 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Small dot at target
+            ctx.fillStyle = borderColor;
+            ctx.beginPath();
+            ctx.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pill Box
+            const pillW = 148;
+            const pillH = 24;
+            ctx.fillStyle = bgColor;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 7);
+            ctx.fill();
+            ctx.stroke();
+
+            // Pill Text
+            ctx.fillStyle = textColor;
+            ctx.font = '800 11px Nunito, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, pillX + 8, pillY + pillH / 2 + 0.5);
+            ctx.restore();
+        }
+
+        // ==========================================
+        // 4. REAL-TIME CANVAS RENDERER (CUP AT X=176, CALLOUTS AT X=308)
+        // ==========================================
+        function renderRainCupCanvas(timestamp) {
+            if (activeTab === 'cup') {
+                const w = 468;
+                const h = 350;
+                cupCtx.clearRect(0, 0, w, h);
+
+                // Table surface
+                cupCtx.fillStyle = '#1e293b';
+                cupCtx.fillRect(0, h - 34, w, 34);
+                cupCtx.fillStyle = '#334155';
+                cupCtx.fillRect(0, h - 34, w, 4);
+
+                // Cup positioned on the left-center so right side (x=305..460) is 100% free for callout labels
+                const cx = 178;
+                const cupTopY = 82;
+                const cupBotY = h - 26;
+                const cupTopW = 176;
+                const cupBotW = 144;
+                const waterSurfaceY = cupBotY - 78 * cupState.waterLevel;
+
+                if (cupState.step >= 1) {
+                    cupState.waterLevel = Math.min(1, cupState.waterLevel + 0.04);
+                }
+                if (cupState.step >= 2) {
+                    cupState.wrapProgress = Math.min(1, cupState.wrapProgress + 0.05);
+                } else {
+                    cupState.wrapProgress = 0;
+                }
+                if (cupState.step >= 3 && cupState.hasIce) {
+                    cupState.iceProgress = Math.min(1, cupState.iceProgress + 0.05);
+                } else {
+                    cupState.iceProgress = 0;
+                }
+
+                // 1. Glass Cup Background
+                cupCtx.save();
+                cupCtx.beginPath();
+                cupCtx.moveTo(cx - cupTopW / 2, cupTopY);
+                cupCtx.lineTo(cx - cupBotW / 2, cupBotY);
+                cupCtx.quadraticCurveTo(cx, cupBotY + 10, cx + cupBotW / 2, cupBotY);
+                cupCtx.lineTo(cx + cupTopW / 2, cupTopY);
+                cupCtx.closePath();
+                cupCtx.fillStyle = 'rgba(224, 242, 254, 0.08)';
+                cupCtx.fill();
+
+                // 2. Water & Left Thermometer
+                if (cupState.waterLevel > 0.01) {
+                    const ratio = (cupBotY - waterSurfaceY) / (cupBotY - cupTopY);
+                    const curWaterW = cupBotW + (cupTopW - cupBotW) * ratio;
+
+                    cupCtx.beginPath();
+                    cupCtx.moveTo(cx - curWaterW / 2, waterSurfaceY);
+                    cupCtx.lineTo(cx - cupBotW / 2, cupBotY);
+                    cupCtx.quadraticCurveTo(cx, cupBotY + 10, cx + cupBotW / 2, cupBotY);
+                    cupCtx.lineTo(cx + curWaterW / 2, waterSurfaceY);
+                    cupCtx.closePath();
+
+                    const wGrad = cupCtx.createLinearGradient(0, waterSurfaceY, 0, cupBotY);
+                    if (cupState.isWarmWater) {
+                        wGrad.addColorStop(0, 'rgba(56, 189, 248, 0.65)');
+                        wGrad.addColorStop(1, 'rgba(2, 132, 199, 0.85)');
+                    } else {
+                        wGrad.addColorStop(0, 'rgba(125, 211, 252, 0.45)');
+                        wGrad.addColorStop(1, 'rgba(3, 105, 161, 0.65)');
+                    }
+                    cupCtx.fillStyle = wGrad;
+                    cupCtx.fill();
+
+                    // Water surface ellipse
+                    cupCtx.beginPath();
+                    cupCtx.ellipse(cx, waterSurfaceY, curWaterW / 2, 6, 0, 0, Math.PI * 2);
+                    cupCtx.fillStyle = cupState.isWarmWater ? 'rgba(125, 211, 252, 0.85)' : 'rgba(186, 230, 253, 0.6)';
+                    cupCtx.fill();
+
+                    // Thermometer cleanly placed on far left (x=46)
+                    const thX = 48;
+                    const thTop = cupTopY + 35;
+                    const thBot = cupBotY - 12;
+                    cupCtx.fillStyle = '#f8fafc';
+                    cupCtx.strokeStyle = '#64748b';
+                    cupCtx.lineWidth = 2;
+                    cupCtx.beginPath();
+                    cupCtx.roundRect(thX - 5, thTop, 10, thBot - thTop, 5);
+                    cupCtx.fill();
+                    cupCtx.stroke();
+
+                    const mercH = cupState.isWarmWater ? (thBot - thTop) * 0.78 : (thBot - thTop) * 0.30;
+                    cupCtx.fillStyle = cupState.isWarmWater ? '#ef4444' : '#3b82f6';
+                    cupCtx.beginPath();
+                    cupCtx.arc(thX, thBot, 9, 0, Math.PI * 2);
+                    cupCtx.fill();
+                    cupCtx.fillRect(thX - 3, thBot - mercH, 6, mercH);
+
+                    cupCtx.fillStyle = cupState.isWarmWater ? '#fca5a5' : '#93c5fd';
+                    cupCtx.font = '900 11px Nunito, sans-serif';
+                    cupCtx.textAlign = 'center';
+                    cupCtx.fillText(cupState.isWarmWater ? '55°C' : '20°C', thX, thTop - 8);
+                }
+
+                // 3. Rising Vapor Particles
+                if (cupState.step >= 1 && cupState.waterLevel > 0.5) {
+                    const spawnChance = cupState.isWarmWater ? 0.45 : 0.06;
+                    if (Math.random() < spawnChance) {
+                        cupState.steamParticles.push({
+                            x: cx + (Math.random() * 116 - 58),
+                            y: waterSurfaceY - 4,
+                            r: 2.8 + Math.random() * 3.0,
+                            vy: cupState.isWarmWater ? (0.95 + Math.random() * 0.6) : 0.4,
+                            alpha: 0.72,
+                            phase: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+
+                const ceilingY = cupTopY + 5;
+                for (let i = cupState.steamParticles.length - 1; i >= 0; i--) {
+                    const p = cupState.steamParticles[i];
+                    p.y -= p.vy;
+                    p.x += Math.sin(timestamp * 0.004 + p.phase) * 0.4;
+
+                    cupCtx.fillStyle = `rgba(224, 242, 254, ${p.alpha})`;
+                    cupCtx.beginPath();
+                    cupCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    cupCtx.fill();
+
+                    if (p.y <= ceilingY + 4) {
+                        if (cupState.step >= 2) {
+                            const nearestIdx = Math.floor(Math.random() * cupState.condensationDrops.length);
+                            const cDrop = cupState.condensationDrops[nearestIdx];
+                            const growthRate = (cupState.step >= 3 && cupState.hasIce) ? 0.22 : 0.025;
+                            cDrop.radius = Math.min(cDrop.maxRadius, cDrop.radius + growthRate);
+
+                            if (cDrop.radius >= cDrop.maxRadius && (cupState.step >= 3 && cupState.hasIce)) {
+                                cupState.fallingDrops.push({
+                                    x: cx + cDrop.offsetX,
+                                    y: ceilingY + 6,
+                                    vy: 2.1,
+                                    r: 4.5
+                                });
+                                cDrop.radius = 1.1;
+                            }
+                        }
+                        cupState.steamParticles.splice(i, 1);
+                    } else if (p.y < 12) {
+                        cupState.steamParticles.splice(i, 1);
+                    }
+                }
+
+                // 4. Plastic Wrap & Hanging Condensation Droplets
+                if (cupState.wrapProgress > 0) {
+                    const wrapW = (cupTopW + 14) * cupState.wrapProgress;
+                    const dip = cupState.iceProgress * 6;
+                    cupCtx.save();
+                    cupCtx.strokeStyle = 'rgba(226, 232, 240, 0.9)';
+                    cupCtx.fillStyle = 'rgba(241, 245, 249, 0.28)';
+                    cupCtx.lineWidth = 3.5;
+                    cupCtx.beginPath();
+                    cupCtx.moveTo(cx - wrapW / 2, cupTopY);
+                    cupCtx.quadraticCurveTo(cx, cupTopY + dip, cx + wrapW / 2, cupTopY);
+                    cupCtx.lineTo(cx + wrapW / 2, cupTopY + 9);
+                    cupCtx.quadraticCurveTo(cx, cupTopY + dip + 5, cx - wrapW / 2, cupTopY + 9);
+                    cupCtx.closePath();
+                    cupCtx.fill();
+                    cupCtx.stroke();
+
+                    cupState.condensationDrops.forEach(d => {
+                        if (d.radius > 0.8) {
+                            const dx = cx + d.offsetX;
+                            const dy = cupTopY + (1 - Math.pow(d.offsetX / (cupTopW / 2), 2)) * dip + 3;
+                            cupCtx.fillStyle = '#38bdf8';
+                            cupCtx.strokeStyle = '#bae6fd';
+                            cupCtx.lineWidth = 1;
+                            cupCtx.beginPath();
+                            cupCtx.arc(dx, dy + d.radius * 0.55, d.radius, 0, Math.PI * 2);
+                            cupCtx.fill();
+                            cupCtx.stroke();
+                        }
+                    });
+                    cupCtx.restore();
+                }
+
+                // 5. Ice Cubes on Top
+                if (cupState.iceProgress > 0) {
+                    cupCtx.save();
+                    const iceY = cupTopY - 21 * cupState.iceProgress;
+                    [-42, -14, 14, 42].forEach((ox, idx) => {
+                        cupCtx.save();
+                        cupCtx.translate(cx + ox, iceY + (idx % 2) * 2);
+                        cupCtx.rotate((idx - 1.5) * 0.07);
+                        cupCtx.fillStyle = 'rgba(165, 243, 252, 0.85)';
+                        cupCtx.strokeStyle = '#ffffff';
+                        cupCtx.lineWidth = 1.8;
+                        cupCtx.beginPath();
+                        cupCtx.roundRect(-13, -3, 26, 20, 5);
+                        cupCtx.fill();
+                        cupCtx.stroke();
+                        cupCtx.restore();
+                    });
+                    cupCtx.restore();
+                }
+
+                // 6. Falling Raindrops
+                for (let i = cupState.fallingDrops.length - 1; i >= 0; i--) {
+                    const fd = cupState.fallingDrops[i];
+                    fd.y += fd.vy;
+                    fd.vy += 0.13;
+
+                    cupCtx.save();
+                    cupCtx.fillStyle = '#38bdf8';
+                    cupCtx.strokeStyle = '#e0f2fe';
+                    cupCtx.lineWidth = 1;
+                    cupCtx.beginPath();
+                    cupCtx.moveTo(fd.x, fd.y - fd.r * 1.5);
+                    cupCtx.quadraticCurveTo(fd.x + fd.r, fd.y, fd.x, fd.y + fd.r);
+                    cupCtx.quadraticCurveTo(fd.x - fd.r, fd.y, fd.x, fd.y - fd.r * 1.5);
+                    cupCtx.closePath();
+                    cupCtx.fill();
+                    cupCtx.stroke();
+                    cupCtx.restore();
+
+                    if (fd.y >= waterSurfaceY) {
+                        cupState.rainCount++;
+                        document.getElementById('rain-drop-counter').textContent = cupState.rainCount;
+                        if (cupState.rainCount % 2 === 1) playPlopSound();
+
+                        if (cupState.step === 3 && cupState.rainCount >= 1) {
+                            cupState.step = 4;
+                            updateCupStepUI();
+                        }
+
+                        cupState.ripples.push({ x: fd.x, y: waterSurfaceY, r: 2, alpha: 0.9 });
+                        cupState.fallingDrops.splice(i, 1);
+                    }
+                }
+
+                // 7. Surface Ripples
+                for (let i = cupState.ripples.length - 1; i >= 0; i--) {
+                    const rp = cupState.ripples[i];
+                    rp.r += 0.75;
+                    rp.alpha -= 0.04;
+                    cupCtx.strokeStyle = `rgba(224, 242, 254, ${Math.max(0, rp.alpha)})`;
+                    cupCtx.lineWidth = 1.4;
+                    cupCtx.beginPath();
+                    cupCtx.ellipse(rp.x, rp.y, rp.r * 1.7, rp.r * 0.42, 0, 0, Math.PI * 2);
+                    cupCtx.stroke();
+                    if (rp.alpha <= 0) cupState.ripples.splice(i, 1);
+                }
+
+                // 8. Glass Cup Outline
+                cupCtx.strokeStyle = 'rgba(226, 232, 240, 0.78)';
+                cupCtx.lineWidth = 3;
+                cupCtx.beginPath();
+                cupCtx.moveTo(cx - cupTopW / 2, cupTopY);
+                cupCtx.lineTo(cx - cupBotW / 2, cupBotY);
+                cupCtx.quadraticCurveTo(cx, cupBotY + 10, cx + cupBotW / 2, cupBotY);
+                cupCtx.lineTo(cx + cupTopW / 2, cupTopY);
+                cupCtx.stroke();
+                cupCtx.restore();
+
+                // ==========================================
+                // 9. DEDICATED RIGHT-HAND CALLOUT ZONE (X=306..454)
+                // Vertically spaced at Y=46, Y=96, Y=168, Y=265 -> ZERO OVERLAP!
+                // ==========================================
+                const pillX = 306;
+                if (cupState.step >= 3 && cupState.hasIce) {
+                    drawCalloutTag(
+                        cupCtx, cx + 45, cupTopY - 10, pillX, 42,
+                        currentLang === 'vi' ? '🧊 Đá viên lạnh (0°C)' : '🧊 Cold Ice (0°C)',
+                        'rgba(8, 145, 178, 0.35)', '#67e8f9', '#22d3ee'
+                    );
+                }
+                if (cupState.step >= 2) {
+                    drawCalloutTag(
+                        cupCtx, cx + cupTopW / 2, cupTopY + 6, pillX, 88,
+                        currentLang === 'vi' ? '💧 Màng bọc & Ngưng tụ' : '💧 Wrap & Condensation',
+                        'rgba(30, 58, 138, 0.5)', '#bae6fd', '#38bdf8'
+                    );
+                }
+                if (cupState.step >= 1) {
+                    drawCalloutTag(
+                        cupCtx, cx + 45, cupTopY + 105, pillX, 165,
+                        cupState.step >= 3 && cupState.hasIce
+                            ? (currentLang === 'vi' ? '🌧️ Mưa nhân tạo rơi!' : '🌧️ Artificial Rain!')
+                            : (currentLang === 'vi' ? '♨️ Hơi nước bay lên' : '♨️ Rising Vapor'),
+                        'rgba(120, 53, 15, 0.45)', '#fde047', '#facc15'
+                    );
+
+                    drawCalloutTag(
+                        cupCtx, cx + 52, waterSurfaceY + 32, pillX, 265,
+                        cupState.isWarmWater
+                            ? (currentLang === 'vi' ? '🌡️ Nước ấm (55°C)' : '🌡️ Warm Water (55°C)')
+                            : (currentLang === 'vi' ? '❄️ Nước nguội (20°C)' : '❄️ Cool Water (20°C)'),
+                        'rgba(136, 19, 55, 0.45)', '#fda4af', '#fb7185'
+                    );
+                }
+            }
+            requestAnimationFrame(renderRainCupCanvas);
+        }
+
+        // ==========================================
+        // 5. TAB 2 LOGIC: NATURE WATER CYCLE & MATCHING
+        // ==========================================
+        let cycleMode = 'explore';
+        let currentCycleStage = 1;
+        let selectedCycleCard = null;
+        let matchedCycleStages = new Set();
+
+        const cycleStageInfo = {
+            1: {
+                emoji: '♨️',
+                tagVi: '1. ♨️ Bay hơi', tagEn: '1. ♨️ Evaporation',
+                titleVi: '1. Bay hơi (Evaporation)', titleEn: '1. Evaporation (Bay hơi)',
+                subVi: 'Giống nước ấm bốc hơi trong cốc', subEn: 'Like warm water steaming in our cup',
+                descVi: 'Mặt Trời chiếu tia nắng ấm áp làm nước ở biển, sông, hồ nóng lên và biến thành hơi nước bay lên bầu trời cao!',
+                descEn: 'The warm Sun heats up water in oceans, rivers, and lakes, turning it into water vapor that rises into the sky!'
+            },
+            2: {
+                emoji: '☁️',
+                tagVi: '2. ☁️ Tạo mây', tagEn: '2. ☁️ Condensation',
+                titleVi: '2. Ngưng tụ tạo Mây (Condensation)', titleEn: '2. Condensation into Clouds',
+                subVi: 'Giống hơi nước gặp màng bọc có đá lạnh', subEn: 'Like vapor hitting the cold ice wrap',
+                descVi: 'Khi hơi nước bay lên bầu trời cao sẽ gặp không khí lạnh, ngưng tụ lại thành vô số hạt nước nhỏ li ti kết thành những đám mây!',
+                descEn: 'High up in the chilly sky, water vapor cools down and condenses into tiny droplets to form clouds!'
+            },
+            3: {
+                emoji: '🌧️',
+                tagVi: '3. 🌧️ Mưa rơi', tagEn: '3. 🌧️ Precipitation',
+                titleVi: '3. Mưa rơi (Precipitation)', titleEn: '3. Rain Falls (Precipitation)',
+                subVi: 'Giống giọt nước to rơi xuống đáy cốc', subEn: 'Like heavy drops falling inside our cup',
+                descVi: 'Nhiều hạt nước nhỏ trong đám mây chụm lại thành giọt nước lớn và nặng, tạo thành đám mây đen rồi rơi xuống đất thành Mưa!',
+                descEn: 'Water droplets in the clouds join together until they get heavy and fall back to Earth as rain!'
+            },
+            4: {
+                emoji: '🌊',
+                tagVi: '4. 🌊 Chảy về biển', tagEn: '4. 🌊 Collection',
+                titleVi: '4. Nước chảy về biển (Collection)', titleEn: '4. Water Flows Back (Collection)',
+                subVi: 'Khép kín vòng tuần hoàn nước', subEn: 'Completing the water cycle',
+                descVi: 'Nước mưa tưới mát cho cây cối rồi chảy qua các con suối, dòng sông để trở về biển cả, rồi lại tiếp tục bay hơi!',
+                descEn: 'Rainwater waters the plants and flows down streams and rivers back into the ocean to start again!'
+            }
+        };
+
+        function selectCycleStage(st) {
+            if (cycleMode === 'game') {
+                handleCycleSlotClick(st);
+                return;
+            }
+            currentCycleStage = st;
+            playTone(540 + st * 40, 'sine', 0.14);
+            updateCycleExploreUI();
+        }
+
+        function updateCycleExploreUI() {
+            const info = cycleStageInfo[currentCycleStage];
+            document.getElementById('cycle-stage-emoji').textContent = info.emoji;
+            document.getElementById('cycle-stage-title').textContent = currentLang === 'vi' ? info.titleVi : info.titleEn;
+            document.getElementById('cycle-stage-sub').textContent = currentLang === 'vi' ? info.subVi : info.subEn;
+            document.getElementById('cycle-stage-desc').textContent = currentLang === 'vi' ? info.descVi : info.descEn;
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`cybtn-${i}`);
+                const box = document.getElementById(`cslot-box-${i}`);
+                if (i === currentCycleStage) {
+                    btn.className = 'btn-kid py-2 rounded-xl bg-amber-200 border-2 border-amber-500 text-amber-950 font-black text-[11px] flex flex-col items-center';
+                    if (cycleMode === 'explore') box.setAttribute('fill', '#fef08a');
+                } else {
+                    btn.className = 'btn-kid py-2 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-black text-[11px] flex flex-col items-center';
+                    if (cycleMode === 'explore') box.setAttribute('fill', '#ffffff');
+                }
+            }
+        }
+
+        function speakCurrentCycleStage() {
+            const info = cycleStageInfo[currentCycleStage];
+            playTone(600, 'sine', 0.12);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(
+                    currentLang === 'vi' ? `${info.titleVi}. ${info.descVi}` : `${info.titleEn}. ${info.descEn}`
+                );
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function setCycleMode(mode) {
+            cycleMode = mode;
+            const expBtn = document.getElementById('cyle-exp-btn');
+            const gameBtn = document.getElementById('cyle-game-btn');
+            const expPanel = document.getElementById('cycle-explore-panel');
+            const gamePanel = document.getElementById('cycle-game-panel');
+
+            if (mode === 'explore') {
+                expBtn.className = 'px-2.5 py-1 rounded-lg font-black text-xs bg-sky-500 text-white shadow-sm';
+                gameBtn.className = 'px-2.5 py-1 rounded-lg font-black text-xs bg-slate-100 text-slate-700 hover:bg-amber-100';
+                expPanel.classList.remove('hidden');
+                gamePanel.classList.add('hidden');
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`cslot-text-${i}`).textContent =
+                        currentLang === 'vi' ? cycleStageInfo[i].tagVi : cycleStageInfo[i].tagEn;
+                }
+                updateCycleExploreUI();
+            } else {
+                gameBtn.className = 'px-2.5 py-1 rounded-lg font-black text-xs bg-amber-500 text-white shadow-sm';
+                expBtn.className = 'px-2.5 py-1 rounded-lg font-black text-xs bg-slate-100 text-slate-700 hover:bg-sky-100';
+                expPanel.classList.add('hidden');
+                gamePanel.classList.remove('hidden');
+                resetCycleGame();
+            }
+        }
+
+        function resetCycleGame() {
+            matchedCycleStages.clear();
+            selectedCycleCard = null;
+            updateCycleGameSVG();
+            renderCycleCards();
+            document.getElementById('cycle-game-feedback').textContent =
+                currentLang === 'vi'
+                    ? '👆 Bước 1: Em hãy chọn 1 thẻ giai đoạn bên trên!'
+                    : '👆 Step 1: Click a stage card above!';
+        }
+
+        function updateCycleGameSVG() {
+            for (let i = 1; i <= 4; i++) {
+                const txt = document.getElementById(`cslot-text-${i}`);
+                const box = document.getElementById(`cslot-box-${i}`);
+                if (matchedCycleStages.has(i)) {
+                    txt.textContent = currentLang === 'vi' ? cycleStageInfo[i].tagVi : cycleStageInfo[i].tagEn;
+                    box.setAttribute('fill', '#dcfce7');
+                } else {
+                    txt.textContent = currentLang === 'vi' ? `❓ [ Ô số ${i} ]` : `❓ [ Slot ${i} ]`;
+                    box.setAttribute('fill', '#fef9c3');
+                }
+            }
+            document.querySelector('#cyle-game-btn span').textContent =
+                currentLang === 'vi'
+                    ? `Ghép nhãn (${matchedCycleStages.size}/4)`
+                    : `Match Game (${matchedCycleStages.size}/4)`;
+        }
+
+        function renderCycleCards() {
+            const list = document.getElementById('cycle-cards-list');
+            list.innerHTML = '';
+            [2, 4, 1, 3].forEach(st => {
+                const isDone = matchedCycleStages.has(st);
+                const isSel = selectedCycleCard === st;
+                const btn = document.createElement('button');
+                btn.disabled = isDone;
+                btn.onclick = () => {
+                    selectedCycleCard = st;
+                    playTone(580, 'sine', 0.12);
+                    renderCycleCards();
+                    document.getElementById('cycle-game-feedback').textContent =
+                        currentLang === 'vi'
+                            ? `👉 Đang chọn "${cycleStageInfo[st].tagVi}". Bấm vào [❓ Ô số ${st}] trên tranh!`
+                            : `👉 Holding "${cycleStageInfo[st].tagEn}". Click the matching [❓] slot on the picture!`;
+                };
+
+                const label = currentLang === 'vi' ? cycleStageInfo[st].tagVi : cycleStageInfo[st].tagEn;
+                if (isDone) {
+                    btn.className = 'w-full py-2 px-3 rounded-xl bg-emerald-100 border-2 border-emerald-400 text-emerald-800 font-black text-xs opacity-60 flex items-center justify-between';
+                    btn.innerHTML = `<span>${label}</span> <span>✅ Đã ghép</span>`;
+                } else if (isSel) {
+                    btn.className = 'btn-kid w-full py-2 px-3 rounded-xl bg-amber-400 border-2 border-amber-700 text-amber-950 font-black text-xs flex items-center justify-between';
+                    btn.innerHTML = `<span>👉 ${label}</span> <span>Bấm vào tranh!</span>`;
+                } else {
+                    btn.className = 'btn-kid w-full py-2 px-3 rounded-xl bg-white hover:bg-amber-100 border-2 border-amber-300 text-slate-800 font-black text-xs flex items-center justify-between';
+                    btn.innerHTML = `<span>${label}</span> <span>Chọn thẻ</span>`;
+                }
+                list.appendChild(btn);
+            });
+        }
+
+        function handleCycleSlotClick(slotNum) {
+            if (cycleMode !== 'game') {
+                selectCycleStage(slotNum);
+                return;
+            }
+            if (!selectedCycleCard) {
+                playErrorSound();
+                document.getElementById('cycle-game-feedback').textContent =
+                    currentLang === 'vi'
+                        ? '⚠️ Em hãy bấm chọn 1 thẻ giai đoạn ở khung bên phải trước nhé!'
+                        : '⚠️ Please pick a stage card on the right first!';
+                return;
+            }
+            if (selectedCycleCard === slotNum) {
+                matchedCycleStages.add(slotNum);
+                selectedCycleCard = null;
+                playSuccessSound();
+                addStars(2);
+                updateCycleGameSVG();
+                renderCycleCards();
+                document.getElementById('cycle-game-feedback').textContent =
+                    matchedCycleStages.size === 4
+                        ? (currentLang === 'vi' ? '🎉 TUYỆT VỜI! Em đã ghép đúng cả 4 bước Vòng Tuần Hoàn Nước!' : '🎉 AMAZING! You completed the Water Cycle!')
+                        : (currentLang === 'vi' ? '🌟 Chính xác! Hãy chọn thẻ tiếp theo nhé!' : '🌟 Correct! Pick the next card!');
+            } else {
+                playErrorSound();
+                document.getElementById('cycle-game-feedback').textContent =
+                    currentLang === 'vi'
+                        ? '❌ Chưa đúng vị trí rồi, em nhìn kỹ số thứ tự và mũi tên nhé!'
+                        : '❌ Not quite! Check the number and arrows!';
+            }
+        }
+
+        // ==========================================
+        // 6. TAB 3 LOGIC: GRADE 2 QUIZ
+        // ==========================================
+        let quizIndex = 0;
+        const quizQuestions = [
+            {
+                emoji: '🧊',
+                qVi: '1. Trong thí nghiệm tạo mưa nhân tạo, vì sao ta đặt các viên đá lạnh lên trên màng bọc?',
+                qEn: '1. In the artificial rain cup experiment, why do we place cold ice cubes on top of the plastic wrap?',
+                optionsVi: [
+                    'Làm lạnh màng bọc để hơi nước ấm bay lên ngưng tụ thành giọt nước',
+                    'Làm cho nước dưới đáy cốc biến thành kem',
+                    'Làm cho cốc nước nặng hơn không bị bay mất',
+                    'Trang trí cho cốc nước đẹp hơn'
+                ],
+                optionsEn: [
+                    'To cool the wrap so rising warm vapor condenses into water droplets',
+                    'To freeze all the water at the bottom of the cup',
+                    'To make the cup heavier',
+                    'Just for decoration'
+                ],
+                correct: 0
+            },
+            {
+                emoji: '♨️',
+                qVi: '2. Hiện tượng nước ấm trong cốc (hoặc nước biển dưới nắng Mặt Trời) biến thành hơi nước bay lên gọi là gì?',
+                qEn: '2. What do we call it when warm water turns into water vapor and rises up?',
+                optionsVi: [
+                    'Đông đặc thành đá',
+                    'Bay hơi (Bốc hơi)',
+                    'Lũ lụt',
+                    'Cầu vồng'
+                ],
+                optionsEn: [
+                    'Freezing',
+                    'Evaporation (Bay hơi)',
+                    'Flooding',
+                    'Rainbow'
+                ],
+                correct: 1
+            },
+            {
+                emoji: '☁️',
+                qVi: '3. Khi hơi nước bay lên bầu trời cao gặp không khí lạnh sẽ ngưng tụ tạo thành gì?',
+                qEn: '3. When rising water vapor meets cold air high in the sky, what does it form?',
+                optionsVi: [
+                    'Tạo thành Ông Mặt Trời',
+                    'Tạo thành những đám mây',
+                    'Tạo thành ngọn núi cao',
+                    'Tạo thành lửa'
+                ],
+                optionsEn: [
+                    'The Sun',
+                    'Clouds (Những đám mây)',
+                    'High mountains',
+                    'Fire'
+                ],
+                correct: 1
+            },
+            {
+                emoji: '🌧️',
+                qVi: '4. Khi các giọt nước trong đám mây (hoặc dưới màng bọc) tụ lại quá to và nặng thì điều gì xảy ra?',
+                qEn: '4. What happens when the water droplets in a cloud (or under the wrap) become big and heavy?',
+                optionsVi: [
+                    'Chúng bay thẳng lên vũ trụ',
+                    'Chúng biến mất hoàn toàn',
+                    'Chúng rơi xuống tạo thành Mưa!',
+                    'Chúng biến thành lá cây'
+                ],
+                optionsEn: [
+                    'They fly into outer space',
+                    'They disappear completely',
+                    'They fall down as Rain!',
+                    'They turn into green leaves'
+                ],
+                correct: 2
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizQuestions[quizIndex];
+            document.getElementById('quiz-progress-text').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIndex + 1} / ${quizQuestions.length}` : `QUESTION ${quizIndex + 1} / ${quizQuestions.length}`;
+            document.getElementById('quiz-emoji').textContent = q.emoji;
+            document.getElementById('quiz-question').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const optsEl = document.getElementById('quiz-options');
+            optsEl.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optionsVi : q.optionsEn;
+
+            opts.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid p-3.5 rounded-xl bg-white hover:bg-sky-50 border-2 border-slate-200 text-slate-800 font-black text-xs sm:text-sm text-left flex items-center gap-2.5';
+                btn.innerHTML = `<span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${optText}</span>`;
+                btn.onclick = () => checkQuizAnswer(idx);
+                optsEl.appendChild(btn);
+            });
+
+            document.getElementById('quiz-feedback').classList.add('hidden');
+        }
+
+        function checkQuizAnswer(idx) {
+            const q = quizQuestions[quizIndex];
+            const fb = document.getElementById('quiz-feedback');
+            fb.classList.remove('hidden');
+
+            if (idx === q.correct) {
+                playSuccessSound();
+                addStars(3);
+                fb.className = 'p-3 rounded-xl font-black text-xs sm:text-sm text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                fb.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Em hiểu bài rất giỏi (+3 Sao)! Đang chuyển câu tiếp theo...'
+                    : '🎉 Correct! Great job (+3 Stars)! Moving to next question...';
+                setTimeout(() => {
+                    quizIndex = (quizIndex + 1) % quizQuestions.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playErrorSound();
+                fb.className = 'p-3 rounded-xl font-black text-xs sm:text-sm text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                fb.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi! Em hãy nhớ lại thí nghiệm cốc nước và chọn lại nhé!'
+                    : '🤔 Not quite! Think about our cup experiment and try again!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIndex = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. TAB NAVIGATION & BILINGUAL SWITCH
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['cup', 'cycle', 'quiz'].forEach(k => {
+                const view = document.getElementById(`view-${k}`);
+                const btn = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    view.classList.remove('hidden');
+                    btn.className = 'btn-kid py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-sky-500 text-white border-2 border-sky-600';
+                } else {
+                    view.classList.add('hidden');
+                    btn.className = 'btn-kid py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-sky-100 border-2 border-slate-200';
+                }
+            });
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-btn-text').textContent = currentLang === 'vi' ? 'Tiếng Việt' : 'English';
+
+            const dict = {
+                vi: {
+                    gradeBadge: 'Tự nhiên & Xã hội - Lớp 2',
+                    appTitle: 'Vòng Tuần Hoàn Nước & Tạo "Mưa Nhân Tạo"',
+                    starsLabel: 'Sao',
+                    tab1: '1. Thí Nghiệm Tạo "Mưa Nhân Tạo"',
+                    tab2: '2. Vòng Tuần Hoàn Nước Tự Nhiên',
+                    tab3: '3. Đố Vui Lớp 2',
+                    rainCountLabel: 'Giọt mưa:',
+                    whatIfLabel: '🔬 Thử điều kiện:',
+                    stepsHeader: 'Các Bước Làm Thí Nghiệm',
+                    listenBtn: 'Nghe',
+                    resetShort: 'Làm lại',
+                    s1Title: 'Đổ nước ấm (55°C) vào cốc',
+                    s1Sub: 'Nước ấm bốc hơi thành hơi nước bay lên',
+                    s2Title: 'Bọc kín miệng cốc bằng màng bọc',
+                    s2Sub: 'Giữ hơi nước ở lại bên trong cốc',
+                    s3Title: 'Đặt đá viên lạnh (0°C) lên màng bọc',
+                    s3Sub: 'Làm lạnh màng bọc giống bầu trời cao',
+                    s4Title: 'Quan sát ngưng tụ & mưa nhân tạo rơi!',
+                    s4Sub: 'Giọt nước lớn dần và rơi xuống cốc',
+                    explainHeader: 'Giải thích hiện tượng:',
+                    logTitle: 'Phiếu Quan Sát Thí Nghiệm & Liên Hệ Tự Nhiên (Bấm để đánh dấu ✅)',
+                    obs1Tag: '1. Bay hơi (Evaporation)',
+                    obs2Tag: '2. Ngưng tụ (Condensation)',
+                    obs3Tag: '3. Mưa rơi (Precipitation)',
+                    cycleExploreBtn: 'Khám phá 4 bước',
+                    cycleLoopBadge: '♻️ Tuần hoàn khép kín',
+                    cycleCardTag: 'Chi Tiết Vòng Tuần Hoàn',
+                    whatHappensLabel: '🌟 Điều gì xảy ra?',
+                    pick4StageLabel: '👇 Bấm xem 4 bước tuần hoàn:',
+                    short1: 'Bay hơi', short2: 'Tạo mây', short3: 'Mưa rơi', short4: 'Về biển',
+                    gameHeader: 'Ghép Đúng Vòng Tuần Hoàn',
+                    replayBtn: 'Chơi lại',
+                    quizHeader: 'Đố Vui: Chuyên Gia Thời Tiết Nhí Lớp 2',
+                    quizReset: 'Làm lại'
+                },
+                en: {
+                    gradeBadge: 'Grade 2 Science & STEM',
+                    appTitle: 'Simple Water Cycle & Artificial Rain in a Cup',
+                    starsLabel: 'Stars',
+                    tab1: '1. "Artificial Rain" Cup Lab',
+                    tab2: '2. Water Cycle in Nature',
+                    tab3: '3. Grade 2 Quiz',
+                    rainCountLabel: 'Raindrops:',
+                    whatIfLabel: '🔬 Test Conditions:',
+                    stepsHeader: 'Experiment Steps',
+                    listenBtn: 'Listen',
+                    resetShort: 'Reset',
+                    s1Title: 'Pour warm water (55°C) into cup',
+                    s1Sub: 'Warm water evaporates into rising vapor',
+                    s2Title: 'Cover tightly with plastic wrap',
+                    s2Sub: 'Traps water vapor inside the cup',
+                    s3Title: 'Place cold ice cubes (0°C) on wrap',
+                    s3Sub: 'Cools the top surface like the high sky',
+                    s4Title: 'Watch droplets condense & fall as rain!',
+                    s4Sub: 'Heavy droplets fall back into the cup',
+                    explainHeader: 'Scientific Explanation:',
+                    logTitle: 'Observation Checklist & Nature Link (Click to check ✅)',
+                    obs1Tag: '1. Evaporation',
+                    obs2Tag: '2. Condensation',
+                    obs3Tag: '3. Precipitation (Rain)',
+                    cycleExploreBtn: 'Explore 4 Steps',
+                    cycleLoopBadge: '♻️ Continuous Cycle',
+                    cycleCardTag: 'Water Cycle Stage Details',
+                    whatHappensLabel: '🌟 What happens here?',
+                    pick4StageLabel: '👇 Click to explore 4 stages:',
+                    short1: 'Vapor', short2: 'Clouds', short3: 'Rain', short4: 'Ocean',
+                    gameHeader: 'Match the Water Cycle',
+                    replayBtn: 'Replay',
+                    quizHeader: 'Fun Quiz: Little Weather Expert',
+                    quizReset: 'Restart'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.textContent = dict[k];
+            });
+
+            updateCupStepUI();
+            updateCycleExploreUI();
+            if (cycleMode === 'explore') {
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`cslot-text-${i}`).textContent =
+                        currentLang === 'vi' ? cycleStageInfo[i].tagVi : cycleStageInfo[i].tagEn;
+                }
+            } else {
+                updateCycleGameSVG();
+                renderCycleCards();
+            }
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 8. INITIALIZE ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateCupStepUI();
+            updateCycleExploreUI();
+            renderQuiz();
+            requestAnimationFrame(renderRainCupCanvas);
+        };
+    </script>
+</body>
+</html>

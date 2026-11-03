@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Đo Độ pH Bằng Chất Chỉ Thị Bắp Cải Tím (Red Cabbage pH Lab)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #f5d0fe 0%, #fae8ff 60%, #fdf4ff 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #a855f7;
+            box-shadow: 0 18px 40px -12px rgba(168, 85, 247, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #a855f7;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-purple-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-purple-600 flex items-center justify-center shadow border-2 border-purple-200 shrink-0 text-2xl font-black">
+                    🟣
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Hóa Học Vui
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Xác định pH dung dịch bằng chất chỉ thị tự nhiên
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Đo Độ pH Bằng Nước Bắp Cải Tím
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-purple-700 hover:bg-purple-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-purple-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-purple-50 px-3.5 py-2 border-b-2 border-purple-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-purple-600 text-white border-2 border-purple-700">
+                <span>🧪</span>
+                <span data-i18n="tab1">1. Pha Trộn Dung Dịch & 4 Bước</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-purple-100 border-2 border-slate-200">
+                <span>🎨</span>
+                <span data-i18n="tab2">2. Thang Màu pH (1 - 14)</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-purple-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Lý Thuyết & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-purple-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: MÔ PHỎNG PHA TRỘN & 4 BƯỚC LAB
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Beaker Canvas Chamber -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-purple-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    THÍ NGHIỆM
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-purple-200 truncate" data-i18n="statusReady">
+                                    Quan sát sự thay đổi màu sắc của nước bắp cải tím khi nhỏ vào dung dịch
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block cursor-pointer"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <button onclick="pourIndicator()" id="btn-pour" class="btn-kid px-3 py-1 rounded-lg bg-fuchsia-500 hover:bg-fuchsia-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="droplet" class="w-3.5 h-3.5"></i>
+                                    <span id="pour-text" data-i18n="pourBtn">Nhỏ nước bắp cải</span>
+                                </button>
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-purple-500 hover:bg-purple-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự động 4 bước</span>
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-300">
+                                <span data-i18n="phResultLabel">Độ pH:</span> <strong id="ph-val-display" class="text-amber-400">pH = 7 (Trung tính)</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Solution Selectors + Sliders + pH Scale + 4 Steps -->
+                    <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50/60 rounded-2xl p-3 border-2 border-purple-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <!-- Header & Tools -->
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-purple-900 bg-purple-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🎛️ Tùy Chỉnh Dung Dịch Thí Nghiệm
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Đặt lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Controls -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-purple-100 space-y-2 mb-2">
+
+                                <!-- Solution Choice Select -->
+                                <div>
+                                    <label class="text-[11px] font-black text-slate-700 block mb-1" data-i18n="selectSolutionLabel">Chọn dung dịch cần thử nghiệm:</label>
+                                    <select id="select-solution" onchange="onParamChange()" class="w-full bg-purple-50 border-2 border-purple-300 text-purple-950 font-black text-xs rounded-lg p-1.5 cursor-pointer outline-none">
+                                        <option value="lemon">🍋 Nước Chanh (pH = 2 - Axit mạnh)</option>
+                                        <option value="vinegar">🍏 Giấm Ăn (pH = 3 - Axit yếu)</option>
+                                        <option value="soda">🥤 Nước Ngọt / Soda (pH = 4 - Axit nhẹ)</option>
+                                        <option value="water" selected>💧 Nước Tinh Khiết (pH = 7 - Trung tính)</option>
+                                        <option value="soap">🧼 Nước Xà Phòng (pH = 9 - Kiềm yếu)</option>
+                                        <option value="bleach">🧪 Nước Tẩy Javel (pH = 12 - Kiềm mạnh)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Custom pH Slider -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-0.5">
+                                        <span class="flex items-center gap-1 text-purple-700">
+                                            <span>📊</span> <span data-i18n="customPhLabel">Hoặc điều chỉnh mức độ pH:</span>
+                                        </span>
+                                        <span id="custom-ph-display" class="bg-purple-100 text-purple-900 px-2 py-0.5 rounded-md font-black text-xs">pH = 7</span>
+                                    </div>
+                                    <input type="range" id="slider-ph" min="1" max="14" step="1" value="7" oninput="onPhSlider()" class="w-full accent-purple-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Math Equation Bar -->
+                                <div class="bg-slate-900 text-white p-2 rounded-lg text-center flex items-center justify-around font-black text-xs border border-purple-300">
+                                    <div class="text-fuchsia-300">Chất chỉ thị Anthocyanin</div>
+                                    <div class="text-slate-400">➔</div>
+                                    <div id="equation-color-desc" class="text-amber-300">Màu Tím (pH 7)</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-purple-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thí Nghiệm (Bấm 1 → 4):
+                            </div>
+
+                            <!-- 4 Step Buttons -->
+                            <div class="space-y-1">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-4 h-4 rounded-md bg-purple-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step1Text">1. Chiết xuất dung dịch bắp cải tím (màu tím).</span>
+                                    <span id="step-badge-1" class="text-[10px] font-black text-amber-800">👉 Thử ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step2Text">2. Thử nghiệm với dung dịch có tính axit (Nước chanh).</span>
+                                    <span id="step-badge-2" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step3Text">3. Thử nghiệm với môi trường trung tính (Nước).</span>
+                                    <span id="step-badge-3" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step4Text">4. Thử nghiệm với dung dịch có tính kiềm (Xà phòng/Javel).</span>
+                                    <span id="step-badge-4" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2 rounded-xl border-2 border-purple-300 shadow-sm mt-1">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-purple-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Bấm chọn <strong>Bước 1</strong> hoặc chọn dung dịch thử nghiệm để bắt đầu đo pH!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Stage Strip -->
+                <div class="bg-purple-50/90 rounded-2xl p-2 border-2 border-purple-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Tiến Trình Thí Nghiệm Xác Định pH
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-purple-900 bg-purple-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Quy luật: Axit (Đỏ/Hồng), Trung tính (Tím), Kiềm (Xanh lục/Vàng)
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: COMPARE pH 1-14 COLOR SCALE
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-3 rounded-2xl border-2 border-purple-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-purple-800 bg-purple-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Bảng màu chuẩn
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-0.5" data-i18n="cmpTitle">
+                            Thang màu chỉ thị pH từ 1 đến 14 của nước bắp cải tím
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5">
+                    <!-- Scale A: Strong Acid (pH 1-3) -->
+                    <div class="bg-white rounded-2xl p-2.5 border-3 border-rose-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">AXIT MẠNH</span>
+                                <span class="text-[10px] font-bold text-slate-500">pH 1 - 3</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scaleATitle">Đỏ sậm / Đỏ hồng</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-rose-950 bg-rose-50 p-1.5 rounded-lg leading-tight" data-i18n="scaleARes">
+                            🔴 <strong>Môi trường axit:</strong> Nước chanh, giấm, axit clohidric làm chất chỉ thị anthocyanin chuyển sang màu đỏ tươi hoặc đỏ hồng.
+                        </p>
+                    </div>
+
+                    <!-- Scale B: Weak Acid / Neutral (pH 4-7) -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-purple-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-purple-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRUNG TÍNH</span>
+                                <span class="text-[10px] font-bold text-slate-500">pH 4 - 7</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scaleBTitle">Tím / Xanh lam nhạt</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-purple-950 bg-purple-50 p-1.5 rounded-lg leading-tight" data-i18n="scaleBRes">
+                            🟣 <strong>Môi trường trung tính:</strong> Nước cất, nước tinh khiết giữ nguyên màu tím đặc trưng ban đầu của nước bắp cải.
+                        </p>
+                    </div>
+
+                    <!-- Scale C: Weak Base (pH 8-10) -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-teal-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-teal-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">KIỀM YẾU</span>
+                                <span class="text-[10px] font-bold text-slate-500">pH 8 - 10</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scaleCTitle">Xanh lá cây</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-teal-950 bg-teal-50 p-1.5 rounded-lg leading-tight" data-i18n="scaleCRes">
+                            🟢 <strong>Môi trường kiềm nhẹ:</strong> Nước xà phòng, baking soda làm chất chỉ thị chuyển sang màu xanh lá cây tươi.
+                        </p>
+                    </div>
+
+                    <!-- Scale D: Strong Base (pH 11-14) -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-yellow-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-yellow-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">KIỀM MẠNH</span>
+                                <span class="text-[10px] font-bold text-slate-500">pH 11 - 14</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scaleDTitle">Vàng / Xanh lục sậm</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-yellow-950 bg-yellow-50 p-1.5 rounded-lg leading-tight" data-i18n="scaleDRes">
+                            🟡 <strong>Môi trường kiềm mạnh:</strong> Nước tẩy Javel, dung dịch xút (NaOH) chuyển dịch sang màu vàng đậm.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: SUMMARY & QUIZ
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-2xl p-3.5 border-2 border-purple-300 space-y-2.5">
+                        <div class="flex items-center gap-2 border-b border-purple-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-purple-800">Phiếu Kiến Thức Trọng Tâm</span>
+                                <h3 class="text-base font-black text-purple-950">Độ pH & Chất Chỉ Thị Tự Nhiên</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-purple-200 space-y-0.5">
+                            <div class="text-xs font-black text-purple-800">🟣 1. Chất chỉ thị Anthocyanin:</div>
+                            <p class="text-xs font-bold text-slate-700">Trong bắp cải tím có chứa sắc tố <strong>Anthocyanin</strong> tan trong nước, là một chất chỉ thị pH tự nhiên có khả năng thay đổi cấu trúc và màu sắc tùy theo độ pH của môi trường.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-purple-200 space-y-0.5">
+                            <div class="text-xs font-black text-purple-800">📊 2. Thang đo pH ( từ 1 đến 14 ):</div>
+                            <div class="text-center bg-purple-50 p-1.5 rounded-lg font-black text-xs text-purple-900">
+                                pH < 7 (Axit) | pH = 7 (Trung tính) | pH > 7 (Kiềm / Bazơ)
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-center font-extrabold text-slate-600">
+                                <div>• <strong>Axit</strong>: Đỏ / Hồng</div>
+                                <div>• <strong>Trung tính</strong>: Tím</div>
+                                <div>• <strong>Kiềm</strong>: Xanh / Vàng</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-purple-200 space-y-0.5">
+                            <div class="text-xs font-black text-purple-800">💡 3. Ứng dụng thực tế:</div>
+                            <ul class="text-xs font-bold text-slate-700 space-y-0.5 list-disc list-inside">
+                                <li>Kiểm tra độ chua của đất trồng nông nghiệp.</li>
+                                <li>Kiểm tra độ kiềm của nước sinh hoạt, hồ bơi.</li>
+                                <li>Làm chất chỉ thị trực quan thú vị trong các thí nghiệm vui.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-100 p-2.5 rounded-xl border-2 border-amber-300">
+                            <div class="text-xs font-black text-amber-900">💡 Lưu ý an toàn khi làm thí nghiệm</div>
+                            <p class="text-xs font-bold text-amber-950 mt-0.5">
+                                Các chất tẩy rửa (như Javel) và axit mạnh có tính ăn mòn cao, cần có sự giám sát của người lớn hoặc giáo viên khi thực hiện!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Thử Thách Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🟣</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-1.5"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.28), 240);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            solutionType: 'water', // 'lemon', 'vinegar', 'soda', 'water', 'soap', 'bleach'
+            phValue: 7,            // pH from 1 to 14
+            isPouring: false,
+            pourProgress: 0,       // 0 to 100%
+            step: 0                // 0: Prep, 1: Extract indicator, 2: Test acid, 3: Test neutral, 4: Test base
+        };
+
+        const solutionData = {
+            lemon:   { nameVi: 'Nước Chanh', nameEn: 'Lemon Juice', ph: 2, descVi: 'Axit mạnh', descEn: 'Strong Acid' },
+            vinegar: { nameVi: 'Giấm Ăn', nameEn: 'Vinegar', ph: 3, descVi: 'Axit yếu', descEn: 'Weak Acid' },
+            soda:    { nameVi: 'Nước Ngọt Soda', nameEn: 'Soda', ph: 4, descVi: 'Axit nhẹ', descEn: 'Mild Acid' },
+            water:   { nameVi: 'Nước Tinh Khiết', nameEn: 'Pure Water', ph: 7, descVi: 'Trung tính', descEn: 'Neutral' },
+            soap:    { nameVi: 'Nước Xà Phòng', nameEn: 'Soap Water', ph: 9, descVi: 'Kiềm yếu', descEn: 'Weak Base' },
+            bleach:  { nameVi: 'Nước Tẩy Javel', nameEn: 'Bleach', ph: 12, descVi: 'Kiềm mạnh', descEn: 'Strong Base' }
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Chiết xuất bắp cải', shortEn: '1. Extract Cabbage', icon: '🟣' },
+            2: { shortVi: '2. Thử nghiệm axit', shortEn: '2. Test Acid', icon: '🍋' },
+            3: { shortVi: '3. Thử nghiệm trung tính', shortEn: '3. Test Neutral', icon: '💧' },
+            4: { shortVi: '4. Thử nghiệm kiềm', shortEn: '4. Test Base', icon: '🧼' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function getPhColor(ph) {
+            if (ph <= 2) return { hex: '#ef4444', nameVi: 'Đỏ đậm', nameEn: 'Dark Red' };       // pH 1-2
+            if (ph <= 3) return { hex: '#f43f5e', nameVi: 'Đỏ hồng', nameEn: 'Red-Pink' };     // pH 3
+            if (ph <= 4) return { hex: '#fb7185', nameVi: 'Hồng sáng', nameEn: 'Bright Pink' };// pH 4
+            if (ph <= 5) return { hex: '#d946ef', nameVi: 'Tím hồng', nameEn: 'Pink-Purple' }; // pH 5
+            if (ph <= 6) return { hex: '#a855f7', nameVi: 'Tím nhạt', nameEn: 'Light Purple' };// pH 6
+            if (ph <= 7) return { hex: '#7c3aed', nameVi: 'Tím chuẩn', nameEn: 'Purple' };     // pH 7
+            if (ph <= 8) return { hex: '#3b82f6', nameVi: 'Xanh dương', nameEn: 'Blue' };      // pH 8
+            if (ph <= 9) return { hex: '#14b8a6', nameVi: 'Xanh ngọc', nameEn: 'Teal' };       // pH 9
+            if (ph <= 10) return { hex: '#10b981', nameVi: 'Xanh lá nhạt', nameEn: 'Light Green' }; // pH 10
+            if (ph <= 11) return { hex: '#84cc16', nameVi: 'Xanh lá', nameEn: 'Green' };       // pH 11
+            if (ph <= 12) return { hex: '#eab308', nameVi: 'Vàng lục', nameEn: 'Yellow-Green' }; // pH 12
+            if (ph <= 13) return { hex: '#facc15', nameVi: 'Vàng tươi', nameEn: 'Bright Yellow' }; // pH 13
+            return { hex: '#ca8a04', nameVi: 'Vàng sậm', nameEn: 'Dark Yellow' }; // pH 14
+        }
+
+        function pourIndicator() {
+            labState.isPouring = true;
+            labState.pourProgress = 0;
+            playTone(550, 'triangle', 0.2);
+            const pourText = document.getElementById('pour-text');
+            pourText.textContent = currentLang === 'vi' ? 'Đang nhỏ...' : 'Pouring...';
+        }
+
+        function onParamChange() {
+            const solKey = document.getElementById('select-solution').value;
+            labState.solutionType = solKey;
+            labState.phValue = solutionData[solKey].ph;
+            document.getElementById('slider-ph').value = labState.phValue;
+            playTone(400, 'sine', 0.05, 0.05);
+            updateLabUI();
+        }
+
+        function onPhSlider() {
+            labState.phValue = parseInt(document.getElementById('slider-ph').value);
+            playTone(300 + labState.phValue * 30, 'sine', 0.04, 0.04);
+            updateLabUI();
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                labState.solutionType = 'water';
+                labState.phValue = 7;
+                document.getElementById('select-solution').value = 'water';
+                document.getElementById('slider-ph').value = 7;
+                playTone(520, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                labState.solutionType = 'lemon';
+                labState.phValue = 2;
+                document.getElementById('select-solution').value = 'lemon';
+                document.getElementById('slider-ph').value = 2;
+                playTone(650, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.solutionType = 'water';
+                labState.phValue = 7;
+                document.getElementById('select-solution').value = 'water';
+                document.getElementById('slider-ph').value = 7;
+                playTone(700, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                labState.solutionType = 'soap';
+                labState.phValue = 9;
+                document.getElementById('select-solution').value = 'soap';
+                document.getElementById('slider-ph').value = 9;
+                playChime();
+            }
+
+            pourIndicator();
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2500);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-purple-500 hover:bg-purple-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.solutionType = 'water';
+            labState.phValue = 7;
+            labState.isPouring = false;
+            labState.pourProgress = 0;
+            labState.step = 0;
+
+            document.getElementById('select-solution').value = 'water';
+            document.getElementById('slider-ph').value = 7;
+            document.getElementById('pour-text').textContent = currentLang === 'vi' ? 'Nhỏ nước bắp cải' : 'Pour Indicator';
+
+            playTone(320, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const ph = labState.phValue;
+            const colInfo = getPhColor(ph);
+
+            document.getElementById('custom-ph-display').textContent = `pH = ${ph}`;
+            document.getElementById('ph-val-display').textContent = `pH = ${ph} (${colInfo.nameVi})`;
+            document.getElementById('equation-color-desc').textContent = `${colInfo.nameVi} (pH ${ph})`;
+
+            // Top Status Badge
+            const badge = document.getElementById('status-step-badge');
+            const title = document.getElementById('status-step-title');
+            badge.className = 'bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+            badge.textContent = st === 0 ? (currentLang === 'vi' ? 'THÍ NGHIỆM' : 'TESTING') : `BƯỚC ${st}/4`;
+
+            const stepTitles = [
+                'Chọn dung dịch thử nghiệm hoặc thay đổi giá trị pH để xem phản ứng màu sắc!',
+                'Bước 1: Chiết xuất nước bắp cải tím có màu tím tự nhiên (pH = 7).',
+                'Bước 2: Nhỏ nước bắp cải vào nước chanh (Axit mạnh) ➔ Chuyển sang màu đỏ sậm (pH = 2).',
+                'Bước 3: Nhỏ nước bắp cải vào nước tinh khiết (Trung tính) ➔ Giữ nguyên màu tím (pH = 7).',
+                'Bước 4: Nhỏ nước bắp cải vào nước xà phòng (Kiềm yếu) ➔ Chuyển sang màu xanh lá (pH = 9).'
+            ];
+            title.textContent = stepTitles[st];
+
+            // 4 Steps buttons UI state
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-4 h-4 rounded-md bg-purple-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-emerald-700';
+                    bdg.textContent = '✅';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-4 h-4 rounded-md bg-purple-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-80';
+                    icon.className = 'w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Result Text
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) {
+                obsEl.innerHTML = `Đang thử nghiệm dung dịch với <strong>pH = ${ph}</strong>. Dung dịch chuyển sang màu <strong>${colInfo.nameVi}</strong> nhờ sắc tố anthocyanin!`;
+            } else if (st === 1) {
+                obsEl.innerHTML = `Chiết xuất nước bắp cải tím bằng nước ấm, thu được dung dịch có màu tím đặc trưng ở pH trung tính.`;
+            } else if (st === 2) {
+                obsEl.innerHTML = `🍋 Khi gặp môi trường axit (pH = ${ph}), chất chỉ thị trong bắp cải tím phản ứng và chuyển đổi lập tức thành màu <strong>${colInfo.nameVi}</strong>!`;
+            } else if (st === 3) {
+                obsEl.innerHTML = `💧 Trong môi trường trung tính (pH = ${ph}), dung dịch giữ nguyên màu <strong>${colInfo.nameVi}</strong> ban đầu.`;
+            } else if (st === 4) {
+                obsEl.innerHTML = `🧼 Trong môi trường kiềm (pH = ${ph}), dung dịch chuyển sang sắc thái <strong>${colInfo.nameVi}</strong> rất bắt mắt!`;
+            }
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-purple-100 text-purple-950 border-2 border-purple-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345 Beaker & Dropper)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawCalloutPill(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath(); c.arc(targetX, targetY, 3, 0, Math.PI * 2); c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 175, 24, 7);
+            c.fill(); c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 6, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas(timestamp) {
+            if (activeTab === 'lab') {
+                if (labState.isPouring) {
+                    labState.pourProgress += 2.5;
+                    if (labState.pourProgress >= 100) {
+                        labState.isPouring = false;
+                        labState.pourProgress = 0;
+                        document.getElementById('pour-text').textContent = currentLang === 'vi' ? 'Nhỏ nước bắp cải' : 'Pour Indicator';
+                    }
+                }
+
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Background Chamber
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 465, 345);
+
+                // Grid lines
+                ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+                for (let x = 0; x < 465; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 345); ctx.stroke(); }
+                for (let y = 0; y < 345; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(465, y); ctx.stroke(); }
+
+                const ph = labState.phValue;
+                const colInfo = getPhColor(ph);
+
+                // --- DRAW LABORATORY BEAKER ---
+                const beakerX = 180, beakerY = 130, beakerW = 110, beakerH = 150;
+
+                // Beaker liquid fill
+                ctx.fillStyle = colInfo.hex + '99';
+                ctx.fillRect(beakerX + 4, beakerY + 35, beakerW - 8, beakerH - 39);
+
+                // Liquid surface ellipse
+                ctx.fillStyle = colInfo.hex;
+                ctx.beginPath();
+                ctx.ellipse(beakerX + beakerW / 2, beakerY + 35, beakerW / 2 - 4, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Beaker Glass Outline
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(beakerX, beakerY);
+                ctx.lineTo(beakerX, beakerY + beakerH);
+                ctx.lineTo(beakerX + beakerW, beakerY + beakerH);
+                ctx.lineTo(beakerX + beakerW, beakerY);
+                ctx.stroke();
+
+                // Beaker lip
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(beakerX - 8, beakerY);
+                ctx.lineTo(beakerX + beakerW + 8, beakerY);
+                ctx.stroke();
+
+                // Gradation marks on beaker
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 1.5;
+                [0.2, 0.4, 0.6, 0.8].forEach(ratio => {
+                    const gy = beakerY + beakerH - ratio * (beakerH - 40);
+                    ctx.beginPath(); ctx.moveTo(beakerX + 5, gy); ctx.lineTo(beakerX + 18, gy); ctx.stroke();
+                });
+
+                // --- DRAW DROPPER / PIPETTE POURING ---
+                const dropperX = beakerX + beakerW / 2;
+                const dropperY = beakerY - 50;
+
+                // Dropper bulb & stem
+                ctx.fillStyle = '#a855f7';
+                ctx.beginPath(); ctx.arc(dropperX, dropperY - 15, 12, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillRect(dropperX - 4, dropperY - 5, 8, 40);
+
+                if (labState.isPouring) {
+                    // Dripping droplets
+                    ctx.fillStyle = '#7c3aed';
+                    ctx.beginPath(); ctx.arc(dropperX, dropperY + 45 + (labState.pourProgress % 30), 4, 0, Math.PI * 2); ctx.fill();
+                }
+
+                // Callouts Overlay
+                const calloutX = 310;
+                if (labState.step === 0) {
+                    drawCalloutPill(ctx, beakerX + beakerW / 2, beakerY + 80, calloutX, 70, `🧪 Dung dịch (pH = ${ph})`, colInfo.hex);
+                } else if (labState.step === 1) {
+                    drawCalloutPill(ctx, beakerX + beakerW / 2, beakerY + 80, calloutX, 70, '🟣 Chiết xuất bắp cải tím', '#7c3aed');
+                } else if (labState.step === 2) {
+                    drawCalloutPill(ctx, beakerX + beakerW / 2, beakerY + 80, calloutX, 70, '🍋 Môi trường Axit (Đỏ)', '#ef4444');
+                } else if (labState.step === 3) {
+                    drawCalloutPill(ctx, beakerX + beakerW / 2, beakerY + 80, calloutX, 70, '💧 Môi trường Trung tính (Tím)', '#7c3aed');
+                } else if (labState.step === 4) {
+                    drawCalloutPill(ctx, beakerX + beakerW / 2, beakerY + 80, calloutX, 70, '🧼 Môi trường Kiềm (Xanh)', '#10b981');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: COMPARE pH 1-14 SCALE
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', ph: 2 },
+                { id: 'cmpCanvasB', ph: 7 },
+                { id: 'cmpCanvasC', ph: 9 },
+                { id: 'cmpCanvasD', ph: 12 }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 144;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+                const cX = w / 2, cY = h / 2;
+                const colInfo = getPhColor(cfg.ph);
+
+                // Draw mini test tube with color
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+                ctx.fillRect(cX - 18, cY - 45, 36, 85);
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+                ctx.strokeRect(cX - 18, cY - 45, 36, 85);
+
+                ctx.fillStyle = colInfo.hex;
+                ctx.fillRect(cX - 16, cY - 10, 32, 48);
+
+                ctx.fillStyle = '#f8fafc'; ctx.font = '800 11px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(`pH = ${cfg.ph} (${colInfo.nameVi})`, cX, cY + 55);
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🟣',
+                qVi: '1. Sắc tố tự nhiên nào trong bắp cải tím giúp đổi màu theo độ pH?',
+                qEn: '1. Which natural pigment in red cabbage causes color changes according to pH?',
+                optsVi: [
+                    'Anthocyanin',
+                    'Chlorophyll',
+                    'Carotenoid',
+                    'Hemoglobin'
+                ],
+                optsEn: [
+                    'Anthocyanin',
+                    'Chlorophyll',
+                    'Carotenoid',
+                    'Hemoglobin'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🍋',
+                qVi: '2. Khi nhỏ nước bắp cải tím vào nước chanh (có tính axit), dung dịch sẽ chuyển sang màu gì?',
+                qEn: '2. When adding red cabbage juice to lemon juice (acidic), what color does it turn?',
+                optsVi: [
+                    'Đỏ hoặc đỏ hồng',
+                    'Xanh lá cây',
+                    'Vàng sậm',
+                    'Xanh dương đậm'
+                ],
+                optsEn: [
+                    'Red or pink-red',
+                    'Green',
+                    'Dark yellow',
+                    'Dark blue'
+                ],
+                ans: 0
+            },
+            {
+                icon: '💧',
+                qVi: '3. Dung dịch nước tinh khiết (trung tính, pH = 7) khi cho nước bắp cải tím vào sẽ có màu gì?',
+                qEn: '3. Pure water (neutral, pH = 7) mixed with red cabbage juice will be what color?',
+                optsVi: [
+                    'Màu tím đặc trưng',
+                    'Màu trắng trong',
+                    'Màu vàng cam',
+                    'Không đổi màu'
+                ],
+                optsEn: [
+                    'Characteristic purple',
+                    'Clear white',
+                    'Yellow-orange',
+                    'No color change'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🧼',
+                qVi: '4. Dung dịch nào sau đây có tính kiềm và làm bắp cải tím chuyển sang màu xanh lá?',
+                qEn: '4. Which of the following solutions is basic and turns red cabbage juice green?',
+                optsVi: [
+                    'Nước xà phòng / Baking soda',
+                    'Nước chanh tươi',
+                    'Giấm ăn',
+                    'Nước ép cam'
+                ],
+                optsEn: [
+                    'Soap water / Baking soda',
+                    'Fresh lemon juice',
+                    'Vinegar',
+                    'Orange juice'
+                ],
+                ans: 0
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2 rounded-xl bg-slate-50 hover:bg-purple-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center shrink-0 font-black">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã nắm vững kiến thức về Độ pH và Bắp Cải Tím (+3 Điểm)!'
+                    : '🎉 Correct! You mastered Red Cabbage pH Indicator (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1400);
+            } else {
+                playTone(220, 'sawtooth', 0.2);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi, hãy đọc lại phiếu tóm tắt bên trái nhé!'
+                    : '🤔 Not quite right, check the theory sheet on the left!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-purple-600 text-white border-2 border-purple-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-purple-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Hóa Học Vui',
+                    goalPill: '🎯 Mục tiêu: Xác định pH dung dịch bằng chất chỉ thị tự nhiên',
+                    appTitle: 'Lab: Đo Độ pH Bằng Nước Bắp Cải Tím',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Pha Trộn Dung Dịch & 4 Bước',
+                    tab2: '2. Thang Màu pH (1 - 14)',
+                    tab3: '3. Tóm Tắt Lý Thuyết & Đố Vui',
+                    pourBtn: 'Nhỏ nước bắp cải',
+                    autoObsBtn: 'Tự động 4 bước',
+                    phResultLabel: 'Độ pH:',
+                    toolsHeader: '🎛️ Tùy Chỉnh Dung Dịch Thí Nghiệm',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Đặt lại',
+                    selectSolutionLabel: 'Chọn dung dịch cần thử nghiệm:',
+                    customPhLabel: 'Hoặc điều chỉnh mức độ pH:',
+                    stepsHeader: '📋 Các Bước Thí Nghiệm (Bấm 1 → 4):',
+                    step1Text: '1. Chiết xuất dung dịch bắp cải tím (màu tím).',
+                    step2Text: '2. Thử nghiệm với dung dịch có tính axit (Nước chanh).',
+                    step3Text: '3. Thử nghiệm với môi trường trung tính (Nước).',
+                    step4Text: '4. Thử nghiệm với dung dịch có tính kiềm (Xà phòng/Javel).',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Tiến Trình Thí Nghiệm Xác Định pH',
+                    finalConclusionBadge: '✅ Quy luật: Axit (Đỏ/Hồng), Trung tính (Tím), Kiềm (Xanh lục/Vàng)',
+                    cmpSub: 'Bảng màu chuẩn',
+                    cmpTitle: 'Thang màu chỉ thị pH từ 1 đến 14 của nước bắp cải tím',
+                    scaleATitle: 'Đỏ sậm / Đỏ hồng',
+                    scaleARes: '🔴 <strong>Môi trường axit:</strong> Nước chanh, giấm, axit clohidric làm chất chỉ thị anthocyanin chuyển sang màu đỏ tươi hoặc đỏ hồng.',
+                    scaleBTitle: 'Tím / Xanh lam nhạt',
+                    scaleBRes: '🟣 <strong>Môi trường trung tính:</strong> Nước cất, nước tinh khiết giữ nguyên màu tím đặc trưng ban đầu của nước bắp cải.',
+                    scaleCTitle: 'Xanh lá cây',
+                    scaleCRes: '🟢 <strong>Môi trường kiềm nhẹ:</strong> Nước xà phòng, baking soda làm chất chỉ thị chuyển sang màu xanh lá cây tươi.',
+                    scaleDTitle: 'Vàng / Xanh lục sậm',
+                    scaleDRes: '🟡 <strong>Môi trường kiềm mạnh:</strong> Nước tẩy Javel, dung dịch xút (NaOH) chuyển dịch sang màu vàng đậm.'
+                },
+                en: {
+                    labBadge: 'Fun Chemistry Lab',
+                    goalPill: '🎯 Goal: Determine solution pH using natural indicator',
+                    appTitle: 'Lab: Red Cabbage pH Indicator Experiment',
+                    starsUnit: 'Pts',
+                    tab1: '1. Solution Mixing & 4 Steps',
+                    tab2: '2. pH Color Scale (1 - 14)',
+                    tab3: '3. Summary & Quiz',
+                    pourBtn: 'Pour Indicator',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    phResultLabel: 'pH Level:',
+                    toolsHeader: '🎛️ Test Solution Controls',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    selectSolutionLabel: 'Select test solution:',
+                    customPhLabel: 'Or adjust pH level:',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Extract red cabbage indicator juice (purple).',
+                    step2Text: '2. Test with acidic solution (Lemon juice).',
+                    step3Text: '3. Test with neutral environment (Water).',
+                    step4Text: '4. Test with basic solution (Soap/Bleach).',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'pH Determination Progress',
+                    finalConclusionBadge: '✅ Rule: Acid (Red/Pink), Neutral (Purple), Base (Green/Yellow)',
+                    cmpSub: 'Standard Color Chart',
+                    cmpTitle: 'Red Cabbage pH 1 to 14 Indicator Color Scale',
+                    scaleATitle: 'Dark Red / Pink-Red',
+                    scaleARes: '🔴 <strong>Acidic environment:</strong> Lemon, vinegar, or acid turn anthocyanin indicator bright red or pink.',
+                    scaleBTitle: 'Purple / Light Blue',
+                    scaleBRes: '🟣 <strong>Neutral environment:</strong> Distilled water keeps the original purple color of cabbage juice.',
+                    scaleCTitle: 'Green',
+                    scaleCRes: '🟢 <strong>Mild basic environment:</strong> Soap water or baking soda turns indicator fresh green.',
+                    scaleDTitle: 'Yellow / Dark Green',
+                    scaleDRes: '🟡 <strong>Strong basic environment:</strong> Bleach or caustic soda shifts color to deep yellow.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

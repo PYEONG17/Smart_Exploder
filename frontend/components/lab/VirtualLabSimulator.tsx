@@ -7,19 +7,13 @@ import {
   Zap,
   Waves,
   Eye,
-  Thermometer,
   RotateCcw,
   Play,
   Pause,
-  Download,
-  Info,
-  CheckCircle2,
-  AlertCircle,
   Sparkles,
   BookOpen,
   Volume2,
   VolumeX,
-  Maximize2,
   Sliders,
   HelpCircle,
   Compass,
@@ -42,14 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/contexts/LanguageContext";
-import { motion, AnimatePresence } from "motion/react";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  fetchLabModels,
-  translateLabTexts,
-  uploadLabModel,
-  type LabModelRecord,
-} from "@/lib/api";
+import { fetchLabModels, translateLabTexts, type LabModelRecord } from "@/lib/api";
 import { Uploaded3DModelViewer } from "@/components/ui/Uploaded3DModelViewer";
 
 // ============================================================================
@@ -1251,7 +1238,6 @@ export function VirtualLabSimulator({
   embedded = false,
 }: VirtualLabSimulatorProps = {}) {
   const { locale } = useLang();
-  const { token, user } = useAuth();
   const isVi = locale === "vi";
   const [labDisplayMode, setLabDisplayMode] =
     useState<LabDisplayMode>("both");
@@ -1288,7 +1274,10 @@ export function VirtualLabSimulator({
     if (initialViewMode) return initialViewMode;
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
-      if (p.get("id")) return "detail";
+      const urlId = p.get("id");
+      if (urlId && KNTT_EXPERIMENTS.some((experiment) => experiment.id === urlId)) {
+        return "detail";
+      }
     }
     return "catalog";
   });
@@ -1379,15 +1368,10 @@ export function VirtualLabSimulator({
     labTranslationState.experimentId !== currentExp.id;
 
   const [labModels, setLabModels] = useState<LabModelRecord[]>([]);
-  const [labModelFile, setLabModelFile] = useState<File | null>(null);
-  const [labModelTitle, setLabModelTitle] = useState("");
-  const [isUploadingLabModel, setIsUploadingLabModel] = useState(false);
   const [labModelError, setLabModelError] = useState("");
   const currentLabModel = labModels.find(
     (model) => model.experimentId === currentExp.id,
   );
-  const canManageLabModels =
-    user?.role === "TEACHER";
 
   useEffect(() => {
     let active = true;
@@ -1409,46 +1393,11 @@ export function VirtualLabSimulator({
     };
   }, []);
 
-  const handleLabModelUpload = async () => {
-    if (!token || !labModelFile) return;
-    if (!labModelFile.name.toLowerCase().endsWith(".glb")) {
-      setLabModelError("Chỉ hỗ trợ mô hình GLB (.glb).");
-      return;
-    }
-    if (labModelFile.size > 100 * 1024 * 1024) {
-      setLabModelError("Mô hình 3D không được vượt quá 100 MB.");
-      return;
-    }
-
-    setIsUploadingLabModel(true);
-    setLabModelError("");
-    try {
-      const savedModel = await uploadLabModel(
-        token,
-        currentExp.id,
-        labModelFile,
-        labModelTitle.trim() || currentExp.title,
-      );
-      setLabModels((models) => [
-        ...models.filter((model) => model.experimentId !== savedModel.experimentId),
-        savedModel,
-      ]);
-      setLabModelFile(null);
-      setLabModelTitle("");
-    } catch (error) {
-      setLabModelError(
-        error instanceof Error ? error.message : "Không thể tải mô hình lên.",
-      );
-    } finally {
-      setIsUploadingLabModel(false);
-    }
-  };
-
   // Sound effects mute toggle
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const playSound = (type: "click" | "bubble" | "laser" | "splash" | "beep") => {
+  const playSound = useCallback((type: "click" | "bubble" | "laser" | "splash" | "beep") => {
     if (soundEnabled) playLabSound(type);
-  };
+  }, [soundEnabled]);
 
   // --------------------------------------------------------------------------
   // STATE CHO TỪNG BÀI THÍ NGHIỆM
@@ -1465,7 +1414,6 @@ export function VirtualLabSimulator({
 
   // 3. Bảo toàn khối lượng hóa học
   const [reactionStep, setReactionStep] = useState<"initial" | "mixed">("initial");
-  const [chemicalType, setChemicalType] = useState<"bacl2_na2so4" | "cuso4_naoh">("bacl2_na2so4");
 
   // 4. Khúc xạ ánh sáng
   const [incidenceAngle, setIncidenceAngle] = useState(45); // Degrees
@@ -1474,7 +1422,6 @@ export function VirtualLabSimulator({
   // 5. Áp suất chất lỏng
   const [fluidDepth, setFluidDepth] = useState(25); // cm
   const [probeOrientation, setProbeOrientation] = useState<"down" | "up" | "side">("down");
-  const [fluidMode, setFluidMode] = useState<"depth_probe" | "communicating_vessels">("depth_probe");
 
   // 6. Thấu kính hội tụ (KHTN 9 Bài 6)
   const [lensFocalLength, setLensFocalLength] = useState(15); // cm
@@ -1610,14 +1557,6 @@ export function VirtualLabSimulator({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Kiểm tra query param 'id' khi component mount
-    const p = new URLSearchParams(window.location.search);
-    const urlId = p.get("id");
-    if (urlId && KNTT_EXPERIMENTS.some((e) => e.id === urlId)) {
-      setSelectedExpId(urlId);
-      setViewMode("detail");
-    }
-
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const id = params.get("id");
@@ -1675,7 +1614,7 @@ export function VirtualLabSimulator({
     return KNTT_EXPERIMENTS.filter(
       (e) => e.id !== currentExp.id && (e.grade === currentExp.grade || e.subject === currentExp.subject)
     ).slice(0, 3);
-  }, [currentExp, selectedExpId]);
+  }, [currentExp]);
 
   // --------------------------------------------------------------------------
   // DATA LOGGER TABLE (Bảng ghi số liệu thực nghiệm)
@@ -1692,14 +1631,15 @@ export function VirtualLabSimulator({
   const [recordedData, setRecordedData] = useState<LogRow[]>([]);
 
   // Quiz state
-  const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<number | null>(null);
-  const [showQuizExplanation, setShowQuizExplanation] = useState(false);
-
-  // Reset quiz when experiment changes
-  useEffect(() => {
-    setSelectedQuizAnswer(null);
-    setShowQuizExplanation(false);
-  }, [selectedExpId]);
+  const [quizState, setQuizState] = useState<{
+    experimentId: string;
+    answer: number | null;
+    showExplanation: boolean;
+  }>({ experimentId: selectedExpId, answer: null, showExplanation: false });
+  const selectedQuizAnswer =
+    quizState.experimentId === selectedExpId ? quizState.answer : null;
+  const showQuizExplanation =
+    quizState.experimentId === selectedExpId && quizState.showExplanation;
 
   // --------------------------------------------------------------------------
   // TÍNH TOÁN VẬT LÝ / HÓA HỌC THỜI GIAN THỰC
@@ -1845,7 +1785,7 @@ export function VirtualLabSimulator({
       });
     }, 250);
     return () => clearInterval(interval);
-  }, [isSeparating, flameLevel]);
+  }, [isSeparating, flameLevel, playSound]);
 
   // 11. Lực ma sát calculations
   const frictionCalculations = useMemo(() => {
@@ -1903,7 +1843,7 @@ export function VirtualLabSimulator({
         return prev + 5;
       });
     }, 35);
-  }, [barrierMaterial, barrierDistance, soundEnabled]);
+  }, [barrierMaterial, barrierDistance, playSound]);
 
   // 14. Đòn bẩy calculations
   const leverCalculations = useMemo(() => {
@@ -2147,7 +2087,7 @@ export function VirtualLabSimulator({
       });
     }, 280);
     return () => clearInterval(interval);
-  }, [isHeatingBall]);
+  }, [isHeatingBall, playSound]);
 
   // 20. Spring Hooke calculations (KHTN 6 Bài 36)
   const springCalculations = useMemo(() => {
@@ -2170,10 +2110,7 @@ export function VirtualLabSimulator({
   }, [hangingMassG, springK]);
 
   useEffect(() => {
-    if (!isSpringBouncing) {
-      setSpringBounceOffset(0);
-      return;
-    }
+    if (!isSpringBouncing) return;
     let frame = 0;
     const interval = setInterval(() => {
       frame += 0.25;
@@ -2269,10 +2206,7 @@ export function VirtualLabSimulator({
   }, [thermalReactionType, reagentAmountG]);
 
   useEffect(() => {
-    if (!isThermalReacting) {
-      setThermalReactionTemp(25);
-      return;
-    }
+    if (!isThermalReacting) return;
     const target = thermalCalculations.targetTemp;
     const interval = setInterval(() => {
       setThermalReactionTemp((prev) => {
@@ -2634,20 +2568,20 @@ export function VirtualLabSimulator({
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Grade Filter Pills */}
               <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-x-auto [scrollbar-width:none]">
-                {[
+                {([
                   { id: "all", label: "Tất cả khối (23)" },
                   { id: "6", label: "Lớp 6 (5)" },
                   { id: "7", label: "Lớp 7 (6)" },
                   { id: "8", label: "Lớp 8 (8)" },
                   { id: "9", label: "Lớp 9 (4)" },
-                ].map((tab) => {
+                ] as const).map((tab) => {
                   const isActive = selectedGradeFilter === tab.id;
                   return (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => {
-                        setSelectedGradeFilter(tab.id as any);
+                        setSelectedGradeFilter(tab.id);
                         playSound("click");
                       }}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
@@ -2664,19 +2598,19 @@ export function VirtualLabSimulator({
 
               {/* Subject Filter Pills */}
               <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
-                {[
+                {([
                   { id: "all", label: "Tất cả môn" },
                   { id: "physics", label: "⚡ Vật lý" },
                   { id: "chemistry", label: "🧪 Hóa học" },
                   { id: "biology", label: "🌿 Sinh học" },
-                ].map((tab) => {
+                ] as const).map((tab) => {
                   const isActive = selectedSubjectFilter === tab.id;
                   return (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => {
-                        setSelectedSubjectFilter(tab.id as any);
+                        setSelectedSubjectFilter(tab.id);
                         playSound("click");
                       }}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
@@ -2983,23 +2917,23 @@ export function VirtualLabSimulator({
             ) : null}
           </section>
 
-          {(currentLabModel || canManageLabModels || labModelError) && (
+          {(currentLabModel || labModelError) && (
             <section className="space-y-4 rounded-3xl border border-indigo-200/70 bg-white/95 p-5 shadow-xs dark:border-indigo-900/60 dark:bg-neutral-900/95">
-              <div>
-                <h3 className="flex items-center gap-2 text-sm font-bold text-neutral-900 dark:text-white">
-                  <Box className="h-4 w-4 text-indigo-500" />
-                  {labDisplayMode === "en"
-                    ? "Uploaded 3D model"
-                    : "Mô hình 3D của bài Lab"}
-                </h3>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  {labDisplayMode === "en"
-                    ? "A visual companion for this experiment. It does not change the simulation results."
-                    : "Mô hình trực quan bổ trợ cho bài thí nghiệm; không làm thay đổi số liệu mô phỏng."}
-                </p>
-              </div>
               {currentLabModel ? (
                 <div>
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-neutral-900 dark:text-white">
+                      <Box className="h-4 w-4 text-indigo-500" />
+                      {labDisplayMode === "en"
+                        ? "Uploaded 3D model"
+                        : "Mô hình 3D của bài Lab"}
+                    </h3>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      {labDisplayMode === "en"
+                        ? "A visual companion for this experiment. It does not change the simulation results."
+                        : "Mô hình trực quan bổ trợ cho bài thí nghiệm; không làm thay đổi số liệu mô phỏng."}
+                    </p>
+                  </div>
                   <p className="mb-2 text-xs font-semibold text-neutral-800 dark:text-neutral-200">
                     {currentLabModel.title}
                   </p>
@@ -3008,45 +2942,6 @@ export function VirtualLabSimulator({
                     title={currentLabModel.title}
                     className="h-[60vh] max-h-[38rem]"
                   />
-                </div>
-              ) : null}
-              {canManageLabModels ? (
-                <div className="flex flex-col gap-2 rounded-xl border border-dashed border-indigo-300 p-3 dark:border-indigo-800">
-                  <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                    {currentLabModel
-                      ? "Thay mô hình hiện tại bằng tệp GLB mới"
-                      : "Tải mô hình GLB lên cho bài thí nghiệm này"}
-                  </label>
-                  <input
-                    type="text"
-                    value={labModelTitle}
-                    onChange={(event) => setLabModelTitle(event.target.value)}
-                    placeholder={currentExp.title}
-                    aria-label="Tên mô hình 3D"
-                    className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs dark:border-neutral-700 dark:bg-neutral-800"
-                  />
-                  <input
-                    type="file"
-                    accept=".glb,model/gltf-binary,application/octet-stream"
-                    onChange={(event) =>
-                      setLabModelFile(event.currentTarget.files?.[0] ?? null)
-                    }
-                    disabled={isUploadingLabModel}
-                    aria-label="Chọn tệp mô hình GLB"
-                    className="block w-full text-xs text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-500/10 file:px-3 file:py-2 file:font-semibold file:text-indigo-700 dark:text-neutral-300 dark:file:text-indigo-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleLabModelUpload()}
-                    disabled={!labModelFile || isUploadingLabModel}
-                    className="self-start rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isUploadingLabModel
-                      ? "Đang tải mô hình..."
-                      : currentLabModel
-                        ? "Thay mô hình"
-                        : "Tải mô hình lên"}
-                  </button>
                 </div>
               ) : null}
               {labModelError ? (
@@ -5579,7 +5474,7 @@ export function VirtualLabSimulator({
                       <rect x="0" y="0" width="250" height="250" rx="14" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
                       <rect x="0" y="0" width="250" height="36" rx="14" fill="#1e293b" />
                       <circle cx="20" cy="18" r="6" fill="#f97316" />
-                      <text x="35" y="22" fill="#f8fafc" fontSize="11" fontWeight="bold">THÍ NGHIỆM 'S GRAVESANDE</text>
+                      <text x="35" y="22" fill="#f8fafc" fontSize="11" fontWeight="bold">THÍ NGHIỆM &apos;S GRAVESANDE</text>
 
                       <g transform="translate(18, 52)">
                         <text x="0" y="14" fill="#94a3b8" fontSize="10">Kim loại quả cầu:</text>
@@ -5783,7 +5678,7 @@ export function VirtualLabSimulator({
                       <rect x="0" y="0" width="280" height="280" rx="14" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
                       <rect x="0" y="0" width="280" height="36" rx="14" fill="#1e293b" />
                       <circle cx="20" cy="18" r="6" fill="#38bdf8" />
-                      <text x="35" y="22" fill="#f8fafc" fontSize="11" fontWeight="bold">ĐỊNH LUẬT HÚC (HOOKE'S LAW)</text>
+                      <text x="35" y="22" fill="#f8fafc" fontSize="11" fontWeight="bold">ĐỊNH LUẬT HÚC (HOOKE&apos;S LAW)</text>
 
                       <g transform="translate(18, 52)">
                         <text x="0" y="14" fill="#94a3b8" fontSize="10">Độ cứng lò xo (k):</text>
@@ -8128,18 +8023,18 @@ export function VirtualLabSimulator({
                     1. Chọn dung dịch mẫu thử:
                   </label>
                   <div className="grid grid-cols-1 gap-1.5">
-                    {[
+                    {([
                       { id: "lemon", name: "Nước chanh tươi", ph: "pH ~ 2.4", type: "Acid mạnh" },
                       { id: "vinegar", name: "Giấm ăn 5%", ph: "pH ~ 3.0", type: "Acid yếu" },
                       { id: "pure_water", name: "Nước cất tinh khiết", ph: "pH = 7.0", type: "Trung tính" },
                       { id: "soap", name: "Nước xà phòng", ph: "pH ~ 9.5", type: "Base nhẹ" },
                       { id: "naoh", name: "Dung dịch NaOH 0.1M", ph: "pH = 13.0", type: "Base mạnh" },
-                    ].map((s) => (
+                    ] as const).map((s) => (
                       <button
                         key={s.id}
                         type="button"
                         onClick={() => {
-                          setSelectedPhSample(s.id as any);
+                          setSelectedPhSample(s.id);
                           setIsIndicatorApplied(false);
                           playSound("click");
                         }}
@@ -8163,16 +8058,16 @@ export function VirtualLabSimulator({
                     2. Chọn loại chất chỉ thị màu:
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {[
+                    {([
                       { id: "litmus", label: "Giấy quỳ tím" },
                       { id: "phenolphthalein", label: "Phenolphtalein" },
                       { id: "universal", label: "pH vạn năng" },
-                    ].map((ind) => (
+                    ] as const).map((ind) => (
                       <button
                         key={ind.id}
                         type="button"
                         onClick={() => {
-                          setSelectedIndicator(ind.id as any);
+                          setSelectedIndicator(ind.id);
                           setIsIndicatorApplied(false);
                           playSound("click");
                         }}
@@ -8212,16 +8107,16 @@ export function VirtualLabSimulator({
                     Môi trường dung dịch nhỏ vào tiêu bản:
                   </label>
                   <div className="grid grid-cols-1 gap-1.5">
-                    {[
+                    {([
                       { id: "hypertonic", name: "Ưu trương (NaCl 10%)", badge: "Co nguyên sinh" },
                       { id: "isotonic", name: "Đẳng trương (NaCl 0.9%)", badge: "Bình thường" },
                       { id: "hypotonic", name: "Nhược trương (Nước cất)", badge: "Trương bào" },
-                    ].map((m) => (
+                    ] as const).map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => {
-                          setOsmosisMedium(m.id as any);
+                          setOsmosisMedium(m.id);
                           setOsmosisProgress(30);
                           playSound("bubble");
                         }}
@@ -8263,12 +8158,12 @@ export function VirtualLabSimulator({
                     Độ phóng đại kính hiển vi:
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {["100x", "400x"].map((z) => (
+                    {(["100x", "400x"] as const).map((z) => (
                       <button
                         key={z}
                         type="button"
                         onClick={() => {
-                          setMicroscopeZoom(z as any);
+                          setMicroscopeZoom(z);
                           playSound("click");
                         }}
                         className={`py-2 text-center rounded-xl text-xs font-medium transition-all cursor-pointer ${
@@ -8331,12 +8226,12 @@ export function VirtualLabSimulator({
                     Số vòng dây cuộn cảm (N):
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[200, 500, 1000].map((t) => (
+                    {([200, 500, 1000] as const).map((t) => (
                       <button
                         key={t}
                         type="button"
                         onClick={() => {
-                          setInductionCoilTurns(t as any);
+                          setInductionCoilTurns(t);
                           playSound("click");
                         }}
                         className={`py-2 text-center rounded-xl text-xs font-medium transition-all cursor-pointer ${
@@ -8458,16 +8353,16 @@ export function VirtualLabSimulator({
                     Dạng sóng dao động:
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[
+                    {([
                       { id: "sine", label: "Sóng Sin" },
                       { id: "triangle", label: "Sóng Tam giác" },
                       { id: "square", label: "Sóng Vuông" },
-                    ].map((w) => (
+                    ] as const).map((w) => (
                       <button
                         key={w.id}
                         type="button"
                         onClick={() => {
-                          setOscWaveform(w.id as any);
+                          setOscWaveform(w.id);
                           playSound("click");
                         }}
                         className={`py-2 text-center rounded-xl text-xs font-medium transition-all cursor-pointer ${
@@ -8505,16 +8400,16 @@ export function VirtualLabSimulator({
                     Chọn kim loại quả cầu:
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {[
+                    {([
                       { id: "aluminum", label: "Nhôm (Al)" },
                       { id: "copper", label: "Đồng (Cu)" },
                       { id: "iron", label: "Sắt (Fe)" },
-                    ].map((m) => (
+                    ] as const).map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => {
-                          setSolidBallMetal(m.id as any);
+                          setSolidBallMetal(m.id);
                           setIsBallTestedPass(false);
                           playSound("click");
                         }}
@@ -8662,6 +8557,7 @@ export function VirtualLabSimulator({
                   <Button
                     type="button"
                     onClick={() => {
+                      setSpringBounceOffset(0);
                       setIsSpringBouncing(true);
                       playSound("click");
                     }}
@@ -8677,6 +8573,7 @@ export function VirtualLabSimulator({
                     onClick={() => {
                       setHangingMassG(0);
                       setIsSpringBouncing(false);
+                      setSpringBounceOffset(0);
                       playSound("click");
                     }}
                     className="rounded-xl py-2 text-xs font-bold border-neutral-300 dark:border-neutral-700 gap-1.5"
@@ -8696,17 +8593,17 @@ export function VirtualLabSimulator({
                     Hướng nguồn sáng chiếu vào hộp kín:
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {[
+                    {([
                       { id: "left", label: "⬅️ Chiếu Trái" },
                       { id: "top", label: "⬆️ Chiếu Đỉnh" },
                       { id: "right", label: "➡️ Chiếu Phải" },
                       { id: "dark", label: "🌑 Che Tối Hoàn Toàn" },
-                    ].map((dir) => (
+                    ] as const).map((dir) => (
                       <button
                         key={dir.id}
                         type="button"
                         onClick={() => {
-                          setLightDirection(dir.id as any);
+                          setLightDirection(dir.id);
                           playSound("click");
                         }}
                         className={`py-2 text-center rounded-xl text-xs font-medium transition-all cursor-pointer ${
@@ -8794,17 +8691,17 @@ export function VirtualLabSimulator({
                     Chọn phản ứng hóa học khảo sát nhiệt:
                   </label>
                   <div className="space-y-1.5">
-                    {[
+                    {([
                       { id: "exothermic_cao", label: "Tôi vôi: CaO + H₂O (Tỏa nhiệt mạnh)" },
                       { id: "exothermic_acid_base", label: "Trung hòa: HCl + NaOH (Tỏa nhiệt)" },
                       { id: "endothermic_nh4cl", label: "Hòa tan: NH₄Cl + H₂O (Thu nhiệt lạnh)" },
                       { id: "endothermic_barium", label: "Ba(OH)₂ + 2NH₄SCN (Đóng băng -5°C)" },
-                    ].map((rx) => (
+                    ] as const).map((rx) => (
                       <button
                         key={rx.id}
                         type="button"
                         onClick={() => {
-                          setThermalReactionType(rx.id as any);
+                          setThermalReactionType(rx.id);
                           setIsThermalReacting(false);
                           setThermalReactionTemp(25);
                           playSound("click");
@@ -8848,7 +8745,12 @@ export function VirtualLabSimulator({
                   <Button
                     type="button"
                     onClick={() => {
-                      setIsThermalReacting(!isThermalReacting);
+                      if (isThermalReacting) {
+                        setIsThermalReacting(false);
+                        setThermalReactionTemp(25);
+                      } else {
+                        setIsThermalReacting(true);
+                      }
                       playSound("bubble");
                     }}
                     className={`rounded-xl py-2 text-xs font-bold gap-1.5 ${
@@ -9076,8 +8978,11 @@ export function VirtualLabSimulator({
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedQuizAnswer(idx);
-                        setShowQuizExplanation(true);
+                        setQuizState({
+                          experimentId: currentExp.id,
+                          answer: idx,
+                          showExplanation: true,
+                        });
                         playSound(idx === currentExp.quiz.correct ? "beep" : "click");
                       }}
                       className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer leading-snug text-balance flex items-start gap-2 ${btnStyle}`}

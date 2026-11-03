@@ -1,6 +1,48 @@
 import { Request, Response } from "express";
+import { unlink } from "node:fs/promises";
 import prisma from "../../config/db.js";
+import { AppError } from "../../utils/app-error.js";
+import {
+  getCourseMediaUrl,
+  isValidGlbFile,
+  removeCourseMediaByUrls,
+} from "../../utils/course-media.js";
 import { seedExploreMaterials } from "./seed.js";
+
+function getExploreRequestBody(req: Request): Record<string, any> {
+  const rawData = req.body?.data;
+  if (typeof rawData !== "string") {
+    return (req.body ?? {}) as Record<string, any>;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(rawData);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, any>;
+    }
+  } catch {
+    throw new AppError("Explore material data is invalid", 400);
+  }
+  throw new AppError("Explore material data is invalid", 400);
+}
+
+async function removeUnlinkedModel(req: Request) {
+  if (!req.file) return;
+  try {
+    await unlink(req.file.path);
+  } catch (error) {
+    console.error("Could not remove unlinked 3D model upload:", error);
+  }
+}
+
+async function validateUploadedModel(req: Request): Promise<string | null> {
+  if (!req.file) return null;
+  if (!req.user) throw new AppError("Authentication required", 401);
+  if (!(await isValidGlbFile(req.file.path))) {
+    throw new AppError("The uploaded file is not a valid GLB 2.0 model", 400);
+  }
+  return getCourseMediaUrl(req, req.user.id, req.file.filename);
+}
 
 /**
  * Helper: ensure DB has initial data on first request
@@ -238,14 +280,17 @@ export async function getExploreMaterialById(req: Request, res: Response) {
  * Create / Add a new 3D model or material into PostgreSQL DB
  */
 export async function createExploreMaterial(req: Request, res: Response) {
+  let uploadedModelUrl: string | null = null;
   try {
-    const body = req.body;
+    const body = getExploreRequestBody(req);
     if (!body.title || !body.category) {
+      await removeUnlinkedModel(req);
       return res.status(400).json({
         success: false,
         message: "Tiêu đề (title) và Danh mục (category) là bắt buộc",
       });
     }
+    uploadedModelUrl = await validateUploadedModel(req);
 
     const baseSlug = (body.slug || body.title)
       .toLowerCase()
@@ -279,6 +324,7 @@ export async function createExploreMaterial(req: Request, res: Response) {
         typeLabelVi: body.typeLabelVi || "Mô hình 3D",
         typeLabelEn: body.typeLabelEn || "3D Model",
         modelType: body.modelType || "sphere",
+        uploadedModelUrl,
         thumbnailUrl: body.thumbnailUrl || "/images/explore/default.png",
         curriculum: body.curriculum || "GDPT 2018",
         textbook: body.textbook || "Kết Nối Tri Thức",
@@ -302,9 +348,14 @@ export async function createExploreMaterial(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("Error in createExploreMaterial:", error);
-    return res.status(500).json({
+    if (uploadedModelUrl) {
+      await removeCourseMediaByUrls([uploadedModelUrl]);
+    } else {
+      await removeUnlinkedModel(req);
+    }
+    return res.status(error instanceof AppError ? error.statusCode : 500).json({
       success: false,
-      message: "Lỗi máy chủ khi tạo học liệu",
+      message: error instanceof Error ? error.message : "Lỗi máy chủ khi tạo học liệu",
     });
   }
 }
@@ -314,15 +365,18 @@ export async function createExploreMaterial(req: Request, res: Response) {
  * Update an existing explore material in DB
  */
 export async function updateExploreMaterial(req: Request, res: Response) {
+  let uploadedModelUrl: string | null = null;
   try {
     const id = String(req.params.id);
-    const body = req.body;
+    const body = getExploreRequestBody(req);
+    uploadedModelUrl = await validateUploadedModel(req);
 
     const existing = await prisma.exploreMaterial.findUnique({
       where: { id },
     });
 
     if (!existing) {
+      await removeUnlinkedModel(req);
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy học liệu cần cập nhật",
@@ -347,6 +401,9 @@ export async function updateExploreMaterial(req: Request, res: Response) {
         typeLabelVi: body.typeLabelVi ?? existing.typeLabelVi,
         typeLabelEn: body.typeLabelEn ?? existing.typeLabelEn,
         modelType: body.modelType ?? existing.modelType,
+        uploadedModelUrl:
+          uploadedModelUrl ??
+          (body.uploadedModelUrl === null ? null : existing.uploadedModelUrl),
         thumbnailUrl: body.thumbnailUrl ?? existing.thumbnailUrl,
         curriculum: body.curriculum ?? existing.curriculum,
         textbook: body.textbook ?? existing.textbook,
@@ -359,6 +416,9 @@ export async function updateExploreMaterial(req: Request, res: Response) {
       },
     });
 
+    if (updated.uploadedModelUrl !== existing.uploadedModelUrl) {
+      await removeCourseMediaByUrls([existing.uploadedModelUrl]);
+    }
     return res.status(200).json({
       success: true,
       message: "Cập nhật học liệu thành công!",
@@ -366,9 +426,14 @@ export async function updateExploreMaterial(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("Error in updateExploreMaterial:", error);
-    return res.status(500).json({
+    if (uploadedModelUrl) {
+      await removeCourseMediaByUrls([uploadedModelUrl]);
+    } else {
+      await removeUnlinkedModel(req);
+    }
+    return res.status(error instanceof AppError ? error.statusCode : 500).json({
       success: false,
-      message: "Lỗi máy chủ khi cập nhật học liệu",
+      message: error instanceof Error ? error.message : "Lỗi máy chủ khi cập nhật học liệu",
     });
   }
 }
@@ -395,6 +460,7 @@ export async function deleteExploreMaterial(req: Request, res: Response) {
     await prisma.exploreMaterial.delete({
       where: { id },
     });
+    await removeCourseMediaByUrls([existing.uploadedModelUrl]);
 
     return res.status(200).json({
       success: true,

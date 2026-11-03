@@ -42,6 +42,14 @@ const labAttachmentExtensions: Record<string, string> = {
   ...model3DExtensions,
   "text/html": ".html",
 };
+const tsxMimeTypes = [
+  "",
+  "application/octet-stream",
+  "text/plain",
+  "text/tsx",
+  "text/typescript",
+  "application/typescript",
+];
 
 function ensureUserUploadDirectory(req: Request): string {
   if (!req.user) throw new AppError("Authentication required", 401);
@@ -53,6 +61,7 @@ function ensureUserUploadDirectory(req: Request): string {
 function createMediaUpload(
   allowedTypes: Record<string, string>,
   fileSize: number,
+  allowTsx = false,
 ) {
   return multer({
     storage: multer.diskStorage({
@@ -72,6 +81,10 @@ function createMediaUpload(
         const isHtmlFile = [".html", ".htm"].includes(
           path.extname(file.originalname).toLowerCase(),
         );
+        const isTsxFile =
+          allowTsx &&
+          path.extname(file.originalname).toLowerCase() === ".tsx" &&
+          tsxMimeTypes.includes(file.mimetype);
         const isHtmlMimeType = [
           "",
           "text/html",
@@ -80,6 +93,8 @@ function createMediaUpload(
         const extension =
           isHtmlFile && isHtmlMimeType
             ? ".html"
+            : isTsxFile
+              ? ".tsx"
             : allowedTypes[file.mimetype] ?? "";
         callback(null, `${randomUUID()}${extension}`);
       },
@@ -87,11 +102,26 @@ function createMediaUpload(
     fileFilter: (_req, file, callback) => {
       const fileExtension = path.extname(file.originalname).toLowerCase();
       const isHtmlFile = [".html", ".htm"].includes(fileExtension);
+      const isTsxFile =
+        allowTsx &&
+        fileExtension === ".tsx" &&
+        tsxMimeTypes.includes(file.mimetype);
       const isHtmlMimeType = ["", "text/html", "application/octet-stream"].includes(
         file.mimetype,
       );
-      if (!allowedTypes[file.mimetype] && !(isHtmlFile && isHtmlMimeType)) {
+      if (
+        !allowedTypes[file.mimetype] &&
+        !(isHtmlFile && isHtmlMimeType) &&
+        !isTsxFile
+      ) {
         callback(new AppError("Unsupported media file type", 400));
+        return;
+      }
+      if (
+        fileExtension === ".tsx" &&
+        !isTsxFile
+      ) {
+        callback(new AppError("TSX Lab files must use a supported TypeScript MIME type", 400));
         return;
       }
       if (
@@ -136,6 +166,7 @@ export const lab3DModelUpload = createMediaUpload(
 export const customLabAttachmentsUpload = createMediaUpload(
   labAttachmentExtensions,
   500 * 1024 * 1024,
+  true,
 ).array("files", 10);
 
 export async function isValidGlbFile(filePath: string): Promise<boolean> {

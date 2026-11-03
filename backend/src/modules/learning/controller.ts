@@ -2,7 +2,6 @@ import type { Request, Response } from "express";
 import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
 import {
-  createLessonQuizSchema,
   createLessonVideoSchema,
   saveProgressSchema,
   checkQuizAnswerSchema,
@@ -32,16 +31,6 @@ export async function getMyProgress(req: Request, res: Response) {
 export async function listAvailableQuizzes(req: Request, res: Response) {
   const data = await learningService.listAvailableQuizzes(authenticatedUserId(req));
   res.json(success(data));
-}
-
-export async function createLessonQuiz(req: Request, res: Response) {
-  const input = createLessonQuizSchema.parse(req.body);
-  const data = await learningService.createLessonQuiz(
-    String(req.params.lessonId),
-    authenticatedUserId(req),
-    input,
-  );
-  res.status(201).json(success(data, "Lesson quiz created"));
 }
 
 export async function createLessonVideo(req: Request, res: Response) {

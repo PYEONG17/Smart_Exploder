@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Khám Phá Định Luật Ôm (Ohm's Law Lab)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 60%, #c7d2fe 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #4f46e5;
+            box-shadow: 0 18px 40px -12px rgba(79, 70, 229, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-indigo-800">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-indigo-600 flex items-center justify-center shadow border-2 border-indigo-200 shrink-0 text-2xl font-black">
+                    ⚡
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Vật Lý Điện Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Khám phá mối liên hệ I = U / R
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Thí Nghiệm Kiểm Chứng Định Luật Ôm (Ohm's Law)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-indigo-700 hover:bg-indigo-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-indigo-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-indigo-50 px-3.5 py-2 border-b-2 border-indigo-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-indigo-600 text-white border-2 border-indigo-700">
+                <span>⚡</span>
+                <span data-i18n="tab1">1. Mô Phỏng & 4 Bước Thí Nghiệm</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-indigo-100 border-2 border-slate-200">
+                <span>📈</span>
+                <span data-i18n="tab2">2. Đồ Thị I-U & 4 Kịch Bản Mạch</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-indigo-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Công Thức & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-indigo-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: MÔ PHỎNG MẠCH ĐIỆN & 4 BƯỚC LAB
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Circuit Canvas Chamber -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-indigo-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    MẠCH MỞ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-indigo-200 truncate" data-i18n="statusReady">
+                                    Đóng công tắc hoặc chọn các bước thí nghiệm
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleSwitch()" id="btn-switch" class="btn-kid px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="power" class="w-3.5 h-3.5"></i>
+                                    <span id="switch-text" data-i18n="switchBtnOn">Đóng công tắc</span>
+                                </button>
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Tự động 4 bước</span>
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-300">
+                                <span data-i18n="flowSpeed">Vận tốc e⁻:</span> <strong id="electron-speed-val" class="text-amber-400">0.0x</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Knobs + Sliders + 4 Steps -->
+                    <div class="bg-gradient-to-br from-indigo-50 to-blue-50/60 rounded-2xl p-3 border-2 border-indigo-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <!-- Header & Tools -->
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-indigo-900 bg-indigo-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🎛️ Bảng Điều Chỉnh Mạch Điện
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Đặt lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Sliders Controls -->
+                            <div class="bg-white p-2.5 rounded-xl border-2 border-indigo-100 space-y-2 mb-2">
+                                <!-- Voltage Slider U -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-1">
+                                        <span class="flex items-center gap-1 text-indigo-700">
+                                            <span>🔋</span> <span data-i18n="voltageLabel">Hiệu điện thế U (Nguồn):</span>
+                                        </span>
+                                        <span id="u-display" class="bg-indigo-100 text-indigo-900 px-2 py-0.5 rounded-md font-black text-xs">12.0 V</span>
+                                    </div>
+                                    <input type="range" id="slider-u" min="0" max="24" step="0.5" value="12" oninput="onParamChange()" class="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Resistance Slider R -->
+                                <div>
+                                    <div class="flex justify-between items-center text-xs font-black text-slate-800 mb-1">
+                                        <span class="flex items-center gap-1 text-amber-700">
+                                            <span>💡</span> <span data-i18n="resistanceLabel">Điện trở R (Tải/Đèn):</span>
+                                        </span>
+                                        <span id="r-display" class="bg-amber-100 text-amber-950 px-2 py-0.5 rounded-md font-black text-xs">10.0 Ω</span>
+                                    </div>
+                                    <input type="range" id="slider-r" min="1" max="50" step="1" value="10" oninput="onParamChange()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+
+                                <!-- Math Equation Bar -->
+                                <div class="bg-slate-900 text-white p-2 rounded-lg text-center flex items-center justify-around font-black text-xs border border-indigo-300">
+                                    <div class="text-cyan-300">I = U / R</div>
+                                    <div class="text-slate-400">➔</div>
+                                    <div class="text-amber-300">I = <span id="eq-u">12</span>V / <span id="eq-r">10</span>Ω</div>
+                                    <div class="text-slate-400">=</div>
+                                    <div id="eq-result" class="text-emerald-400 text-sm font-black">1.20 A</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-indigo-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thí Nghiệm (Bấm 1 → 4):
+                            </div>
+
+                            <!-- 4 Step Buttons -->
+                            <div class="space-y-1">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-4 h-4 rounded-md bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step1Text">1. Bật nguồn & đóng công tắc điện.</span>
+                                    <span id="step-badge-1" class="text-[10px] font-black text-amber-800">👉 Thử ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step2Text">2. Đọc Ampe kế đo cường độ I.</span>
+                                    <span id="step-badge-2" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step3Text">3. Tăng U, giữ nguyên R (I tăng theo).</span>
+                                    <span id="step-badge-3" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-[11px] text-slate-900 flex-1" data-i18n="step4Text">4. Tăng R, giữ nguyên U (I giảm đi).</span>
+                                    <span id="step-badge-4" class="text-[10px] font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2 rounded-xl border-2 border-indigo-300 shadow-sm mt-1">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-indigo-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Bấm <strong>Đóng công tắc</strong> hoặc chọn <strong>Bước 1</strong> để bắt đầu dòng điện!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Stage Strip -->
+                <div class="bg-indigo-50/90 rounded-2xl p-2 border-2 border-indigo-200">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Các Trạng Thái Tiến Hành Thí Nghiệm
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-indigo-900 bg-indigo-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Định luật Ôm: I tỉ lệ thuận với U, tỉ lệ nghịch với R
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: GRAPH & 4 SCENARIOS
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-indigo-50 to-blue-50 p-3 rounded-2xl border-2 border-indigo-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-indigo-800 bg-indigo-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Đồ thị & Phân tích kịch bản
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-0.5" data-i18n="cmpTitle">
+                            Đặc tuyến Volt-Ampere (I theo U) & Các trường hợp mạch đặc biệt
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2.5">
+                    <!-- Scenario A: Standard Normal -->
+                    <div class="bg-white rounded-2xl p-2.5 border-3 border-emerald-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU A (Chuẩn)</span>
+                                <span class="text-[10px] font-bold text-slate-500">U=12V, R=10Ω</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenATitle">Hoạt động bình thường</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-emerald-900 bg-emerald-50 p-1.5 rounded-lg leading-tight" data-i18n="scenARes">
+                            ✅ <strong>I = 1.2A:</strong> Dòng điện vừa đủ, bóng đèn phát sáng rực rỡ và ổn định.
+                        </p>
+                    </div>
+
+                    <!-- Scenario B: High Resistance -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">MẪU B (R Lớn)</span>
+                                <span class="text-[10px] font-bold text-slate-500">U=12V, R=40Ω</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenBTitle">Điện trở cản trở lớn</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-amber-900 bg-amber-50 p-1.5 rounded-lg leading-tight" data-i18n="scenBRes">
+                            ⚠️ <strong>I = 0.3A:</strong> Điện trở lớn làm dòng điện yếu đi đáng kể, dây tóc chỉ hơi hồng.
+                        </p>
+                    </div>
+
+                    <!-- Scenario C: High Voltage -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-indigo-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-indigo-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU C (U Cao)</span>
+                                <span class="text-[10px] font-bold text-slate-500">U=24V, R=10Ω</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenCTitle">Tăng gấp đôi điện áp U</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-900 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-indigo-900 bg-indigo-50 p-1.5 rounded-lg leading-tight" data-i18n="scenCRes">
+                            🚀 <strong>I = 2.4A:</strong> Tăng U làm dòng I tăng tỉ lệ thuận, electron đẩy đi cực nhanh.
+                        </p>
+                    </div>
+
+                    <!-- Scenario D: Short Circuit -->
+                    <div class="bg-white rounded-2xl p-2.5 border-2 border-rose-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU D (Đoản Mạch)</span>
+                                <span class="text-[10px] font-bold text-slate-500">U=12V, R ≈ 0Ω</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-900 mt-1" data-i18n="scenDTitle">Nguy cơ đoản mạch (Ngắn mạch)</h4>
+                        </div>
+                        <div class="my-1.5 bg-slate-950 rounded-xl h-36 flex items-center justify-center overflow-hidden border border-rose-800">
+                            <canvas id="cmpCanvasD" width="185" height="144"></canvas>
+                        </div>
+                        <p class="text-[10px] font-bold text-rose-900 bg-rose-50 p-1.5 rounded-lg leading-tight" data-i18n="scenDRes">
+                            💥 <strong>I quá lớn:</strong> R tiến về 0 khiến dòng I tăng vọt gây quá nhiệt, ngắt cầu chì bảo vệ!
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-3.5 border-2 border-indigo-300 space-y-2.5">
+                        <div class="flex items-center gap-2 border-b border-indigo-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-indigo-800">Phiếu Lý Thuyết Trọng Tâm</span>
+                                <h3 class="text-base font-black text-indigo-950">Định Luật Ôm Trong Mạch Điện</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-indigo-200 space-y-0.5">
+                            <div class="text-xs font-black text-indigo-800">📜 1. Phát biểu định luật:</div>
+                            <p class="text-xs font-bold text-slate-700">Cường độ dòng điện chạy qua dây dẫn tỉ lệ thuận với hiệu điện thế giữa hai đầu dây và tỉ lệ nghịch với điện trở của dây.</p>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-indigo-200 space-y-0.5">
+                            <div class="text-xs font-black text-indigo-800">📐 2. Công thức toán học:</div>
+                            <div class="text-center bg-indigo-50 p-1.5 rounded-lg font-black text-sm text-indigo-900">
+                                I = U / R &nbsp;&nbsp;&rArr;&nbsp;&nbsp; U = I &middot; R &nbsp;&nbsp;&rArr;&nbsp;&nbsp; R = U / I
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-center font-extrabold text-slate-600">
+                                <div>• <strong>I</strong>: Ampe (A)</div>
+                                <div>• <strong>U</strong>: Volt (V)</div>
+                                <div>• <strong>R</strong>: Ôm (&Omega;)</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-xl border border-indigo-200 space-y-0.5">
+                            <div class="text-xs font-black text-indigo-800">💡 3. Ý nghĩa thực tiễn:</div>
+                            <ul class="text-xs font-bold text-slate-700 space-y-0.5 list-disc list-inside">
+                                <li>Tăng hiệu điện thế $U$ làm thiết bị chạy mạnh hơn.</li>
+                                <li>Dùng biến trở $R$ để điều chỉnh độ sáng đèn, âm lượng loa.</li>
+                                <li>Đoản mạch ($R \approx 0$) gây nguy hiểm vì $I$ tăng rất cao.</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-amber-100 p-2.5 rounded-xl border-2 border-amber-300">
+                            <div class="text-xs font-black text-amber-900">💡 Mẹo ghi nhớ: "Bàn tay Ohm"</div>
+                            <p class="text-xs font-bold text-amber-950 mt-0.5">
+                                Che chữ muốn tính: Che <strong>I</strong> thấy <strong>U/R</strong>, che <strong>U</strong> thấy <strong>I&middot;R</strong>, che <strong>R</strong> thấy <strong>U/I</strong>!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Thử Thách Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">⚡</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-1.5"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 80);
+            setTimeout(() => playTone(783.99, 'triangle', 0.2), 160);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.28), 240);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            switchOn: false,
+            voltage: 12.0,   // U (Volts)
+            resistance: 10.0, // R (Ohms)
+            step: 0          // 0: Init, 1: Switch closed, 2: Read I, 3: Increase U, 4: Increase R
+        };
+
+        let electronOffset = 0;
+
+        const stageData = {
+            1: { shortVi: '1. Đóng mạch', shortEn: '1. Close Switch', icon: '🔌' },
+            2: { shortVi: '2. Đọc Ampe kế', shortEn: '2. Read Ammeter', icon: '📏' },
+            3: { shortVi: '3. Tăng điện áp U', shortEn: '3. Increase U', icon: '⚡' },
+            4: { shortVi: '4. Tăng điện trở R', shortEn: '4. Increase R', icon: '💡' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function toggleSwitch() {
+            labState.switchOn = !labState.switchOn;
+            playTone(labState.switchOn ? 600 : 300, 'sine', 0.12);
+            if (labState.switchOn && labState.step === 0) {
+                executeStep(1);
+            } else {
+                updateLabUI();
+            }
+        }
+
+        function onParamChange() {
+            labState.voltage = parseFloat(document.getElementById('slider-u').value);
+            labState.resistance = parseFloat(document.getElementById('slider-r').value);
+            playTone(200 + labState.voltage * 20 + labState.resistance * 5, 'sine', 0.05, 0.05);
+            updateLabUI();
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                labState.switchOn = true;
+                playTone(500, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                playTone(650, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.voltage = 18.0;
+                document.getElementById('slider-u').value = 18.0;
+                playTone(750, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                labState.resistance = 25.0;
+                document.getElementById('slider-r').value = 25.0;
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2200);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 500);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.switchOn = false;
+            labState.voltage = 12.0;
+            labState.resistance = 10.0;
+            labState.step = 0;
+
+            document.getElementById('slider-u').value = 12.0;
+            document.getElementById('slider-r').value = 10.0;
+
+            playTone(320, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const currentI = labState.switchOn ? (labState.voltage / labState.resistance) : 0;
+
+            // Slider & Numbers
+            document.getElementById('u-display').textContent = labState.voltage.toFixed(1) + ' V';
+            document.getElementById('r-display').textContent = labState.resistance.toFixed(1) + ' Ω';
+            document.getElementById('eq-u').textContent = labState.voltage.toFixed(1);
+            document.getElementById('eq-r').textContent = labState.resistance.toFixed(1);
+            document.getElementById('eq-result').textContent = currentI.toFixed(2) + ' A';
+
+            document.getElementById('electron-speed-val').textContent = (currentI * 0.8).toFixed(1) + 'x';
+
+            // Switch button style
+            const swBtn = document.getElementById('btn-switch');
+            const swTxt = document.getElementById('switch-text');
+            if (labState.switchOn) {
+                swBtn.className = 'btn-kid px-3 py-1 rounded-lg bg-rose-500 hover:bg-rose-400 text-white font-black text-xs flex items-center gap-1';
+                swTxt.textContent = currentLang === 'vi' ? 'Ngắt công tắc' : 'Open Switch';
+            } else {
+                swBtn.className = 'btn-kid px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1';
+                swTxt.textContent = currentLang === 'vi' ? 'Đóng công tắc' : 'Close Switch';
+            }
+
+            // Top Status Badge
+            const badge = document.getElementById('status-step-badge');
+            const title = document.getElementById('status-step-title');
+            if (!labState.switchOn) {
+                badge.className = 'bg-rose-500 text-white font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+                badge.textContent = currentLang === 'vi' ? 'MẠCH MỞ' : 'OPEN CIRCUIT';
+                title.textContent = currentLang === 'vi' ? 'Đóng công tắc để dòng điện electron di chuyển' : 'Close switch to allow electron flow';
+            } else {
+                badge.className = 'bg-emerald-400 text-emerald-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0';
+                badge.textContent = `BƯỚC ${st > 0 ? st : 1}/4`;
+                const stepTitles = [
+                    'Mạch đã đóng, dòng điện đang chạy!',
+                    'Bước 1: Đóng mạch điện thành công!',
+                    'Bước 2: Ampe kế đo cường độ I = ' + currentI.toFixed(2) + 'A',
+                    'Bước 3: Tăng U = ' + labState.voltage + 'V làm I tăng lên ' + currentI.toFixed(2) + 'A',
+                    'Bước 4: Tăng R = ' + labState.resistance + 'Ω làm I giảm xuống ' + currentI.toFixed(2) + 'A'
+                ];
+                title.textContent = stepTitles[st];
+            }
+
+            // 4 Steps buttons UI state
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-4 h-4 rounded-md bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-emerald-700';
+                    bdg.textContent = '✅';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-4 h-4 rounded-md bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1 px-2 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-80';
+                    icon.className = 'w-4 h-4 rounded-md bg-slate-400 text-white font-black text-[10px] flex items-center justify-center shrink-0';
+                    bdg.className = 'text-[10px] font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Result Text
+            const obsEl = document.getElementById('observation-desc');
+            if (!labState.switchOn) {
+                obsEl.innerHTML = 'Mạch đang mở, <strong>I = 0A</strong>. Hãy bấm <strong>Đóng công tắc</strong> để kích hoạt dòng điện!';
+            } else if (st === 1) {
+                obsEl.innerHTML = `Đã đóng mạch! Điện áp <strong>U = ${labState.voltage}V</strong> thúc đẩy dòng electron chạy qua điện trở <strong>R = ${labState.resistance}Ω</strong>.`;
+            } else if (st === 2) {
+                obsEl.innerHTML = `Ampe kế chỉ <strong>I = ${currentI.toFixed(2)}A</strong>. Bóng đèn sáng ổn định tương ứng với công suất P = ${(labState.voltage * currentI).toFixed(1)}W.`;
+            } else if (st === 3) {
+                obsEl.innerHTML = `Tăng <strong>U lên ${labState.voltage}V</strong> ➔ Dòng <strong>I tăng lên ${currentI.toFixed(2)}A</strong> làm đèn sáng rực rỡ hơn! (Tỉ lệ thuận).`;
+            } else if (st === 4) {
+                obsEl.innerHTML = `Tăng <strong>R lên ${labState.resistance}Ω</strong> ➔ Dòng <strong>I giảm xuống ${currentI.toFixed(2)}A</strong> làm bóng đèn mờ đi! (Tỉ lệ nghịch).`;
+            } else {
+                obsEl.innerHTML = `Dòng điện hiện tại: <strong>I = ${currentI.toFixed(2)}A</strong>. Bạn có thể kéo thử hai thanh trượt U và R để quan sát sự thay đổi liên tục!`;
+            }
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-indigo-100 text-indigo-950 border-2 border-indigo-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345 Circuit View)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawMeter(c, x, y, label, val, unit, maxVal) {
+            c.save();
+            c.translate(x, y);
+
+            // Meter Outer Circle
+            c.fillStyle = '#0f172a';
+            c.beginPath(); c.arc(0, 0, 32, 0, Math.PI * 2); c.fill();
+            c.strokeStyle = '#38bdf8'; c.lineWidth = 2.5; c.stroke();
+
+            // Dial scale
+            c.strokeStyle = '#64748b'; c.lineWidth = 1.5;
+            c.beginPath(); c.arc(0, 2, 22, Math.PI * 0.8, Math.PI * 2.2); c.stroke();
+
+            // Needle angle
+            const ratio = Math.min(Math.max(val / maxVal, 0), 1);
+            const angle = Math.PI * 0.8 + ratio * (Math.PI * 1.4);
+
+            c.strokeStyle = '#ef4444'; c.lineWidth = 2;
+            c.beginPath();
+            c.moveTo(0, 2);
+            c.lineTo(Math.cos(angle) * 18, Math.sin(angle) * 18 + 2);
+            c.stroke();
+
+            // Center Pin
+            c.fillStyle = '#f8fafc';
+            c.beginPath(); c.arc(0, 2, 3, 0, Math.PI * 2); c.fill();
+
+            // Digital Text Readout
+            c.fillStyle = '#facc15';
+            c.font = '900 10px Nunito, sans-serif';
+            c.textAlign = 'center';
+            c.fillText(`${label}: ${val.toFixed(2)}${unit}`, 0, 24);
+
+            c.restore();
+        }
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath(); c.arc(targetX, targetY, 3, 0, Math.PI * 2); c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 170, 24, 7);
+            c.fill(); c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 6, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Bench background grid
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, 465, 345);
+
+                // Grid lines
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < 465; x += 30) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 345); ctx.stroke();
+                }
+                for (let y = 0; y < 345; y += 30) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(465, y); ctx.stroke();
+                }
+
+                // Main Circuit Loop Coordinates
+                const x1 = 65, y1 = 55, x2 = 400, y2 = 280;
+                const currentI = labState.switchOn ? (labState.voltage / labState.resistance) : 0;
+
+                // Draw Wires (Copper lines)
+                ctx.strokeStyle = labState.switchOn ? '#38bdf8' : '#475569';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineTo(x1, y2);
+                ctx.closePath();
+                ctx.stroke();
+
+                // Animated Electrons (blue dots) along wire loop
+                if (labState.switchOn && currentI > 0) {
+                    electronOffset += currentI * 1.2;
+                    const perimeter = (x2 - x1) * 2 + (y2 - y1) * 2;
+                    const numElectrons = 28;
+
+                    for (let i = 0; i < numElectrons; i++) {
+                        let pos = (electronOffset + (i * perimeter / numElectrons)) % perimeter;
+                        let ex = x1, ey = y1;
+
+                        if (pos < (x2 - x1)) {
+                            ex = x1 + pos; ey = y1;
+                        } else if (pos < (x2 - x1) + (y2 - y1)) {
+                            ex = x2; ey = y1 + (pos - (x2 - x1));
+                        } else if (pos < (x2 - x1) * 2 + (y2 - y1)) {
+                            ex = x2 - (pos - (x2 - x1) - (y2 - y1)); ey = y2;
+                        } else {
+                            ex = x1; ey = y2 - (pos - (x2 - x1) * 2 - (y2 - y1));
+                        }
+
+                        ctx.fillStyle = '#60a5fa';
+                        ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath(); ctx.arc(ex, ey, 1.5, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+
+                // --- 1. POWER SOURCE (BATTERY) at TOP ---
+                const batX = (x1 + x2) / 2, batY = y1;
+                ctx.fillStyle = '#1e293b'; ctx.fillRect(batX - 35, batY - 14, 70, 28);
+                ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2; ctx.strokeRect(batX - 35, batY - 14, 70, 28);
+                // Battery Terminals
+                ctx.fillStyle = '#ef4444'; ctx.fillRect(batX - 33, batY - 8, 8, 16); // +
+                ctx.fillStyle = '#3b82f6'; ctx.fillRect(batX + 25, batY - 8, 8, 16); // -
+                ctx.fillStyle = '#f8fafc'; ctx.font = '900 11px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(`${labState.voltage.toFixed(1)}V`, batX, batY + 4);
+
+                // Voltmeter connected in parallel above battery
+                drawMeter(ctx, batX, batY - 36, 'V', labState.switchOn ? labState.voltage : 0, 'V', 24);
+
+                // --- 2. SWITCH at RIGHT WIRE ---
+                const swX = x2, swY = (y1 + y2) / 2 - 30;
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(swX - 10, swY - 20, 20, 40);
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath(); ctx.arc(swX, swY - 15, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(swX, swY + 15, 4, 0, Math.PI * 2); ctx.fill();
+
+                ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(swX, swY + 15);
+                if (labState.switchOn) {
+                    ctx.lineTo(swX, swY - 15); // Closed
+                } else {
+                    ctx.lineTo(swX + 16, swY - 5); // Open
+                }
+                ctx.stroke();
+
+                // --- 3. AMMETER at LEFT WIRE ---
+                const amX = x1, amY = (y1 + y2) / 2;
+                drawMeter(ctx, amX, amY, 'A', currentI, 'A', 3.0);
+
+                // --- 4. RESISTOR / BULB at BOTTOM WIRE ---
+                const resX = (x1 + x2) / 2, resY = y2;
+
+                // Glowing Light Effect based on Power P = I^2 * R
+                if (labState.switchOn && currentI > 0) {
+                    const glowRadius = Math.min(15 + currentI * 14, 55);
+                    const grad = ctx.createRadialGradient(resX, resY, 2, resX, resY, glowRadius);
+                    grad.addColorStop(0, 'rgba(251, 191, 36, 0.9)');
+                    grad.addColorStop(0.5, 'rgba(245, 158, 11, 0.4)');
+                    grad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath(); ctx.arc(resX, resY, glowRadius, 0, Math.PI * 2); ctx.fill();
+                }
+
+                // Bulb Glass Dome
+                ctx.fillStyle = labState.switchOn && currentI > 0 ? '#fef08a' : '#334155';
+                ctx.beginPath(); ctx.arc(resX, resY - 4, 18, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.stroke();
+
+                // Filament zigzag
+                ctx.strokeStyle = labState.switchOn && currentI > 0 ? '#ef4444' : '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(resX - 8, resY);
+                ctx.lineTo(resX - 3, resY - 10);
+                ctx.lineTo(resX + 3, resY - 10);
+                ctx.lineTo(resX + 8, resY);
+                ctx.stroke();
+
+                // Resistor value badge
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(resX - 28, resY + 16, 56, 18);
+                ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.strokeRect(resX - 28, resY + 16, 56, 18);
+                ctx.fillStyle = '#f8fafc'; ctx.font = '800 10px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(`${labState.resistance.toFixed(1)} Ω`, resX, resY + 29);
+
+                // Callouts Overlay
+                const pillX = 280;
+                if (!labState.switchOn) {
+                    drawRightCallout(ctx, swX + 8, swY, pillX, 120, '🔴 Công tắc đang MỞ (I = 0)', '#ef4444');
+                } else {
+                    drawRightCallout(ctx, batX, batY - 10, pillX, 60, `🔋 Nguồn U = ${labState.voltage}V`, '#818cf8');
+                    drawRightCallout(ctx, amX, amY, pillX, 110, `📏 Ampe kế I = ${currentI.toFixed(2)}A`, '#38bdf8');
+                    drawRightCallout(ctx, resX, resY, pillX, 160, `💡 Điện trở R = ${labState.resistance}Ω`, '#f59e0b');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: GRAPH & 4 SCENARIOS
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', u: 12, r: 10, short: false },
+                { id: 'cmpCanvasB', u: 12, r: 40, short: false },
+                { id: 'cmpCanvasC', u: 24, r: 10, short: false },
+                { id: 'cmpCanvasD', u: 12, r: 0.5, short: true }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 144;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+
+                if (cfg.short) {
+                    // Short circuit visual explosion/warning
+                    ctx.fillStyle = '#450a0a'; ctx.fillRect(0, 0, w, h);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = '900 12px Nunito'; ctx.textAlign = 'center';
+                    ctx.fillText('💥 ĐOẢN MẠCH!', w/2, h/2 - 10);
+                    ctx.fillStyle = '#fca5a5';
+                    ctx.font = '700 10px Nunito';
+                    ctx.fillText('Dòng I tăng vọt > 20A', w/2, h/2 + 10);
+                    ctx.fillText('Cầu chì tự động NGẮT', w/2, h/2 + 25);
+                } else {
+                    // Draw Mini Volt-Ampere Graph I = f(U)
+                    const margin = 24;
+                    const gW = w - margin * 2;
+                    const gH = h - margin * 2;
+
+                    // Axes
+                    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(margin, margin); ctx.lineTo(margin, h - margin); ctx.lineTo(w - margin, h - margin);
+                    ctx.stroke();
+
+                    // Axis Labels
+                    ctx.fillStyle = '#94a3b8'; ctx.font = '800 9px Nunito';
+                    ctx.fillText('I(A)', margin - 4, margin - 6);
+                    ctx.fillText('U(V)', w - margin, h - margin + 14);
+
+                    // Line Graph I = U / R
+                    const iVal = cfg.u / cfg.r;
+                    const endX = margin + (cfg.u / 24) * gW;
+                    const endY = (h - margin) - (iVal / 3.0) * gH;
+
+                    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(margin, h - margin);
+                    ctx.lineTo(endX, Math.max(endY, margin));
+                    ctx.stroke();
+
+                    // Operating Point Dot
+                    ctx.fillStyle = '#facc15';
+                    ctx.beginPath(); ctx.arc(endX, Math.max(endY, margin), 4, 0, Math.PI * 2); ctx.fill();
+
+                    ctx.fillStyle = '#f8fafc'; ctx.font = '800 10px Nunito'; ctx.textAlign = 'left';
+                    ctx.fillText(`I = ${iVal.toFixed(2)}A`, endX - 20, Math.max(endY - 8, margin + 10));
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '⚡',
+                qVi: '1. Theo Định luật Ôm, nếu giữ nguyên điện trở R và tăng hiệu điện thế U lên 2 lần thì cường độ dòng điện I sẽ như thế nào?',
+                qEn: '1. According to Ohm\'s Law, if resistance R is constant and voltage U doubles, how does current I change?',
+                optsVi: [
+                    'Tăng lên 2 lần.',
+                    'Giảm đi 2 lần.',
+                    'Không thay đổi.',
+                    'Tăng lên 4 lần.'
+                ],
+                optsEn: [
+                    'Increases 2 times.',
+                    'Decreases 2 times.',
+                    'Remains unchanged.',
+                    'Increases 4 times.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '💡',
+                qVi: '2. Khi thay đổi điện trở R của một bóng đèn, yếu tố nào biểu thị sự cản trở dòng điện?',
+                qEn: '2. When changing resistor R, what does electrical resistance represent?',
+                optsVi: [
+                    'Mức độ thúc đẩy electron đi nhanh hơn.',
+                    'Đơn vị đo lượng điện tích tích tụ.',
+                    'Mức độ cản trở dòng điện electron trong dây dẫn.',
+                    'Tốc độ ánh sáng của bóng đèn.'
+                ],
+                optsEn: [
+                    'How fast electrons move.',
+                    'Amount of accumulated charge.',
+                    'Degree of opposition to electron current flow.',
+                    'Speed of light in bulb.'
+                ],
+                ans: 2
+            },
+            {
+                icon: '📐',
+                qVi: '3. Công thức nào sau đây thể hiện đúng mối quan hệ của Định luật Ôm?',
+                qEn: '3. Which formula correctly represents Ohm\'s Law?',
+                optsVi: [
+                    'I = U / R',
+                    'I = U · R',
+                    'I = R / U',
+                    'I = U + R'
+                ],
+                optsEn: [
+                    'I = U / R',
+                    'I = U · R',
+                    'I = R / U',
+                    'I = U + R'
+                ],
+                ans: 0
+            },
+            {
+                icon: '💥',
+                qVi: '4. Hiện tượng "Đoản mạch" (ngắn mạch) xảy ra trong trường hợp nào gây nguy cơ cháy nổ?',
+                qEn: '4. What causes a "Short Circuit" that risks fire and damage?',
+                optsVi: [
+                    'Khi hiệu điện thế U bằng 0.',
+                    'Khi điện trở R của mạch xấp xỉ bằng 0 làm dòng I tăng rất lớn.',
+                    'Khi ngắt công tắc điện.',
+                    'Khi tăng điện trở R lên cực đại.'
+                ],
+                optsEn: [
+                    'When voltage U becomes 0.',
+                    'When resistance R approaches 0 causing current I to surge.',
+                    'When opening the switch.',
+                    'When increasing R to maximum.'
+                ],
+                ans: 1
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-5 h-5 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center shrink-0 font-black">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã nắm vững Định luật Ôm (+3 Điểm)!'
+                    : '🎉 Correct! You mastered Ohm\'s Law (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1400);
+            } else {
+                playTone(220, 'sawtooth', 0.2);
+                msg.className = 'p-2 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa đúng rồi, hãy đọc lại phiếu tóm tắt bên trái nhé!'
+                    : '🤔 Not quite right, check the theory sheet on the left!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-indigo-600 text-white border-2 border-indigo-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-indigo-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Vật Lý Điện Học',
+                    goalPill: '🎯 Mục tiêu: Khám phá mối liên hệ I = U / R',
+                    appTitle: 'Lab: Thí Nghiệm Kiểm Chứng Định Luật Ôm (Ohm\'s Law)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Mô Phỏng & 4 Bước Thí Nghiệm',
+                    tab2: '2. Đồ Thị I-U & 4 Kịch Bản Mạch',
+                    tab3: '3. Tóm Tắt Công Thức & Đố Vui',
+                    autoObsBtn: 'Tự động 4 bước',
+                    toolsHeader: '🎛️ Bảng Điều Chỉnh Mạch Điện',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Đặt lại',
+                    voltageLabel: 'Hiệu điện thế U (Nguồn):',
+                    resistanceLabel: 'Điện trở R (Tải/Đèn):',
+                    stepsHeader: '📋 Các Bước Thí Nghiệm (Bấm 1 → 4):',
+                    step1Text: '1. Bật nguồn & đóng công tắc điện.',
+                    step2Text: '2. Đọc Ampe kế đo cường độ I.',
+                    step3Text: '3. Tăng U, giữ nguyên R (I tăng theo).',
+                    step4Text: '4. Tăng R, giữ nguyên U (I giảm đi).',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Các Trạng Thái Tiến Hành Thí Nghiệm',
+                    finalConclusionBadge: '✅ Định luật Ôm: I tỉ lệ thuận với U, tỉ lệ nghịch với R',
+                    cmpSub: 'Đồ thị & Phân tích kịch bản',
+                    cmpTitle: 'Đặc tuyến Volt-Ampere (I theo U) & Các trường hợp mạch đặc biệt',
+                    scenATitle: 'Hoạt động bình thường',
+                    scenARes: '✅ <strong>I = 1.2A:</strong> Dòng điện vừa đủ, bóng đèn phát sáng rực rỡ và ổn định.',
+                    scenBTitle: 'Điện trở cản trở lớn',
+                    scenBRes: '⚠️ <strong>I = 0.3A:</strong> Điện trở lớn làm dòng điện yếu đi đáng kể, dây tóc chỉ hơi hồng.',
+                    scenCTitle: 'Tăng gấp đôi điện áp U',
+                    scenCRes: '🚀 <strong>I = 2.4A:</strong> Tăng U làm dòng I tăng tỉ lệ thuận, electron đẩy đi cực nhanh.',
+                    scenDTitle: 'Nguy cơ đoản mạch (Ngắn mạch)',
+                    scenDRes: '💥 <strong>I quá lớn:</strong> R tiến về 0 khiến dòng I tăng vọt gây quá nhiệt, ngắt cầu chì bảo vệ!'
+                },
+                en: {
+                    labBadge: 'Physics Electricity Lab',
+                    goalPill: '🎯 Goal: Discover relationship I = U / R',
+                    appTitle: 'Lab: Verifying Ohm\'s Law Circuit Experiment',
+                    starsUnit: 'Pts',
+                    tab1: '1. Simulation & 4 Lab Steps',
+                    tab2: '2. I-U Graph & 4 Scenarios',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🎛️ Circuit Control Panel',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    voltageLabel: 'Voltage U (Source):',
+                    resistanceLabel: 'Resistance R (Bulb/Load):',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Turn on power & close switch.',
+                    step2Text: '2. Read Ammeter current I.',
+                    step3Text: '3. Increase U, keep R constant.',
+                    step4Text: '4. Increase R, keep U constant.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Experiment Procedure Stages',
+                    finalConclusionBadge: '✅ Ohm\'s Law: I directly proportional to U, inversely to R',
+                    cmpSub: 'Graph & Analysis',
+                    cmpTitle: 'Volt-Ampere Curve (I vs U) & Special Circuit Scenarios',
+                    scenATitle: 'Normal Operation',
+                    scenARes: '✅ <strong>I = 1.2A:</strong> Optimal current, bulb glows brightly and steadily.',
+                    scenBTitle: 'High Resistance',
+                    scenBRes: '⚠️ <strong>I = 0.3A:</strong> High resistance restricts electron flow, bulb glows dimly.',
+                    scenCTitle: 'Double Voltage U',
+                    scenCRes: '🚀 <strong>I = 2.4A:</strong> Doubling U proportionally increases current I.',
+                    scenDTitle: 'Short Circuit Danger',
+                    scenDRes: '💥 <strong>Excessive I:</strong> R near 0 surges current, blowing fuse for safety!'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

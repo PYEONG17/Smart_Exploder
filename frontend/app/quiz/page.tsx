@@ -1,40 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
-  Sparkles,
-  BookOpen,
   Layers,
   BrainCircuit,
-  PlusCircle,
   RotateCw,
   CheckCircle2,
   XCircle,
   HelpCircle,
   Trash2,
-  Play,
   ArrowRight,
   ArrowLeft,
-  GraduationCap,
   Plus,
-  Send,
-  Loader2,
   ChevronRight,
-  Flame,
   Award,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLang } from "@/contexts/LanguageContext";
 import {
-  fetchMyCourses,
-  createLessonQuiz,
-  generateAssessment,
   fetchStudyFlashcards,
   createStudyFlashcard,
   setStudyFlashcardMastered,
@@ -42,9 +28,7 @@ import {
   fetchPracticeQuestions,
   createPracticeQuestion,
   submitPracticeAnswer,
-  type AssessmentDifficulty,
 } from "@/lib/api";
-import type { Course, Lesson } from "@/types";
 
 // ── Types ──────────────────────────────────────────────────────────
 export type Flashcard = {
@@ -136,12 +120,11 @@ const defaultQuestions: PracticeQuestion[] = [
 ];
 
 export default function QuizHubPage() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const { locale } = useLang();
   const isVietnamese = locale === "vi";
 
-  // Tab: "flashcards" | "practice" | "teacher-assignment"
-  const [activeTab, setActiveTab] = useState<"flashcards" | "practice" | "teacher-assignment">("flashcards");
+  const [activeTab, setActiveTab] = useState<"flashcards" | "practice">("flashcards");
 
   // ── Flashcard state ───────────────────────────────────────────────
   const [savedFlashcards, setSavedFlashcards] =
@@ -176,34 +159,6 @@ export default function QuizHubPage() {
   const [newQExplanation, setNewQExplanation] = useState("");
   const [newQTopic, setNewQTopic] = useState("Toán học");
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
-
-  // ── Teacher Assignment Creation State ────────────────────────────
-  const isTeacher = user?.role === "TEACHER";
-  const [teacherCourses, setTeacherCourses] = useState<Course[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [selectedLessonId, setSelectedLessonId] = useState("");
-  const [assignmentTitle, setAssignmentTitle] = useState("");
-  const [aiTopic, setAiTopic] = useState("");
-  const [aiGrade, setAiGrade] = useState("6");
-  const [aiDifficulty, setAiDifficulty] = useState<AssessmentDifficulty>("MEDIUM");
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-
-  // Load teacher courses if user has rights
-  useEffect(() => {
-    if (token && isTeacher) {
-      fetchMyCourses(token)
-        .then((courses) => {
-          setTeacherCourses(courses);
-          if (courses.length > 0) {
-            setSelectedCourseId(courses[0].id);
-          }
-        })
-        .catch(() => {
-          // ignore or fallback
-        });
-    }
-  }, [token, isTeacher]);
 
   useEffect(() => {
     if (!token) return;
@@ -241,9 +196,6 @@ export default function QuizHubPage() {
     token && studyDataToken === token ? savedFlashcards : defaultFlashcards;
   const questions =
     token && studyDataToken === token ? savedQuestions : defaultQuestions;
-
-  const selectedCourse = teacherCourses.find((c) => c.id === selectedCourseId);
-  const lessonOptions: Lesson[] = selectedCourse?.lessons || [];
 
   // Flashcard controls
   const handleNextCard = () => {
@@ -469,78 +421,6 @@ export default function QuizHubPage() {
     }
   };
 
-  // Teacher AI Assessment generation and direct publishing
-  const handleTeacherGenerateAndPublish = async () => {
-    if (!token) {
-      toast.error(isVietnamese ? "Vui lòng đăng nhập" : "Please log in");
-      return;
-    }
-    if (!selectedLessonId) {
-      toast.error(isVietnamese ? "Vui lòng chọn bài học cần giao bài tập" : "Please select a lesson");
-      return;
-    }
-    if (!aiTopic.trim()) {
-      toast.error(isVietnamese ? "Vui lòng nhập chủ đề bài tập" : "Please enter a topic");
-      return;
-    }
-
-    setIsGeneratingAi(true);
-    try {
-      const assessment = await generateAssessment(token, {
-        grade: Number(aiGrade),
-        subject: selectedCourse?.subject === "math" ? "Mathematics" : "Science",
-        topic: aiTopic.trim(),
-        difficulty: aiDifficulty,
-        question_count: 5,
-        locale: isVietnamese ? "vi" : "en",
-      });
-
-      setIsPublishing(true);
-      // Map AI assessment questions into lesson quiz format
-      const formattedQuestions = assessment.questions.map((q) => {
-        const choices = q.choices && q.choices.length > 0 ? q.choices : ["A", "B", "C", "D"];
-        const ansObj = assessment.answers.find((a) => a.question_number === q.question_number);
-        const correctStr = String(ansObj?.correct_answer || choices[0]);
-
-        return {
-          question: q.prompt,
-          type: "MULTIPLE_CHOICE" as const,
-          answers: choices.map((choice) => ({
-            content: choice,
-            isCorrect: choice.toLowerCase().trim() === correctStr.toLowerCase().trim(),
-          })),
-        };
-      });
-
-      // Ensure at least one correct answer per question
-      formattedQuestions.forEach((fq) => {
-        if (!fq.answers.some((a) => a.isCorrect)) {
-          fq.answers[0].isCorrect = true;
-        }
-      });
-
-      await createLessonQuiz(token, selectedLessonId, {
-        title: assignmentTitle.trim() || assessment.quiz.title,
-        questions: formattedQuestions,
-      });
-
-      toast.success(
-        isVietnamese
-          ? "Đã tạo và giao bài tập trắc nghiệm thành công cho học sinh!"
-          : "Quiz assignment successfully created and assigned to students!"
-      );
-      setAssignmentTitle("");
-      setAiTopic("");
-    } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : isVietnamese ? "Không thể tạo bài tập lúc này" : "Failed to create assignment"
-      );
-    } finally {
-      setIsGeneratingAi(false);
-      setIsPublishing(false);
-    }
-  };
-
   const currentCard = flashcards[currentCardIndex];
 
   return (
@@ -576,8 +456,8 @@ export default function QuizHubPage() {
               </h1>
               <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-neutral-600 dark:text-slate-400 md:text-base">
                 {isVietnamese
-                  ? "Tăng tốc ghi nhớ thuật ngữ STEM với thẻ ghi nhớ tương tác, luyện tập câu hỏi trắc nghiệm tự động chấm điểm và bộ đề thi chuẩn GDPT 2018."
-                  : "Accelerate your STEM retention with interactive flashcards, practice quizzes, and teacher assignment tools."}
+                  ? "Ôn tập thuật ngữ và kiến thức STEM qua flashcard tương tác và câu hỏi trắc nghiệm tự chấm điểm."
+                  : "Review STEM terms and concepts with interactive flashcards and self-scored practice quizzes."}
               </p>
             </div>
 
@@ -607,20 +487,6 @@ export default function QuizHubPage() {
                 <HelpCircle className="h-4 w-4" />
                 <span>{isVietnamese ? "Ôn tập Quiz" : "Practice Quiz"}</span>
               </Button>
-              {isTeacher && (
-                <Button
-                  variant={activeTab === "teacher-assignment" ? "default" : "outline"}
-                  className={`rounded-xl font-semibold gap-2 transition-all ${
-                    activeTab === "teacher-assignment"
-                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
-                      : "border-neutral-200 dark:border-slate-800 text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
-                  }`}
-                  onClick={() => setActiveTab("teacher-assignment")}
-                >
-                  <GraduationCap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span>{isVietnamese ? "Giáo viên Giao Bài" : "Assign Quiz"}</span>
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -1078,167 +944,6 @@ export default function QuizHubPage() {
           </div>
         )}
 
-        {/* ── TAB 3: TEACHER ASSIGNMENT CREATION ──────────────────────── */}
-        {activeTab === "teacher-assignment" && isTeacher && (
-          <div className="mx-auto max-w-3xl space-y-6 animate-in fade-in duration-300">
-            <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-sm md:p-8">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">
-                    {isVietnamese ? "Giáo viên Soạn & Giao Bài Kiểm Tra" : "Create & Assign Quiz to Students"}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {isVietnamese
-                      ? "Tạo bộ câu hỏi theo chuẩn bài giảng hoặc sử dụng AI để tự động tạo đề kiểm tra."
-                      : "Create quiz questions aligned to your course lessons or generate them instantly with AI."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-                      {isVietnamese ? "1. Chọn Khóa học" : "1. Select Course"}
-                    </label>
-                    <select
-                      value={selectedCourseId}
-                      onChange={(e) => {
-                        setSelectedCourseId(e.target.value);
-                        setSelectedLessonId("");
-                      }}
-                      className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      {teacherCourses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-                      {isVietnamese ? "2. Chọn Bài học để giao" : "2. Select Lesson"}
-                    </label>
-                    <select
-                      value={selectedLessonId}
-                      onChange={(e) => setSelectedLessonId(e.target.value)}
-                      className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="">
-                        {isVietnamese ? "-- Chọn bài học --" : "-- Select a lesson --"}
-                      </option>
-                      {lessonOptions.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          Bài {l.order}: {l.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1.5">
-                    {isVietnamese ? "3. Tiêu đề bài kiểm tra" : "3. Quiz Title"}
-                  </label>
-                  <input
-                    type="text"
-                    value={assignmentTitle}
-                    onChange={(e) => setAssignmentTitle(e.target.value)}
-                    placeholder="Ví dụ: Kiểm tra 15 phút - Định luật Newton..."
-                    className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold text-primary">
-                      {isVietnamese ? "Trợ lý AI Tự Động Tạo Bộ Câu Hỏi" : "AI Quiz Generator"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">
-                        {isVietnamese ? "Khối lớp" : "Grade"}
-                      </label>
-                      <select
-                        value={aiGrade}
-                        onChange={(e) => setAiGrade(e.target.value)}
-                        className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-xs text-foreground"
-                      >
-                        {["6", "7", "8", "9"].map((g) => (
-                          <option key={g} value={g}>
-                            Lớp {g}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">
-                        {isVietnamese ? "Độ khó" : "Difficulty"}
-                      </label>
-                      <select
-                        value={aiDifficulty}
-                        onChange={(e) => setAiDifficulty(e.target.value as AssessmentDifficulty)}
-                        className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-xs text-foreground"
-                      >
-                        <option value="EASY">Cơ bản (Easy)</option>
-                        <option value="MEDIUM">Vừa phải (Medium)</option>
-                        <option value="HARD">Nâng cao (Hard)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground block mb-1">
-                        {isVietnamese ? "Chủ đề kiến thức" : "Topic"}
-                      </label>
-                      <input
-                        type="text"
-                        value={aiTopic}
-                        onChange={(e) => setAiTopic(e.target.value)}
-                        placeholder="Ví dụ: Phân số, Định luật Newton..."
-                        className="w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-xs text-foreground"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                    {isVietnamese
-                      ? "AI sẽ tạo 5 câu hỏi trắc nghiệm chất lượng cao kèm giải thích và tự động lưu trực tiếp vào bài tập của học sinh."
-                      : "AI will generate 5 high-quality questions with explanations and link them directly to student assignments."}
-                  </p>
-
-                  <Button
-                    onClick={handleTeacherGenerateAndPublish}
-                    disabled={isGeneratingAi || isPublishing || !selectedLessonId || !aiTopic.trim()}
-                    className="w-full rounded-xl font-semibold gap-2 py-5 shadow-xs"
-                  >
-                    {isGeneratingAi || isPublishing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {isGeneratingAi
-                          ? (isVietnamese ? "Đang soạn đề bằng AI..." : "Generating with AI...")
-                          : (isVietnamese ? "Đang lưu bài tập..." : "Publishing assignment...")}
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        {isVietnamese ? "Tạo và Giao Bài Kiểm Tra Ngay" : "Generate & Assign Quiz Now"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );

@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 7: Đo Tốc Độ Chuyển Động (Measuring Speed)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #e0f2fe 0%, #cffafe 60%, #ecfeff 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #0891b2;
+            box-shadow: 0 18px 40px -12px rgba(8, 145, 178, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #0891b2; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-cyan-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-cyan-600 flex items-center justify-center shadow border-2 border-cyan-200 shrink-0 text-2xl">
+                    🏎️
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Động Học
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Xác định tốc độ chuyển động
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab 7: Đo Tốc Độ Chuyển Động (Đo Quãng Đường & Thời Gian)
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-white text-cyan-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-cyan-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-cyan-700 hover:bg-cyan-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-cyan-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-cyan-50 px-3.5 py-2 border-b-2 border-cyan-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-cyan-600 text-white border-2 border-cyan-700">
+                <span>⏱️</span>
+                <span data-i18n="tab1">1. Thực Hành 4 Bước Đo Tốc Độ</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-cyan-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Thử Nghiệm 4 Độ Dốc Khác Nhau</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-cyan-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Công Thức & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-cyan-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: THỰC HÀNH ĐO TỐC ĐỘ
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Interactive Lab Canvas -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-cyan-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-cyan-200 truncate" data-i18n="statusReady">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Xem tự động 4 bước</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 4 Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-cyan-50 to-teal-50/60 rounded-2xl p-3 border-2 border-cyan-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-cyan-900 bg-cyan-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Dụng Cụ Đo Lường (4 món)
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tools Grid (4 items) -->
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <div onclick="triggerToolClick('ruler')" id="tool-ruler" class="cursor-pointer bg-cyan-100 border-2 border-cyan-500 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">📏</div>
+                                    <div class="font-black text-[10px] text-cyan-950 mt-1" data-i18n="toolRuler">Thước đo</div>
+                                    <div id="tool-status-ruler" class="text-[9px] font-extrabold text-cyan-700">✓ Sẵn</div>
+                                </div>
+                                <div onclick="triggerToolClick('ramp')" id="tool-ramp" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">📐</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolRamp">Mặt dốc</div>
+                                    <div id="tool-status-ramp" class="text-[9px] font-extrabold text-amber-600">Bước 1</div>
+                                </div>
+                                <div onclick="triggerToolClick('car')" id="tool-car" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🏎️</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolCar">Xe đồ chơi</div>
+                                    <div id="tool-status-car" class="text-[9px] font-extrabold text-slate-400">Bước 2</div>
+                                </div>
+                                <div onclick="triggerToolClick('timer')" id="tool-timer" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">⏱️</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolTimer">Đồng hồ</div>
+                                    <div id="tool-status-timer" class="text-[9px] font-extrabold text-slate-400">Bước 3</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-cyan-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Lắp Ráp (Bấm lần lượt 1 → 4):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-cyan-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Bố trí thước đo quãng đường s (cm).</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Đặt mặt dốc & đưa xe lên vị trí xuất phát.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Thả xe chạy & Bắt đầu bấm đồng hồ.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Dừng đồng hồ khi xe tới đích & Tính tốc độ.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-cyan-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-cyan-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Dữ liệu đo đạc:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Bố trí thước đo</strong> để bắt đầu chuẩn bị thí nghiệm!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: 4 Stages Strip -->
+                <div class="bg-cyan-50/90 rounded-2xl p-2.5 border-2 border-cyan-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Quá Trình Đo Đạc (Bấm vào từng bước để xem lại)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-cyan-900 bg-cyan-200 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Công thức: v = s / t
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 TRƯỜNG HỢP (COMPARE)
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-cyan-50 to-teal-50 p-3.5 rounded-2xl border-2 border-cyan-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-cyan-800 bg-cyan-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích các yếu tố
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Độ dốc và ma sát ảnh hưởng thế nào đến tốc độ?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Cùng quãng đường (s = 50cm), hãy quan sát thời gian (t) ở 4 trường hợp:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Case A: Normal Slope -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-cyan-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-cyan-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP A</span>
+                                <span class="text-xs">📐 Dốc vừa</span>
+                            </div>
+                            <h4 class="font-black text-xs text-cyan-950 mt-1.5" data-i18n="cupATitle">Mặt dốc tiêu chuẩn</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-cyan-900 bg-cyan-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Bình thường:</strong> Thời gian t = 2.5s. Tốc độ v = 20 cm/s. Xe chạy ổn định.
+                        </p>
+                    </div>
+
+                    <!-- Case B: Steep Slope -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-emerald-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP B</span>
+                                <span class="text-xs">⛰️ Dốc cao</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Mặt dốc rất cao</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-emerald-900 bg-emerald-50 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ✨ <strong>Tốc độ cao:</strong> Dốc cao giúp xe tăng tốc nhanh. Thời gian t nhỏ (1.25s) -> Tốc độ v lớn (40 cm/s).
+                        </p>
+                    </div>
+
+                    <!-- Case C: Low Slope -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-amber-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP C</span>
+                                <span class="text-xs">📉 Dốc thoai thoải</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Mặt dốc thấp</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-amber-900 bg-amber-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            🐢 <strong>Tốc độ chậm:</strong> Xe ít được gia tốc. Thời gian t lớn (5.0s) -> Tốc độ v nhỏ (10 cm/s).
+                        </p>
+                    </div>
+
+                    <!-- Case D: Rough Surface -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-rose-400 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-rose-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">TRƯỜNG HỢP D</span>
+                                <span class="text-xs">🧶 Mặt nhám</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Trải thảm nhám (Ma sát)</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-rose-900 bg-rose-50 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ⚠️ <strong>Rất chậm/Dừng lại:</strong> Dốc như cũ nhưng lực ma sát lớn cản trở xe. Thời gian t rất lớn, v rất nhỏ.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl p-4 border-2 border-cyan-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-cyan-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-cyan-800">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-cyan-950">Tóm Tắt Lab: Đo Tốc Độ Chuyển Động</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-cyan-200 space-y-1">
+                            <div class="text-xs font-black text-cyan-800">🎯 1. Khái niệm tốc độ:</div>
+                            <p class="text-xs font-bold text-slate-700">Tốc độ là đại lượng cho biết sự nhanh, chậm của chuyển động, được tính bằng quãng đường đi được trong một đơn vị thời gian.</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-cyan-200 space-y-1">
+                            <div class="text-xs font-black text-cyan-800">🧮 2. Công thức tính:</div>
+                            <div class="grid grid-cols-1 gap-1 pt-1 text-xs font-bold text-slate-700">
+                                <div class="text-lg text-cyan-700 text-center font-black">v = s / t</div>
+                                <div>• <strong>v</strong>: Tốc độ (m/s, km/h, cm/s)</div>
+                                <div>• <strong>s</strong>: Quãng đường đo bằng Thước (m, km, cm)</div>
+                                <div>• <strong>t</strong>: Thời gian đo bằng Đồng hồ (s, h)</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-amber-900">💡 3. Các yếu tố ảnh hưởng:</div>
+                            <p class="text-xs font-black text-cyan-950">
+                                Lực đẩy (từ độ dốc) làm xe chạy nhanh hơn. Lực ma sát (từ mặt đường nhám) làm xe chạy chậm lại!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🏎️</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.3), 270);
+        }
+
+        function playCarRoll() {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(200, ctx.currentTime + 1.5);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 1.5);
+            } catch(e) {}
+        }
+
+        function playTick() {
+            playTone(800, 'square', 0.05, 0.05);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+        let animFrameId = null;
+
+        const labState = {
+            step: 0,           // 0: Prep, 1: Ruler, 2: Ramp & Car, 3: Rolling, 4: Finished
+            carProgress: 0,    // 0 to 1
+            timerValue: 0      // simulated seconds
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Đặt thước', shortEn: '1. Place Ruler', icon: '📏' },
+            2: { shortVi: '2. Đặt xe & dốc', shortEn: '2. Place Car', icon: '🏎️' },
+            3: { shortVi: '3. Thả xe chạy', shortEn: '3. Release Car', icon: '💨' },
+            4: { shortVi: '4. Xem kết quả', shortEn: '4. Check Result', icon: '✅' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'ruler' && labState.step === 0) {
+                executeStep(1);
+            } else if (toolKey === 'ramp' && labState.step === 1) {
+                executeStep(2);
+            } else if (toolKey === 'car' && labState.step === 1) {
+                executeStep(2); // Merge step 2
+            } else if (toolKey === 'timer' && labState.step === 2) {
+                executeStep(3);
+            }
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                playTone(450, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                playTone(520, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                labState.carProgress = 0;
+                labState.timerValue = 0;
+                playCarRoll();
+                // We let the render loop handle progression from 3 -> 4 when progress >= 1
+            } else if (targetStep === 4) {
+                labState.carProgress = 1;
+                labState.timerValue = 2.50;
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 3) {
+                    autoPlayTimer = setTimeout(playNext, 1800);
+                } else {
+                    // Step 3 to 4 is handled by animation, wait a bit then reset button
+                    autoPlayTimer = setTimeout(() => {
+                        autoPlayTimer = null;
+                        updateAutoPlayButton(false);
+                    }, 2000);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            labState.carProgress = 0;
+            labState.timerValue = 0;
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const titlesVi = [
+                'Chuẩn bị dụng cụ thí nghiệm đo tốc độ',
+                'Bước 1: Bố trí thước đo khoảng cách 50cm',
+                'Bước 2: Lắp đặt mặt dốc và đưa xe lên đỉnh',
+                'Bước 3: Thả xe chạy và bấm đồng hồ khi xe qua vạch',
+                'Bước 4: Tính tốc độ xe dựa trên Quãng đường và Thời gian'
+            ];
+
+            document.getElementById('status-step-badge').textContent = st === 0 ? 'CHUẨN BỊ' : `BƯỚC ${st}/4`;
+            document.getElementById('status-step-title').textContent = titlesVi[st];
+
+            // Tool status updates
+            const toolUpdate = (id, threshold, textDone, textWait, textNext) => {
+                const el = document.getElementById(`tool-${id}`);
+                const status = document.getElementById(`tool-status-${id}`);
+                if (st >= threshold) {
+                    el.className = 'cursor-pointer bg-cyan-100 border-2 border-cyan-500 rounded-xl p-1 text-center transition';
+                    status.className = 'text-[9px] font-extrabold text-cyan-700';
+                    status.textContent = textDone;
+                } else if (st === threshold - 1) {
+                    el.className = 'cursor-pointer bg-amber-50 border-2 border-amber-400 rounded-xl p-1 text-center transition pulse-next';
+                    status.className = 'text-[9px] font-extrabold text-amber-700';
+                    status.textContent = '👉 Bấm chọn';
+                } else {
+                    el.className = 'cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition';
+                    status.className = 'text-[9px] font-extrabold text-slate-400';
+                    status.textContent = textNext;
+                }
+            };
+
+            toolUpdate('ruler', 1, '✓ Đã đặt', '', 'Bước 1');
+            toolUpdate('ramp', 2, '✓ Lắp xong', '', 'Bước 2');
+            toolUpdate('car', 2, '✓ Đặt xong', '', 'Bước 2');
+            toolUpdate('timer', 3, '✓ Đang đo', '', 'Bước 3');
+
+            // 4 Steps buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-5 h-5 rounded-md bg-cyan-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    icon.className = 'w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Description box
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Bố trí thước đo</strong> để bắt đầu chuẩn bị!';
+            if (st === 1) obsEl.innerHTML = 'Thước đo đã được đặt dọc theo quỹ đạo phẳng (Từ 0cm đến 50cm). Bấm <strong>Bước 2</strong> để thêm xe!';
+            if (st === 2) obsEl.innerHTML = 'Xe đang nằm yên trên đỉnh dốc. Quãng đường cần đo là s = 50cm. Bấm <strong>Bước 3</strong> để thả xe!';
+            if (st === 3) obsEl.innerHTML = 'Xe đang lăn xuống dốc. <strong>Đồng hồ bắt đầu đếm</strong> khi xe chạm vạch 0cm!';
+            if (st === 4) obsEl.innerHTML = '🎉 <strong>KẾT QUẢ:</strong> Xe đi được quãng đường <strong>s = 50cm</strong> trong thời gian <strong>t = 2.5s</strong>. Tốc độ <strong>v = 20 cm/s</strong>!';
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-cyan-100 text-cyan-950 border-2 border-cyan-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawCar(c, cx, cy, angle) {
+            c.save();
+            c.translate(cx, cy);
+            c.rotate(angle);
+            
+            // Wheels
+            c.fillStyle = '#1e293b';
+            c.beginPath(); c.arc(-12, 10, 6, 0, Math.PI*2); c.fill();
+            c.beginPath(); c.arc(12, 10, 6, 0, Math.PI*2); c.fill();
+            
+            // Body
+            c.fillStyle = '#ef4444'; // Red sports car
+            c.beginPath();
+            c.moveTo(-20, 8);
+            c.lineTo(20, 8);
+            c.lineTo(24, -2);
+            c.lineTo(10, -10);
+            c.lineTo(-10, -10);
+            c.lineTo(-24, -2);
+            c.closePath();
+            c.fill();
+            c.strokeStyle = '#991b1b';
+            c.lineWidth = 1.5;
+            c.stroke();
+            
+            // Windows
+            c.fillStyle = '#cbd5e1';
+            c.beginPath();
+            c.moveTo(-8, -2); c.lineTo(8, -2); c.lineTo(5, -8); c.lineTo(-5, -8); c.closePath();
+            c.fill();
+
+            c.restore();
+        }
+
+        function drawStopwatch(c, x, y, timeStr) {
+            c.save();
+            c.translate(x, y);
+            
+            // Outer casing
+            c.fillStyle = '#334155';
+            c.beginPath(); c.arc(0, 0, 35, 0, Math.PI*2); c.fill();
+            c.strokeStyle = '#94a3b8'; c.lineWidth = 3; c.stroke();
+            
+            // Buttons
+            c.fillStyle = '#cbd5e1';
+            c.fillRect(-6, -42, 12, 8); // top
+            c.translate(0,0); c.rotate(Math.PI/4); c.fillRect(-4, -40, 8, 6); // side
+            c.rotate(-Math.PI/4);
+            
+            // Display screen
+            c.fillStyle = '#a7f3d0';
+            c.beginPath(); c.roundRect(-24, -12, 48, 24, 4); c.fill();
+            c.strokeStyle = '#065f46'; c.lineWidth = 1.5; c.stroke();
+            
+            // Text
+            c.fillStyle = '#064e3b';
+            c.font = '900 16px monospace';
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText(timeStr, 0, 1);
+            
+            c.restore();
+        }
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath();
+            c.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 172, 24, 7);
+            c.fill();
+            c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 7, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                const st = labState.step;
+                
+                // Track definitions
+                const yFlat = 280;
+                const xFlatStart = 160;
+                const xFlatEnd = 450;
+                const rampTopX = 40;
+                const rampTopY = 160;
+                const finishX = 360; // 50cm mark at finishX
+                
+                // Animation Logic for Step 3
+                if (st === 3) {
+                    labState.carProgress += 0.007; // Move speed
+                    if (labState.carProgress > 1) {
+                        executeStep(4);
+                    } else if (labState.carProgress > 0.4) {
+                        // Wait for car to hit flat before timing
+                        // Progress 0->0.3 is ramp, 0.3->1 is flat
+                        labState.timerValue = ((labState.carProgress - 0.4) / 0.6) * 2.50;
+                        if (Math.random() < 0.1) playTick(); // occasional ticking sound
+                    }
+                }
+
+                // Calculate Car position
+                let carX = 0, carY = 0, carA = 0;
+                
+                if (st >= 2) {
+                    if (st === 2 || (st === 3 && labState.carProgress < 0.4)) {
+                        // On Ramp
+                        let p = (st === 2) ? 0 : (labState.carProgress / 0.4);
+                        carX = rampTopX + p * (xFlatStart - rampTopX);
+                        carY = rampTopY + p * (yFlat - rampTopY) - 16;
+                        carA = Math.atan2(yFlat - rampTopY, xFlatStart - rampTopX);
+                    } else {
+                        // On Flat
+                        let p = (st === 3) ? ((labState.carProgress - 0.4) / 0.6) : 1;
+                        carX = xFlatStart + p * (finishX - xFlatStart);
+                        carY = yFlat - 16;
+                        carA = 0;
+                    }
+                }
+
+                // 1. Draw Background Table
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, yFlat, 465, 65);
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, yFlat, 465, 4);
+
+                // 2. Draw Ruler (Step 1+)
+                if (st >= 1) {
+                    ctx.fillStyle = '#fbbf24'; // Yellow ruler
+                    ctx.fillRect(xFlatStart, yFlat + 5, 200, 20);
+                    ctx.fillStyle = '#92400e';
+                    ctx.font = '800 10px Nunito';
+                    ctx.fillText('0cm', xFlatStart + 2, yFlat + 18);
+                    ctx.fillText('50cm', finishX - 28, yFlat + 18);
+                    // ticks
+                    for(let i=0; i<=10; i++) {
+                        ctx.fillRect(xFlatStart + i*20, yFlat + 5, 2, i%5===0 ? 10 : 6);
+                    }
+                    
+                    // Measurement zone lines
+                    ctx.strokeStyle = 'rgba(14, 165, 233, 0.4)';
+                    ctx.setLineDash([4,4]);
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(xFlatStart, 100); ctx.lineTo(xFlatStart, yFlat); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(finishX, 100); ctx.lineTo(finishX, yFlat); ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // 3. Draw Ramp (Step 2+)
+                if (st >= 2) {
+                    ctx.fillStyle = '#64748b'; // Slate ramp
+                    ctx.beginPath();
+                    ctx.moveTo(rampTopX, rampTopY);
+                    ctx.lineTo(xFlatStart, yFlat);
+                    ctx.lineTo(rampTopX, yFlat);
+                    ctx.fill();
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(rampTopX, rampTopY); ctx.lineTo(xFlatStart, yFlat); ctx.stroke();
+                }
+
+                // 4. Draw Car (Step 2+)
+                if (st >= 2) {
+                    drawCar(ctx, carX, carY, carA);
+                }
+
+                // 5. Draw Stopwatch (Step 1+)
+                if (st >= 1) {
+                    let timeStr = labState.timerValue.toFixed(2) + 's';
+                    drawStopwatch(ctx, 230, 80, timeStr);
+                }
+
+                // Callouts (Right side non-overlapping)
+                const pillX = 278;
+                if (st === 0) {
+                    drawRightCallout(ctx, 230, yFlat, pillX, 150, '📏 Mặt bàn phẳng', '#94a3b8');
+                } else if (st === 1) {
+                    drawRightCallout(ctx, xFlatStart + 100, yFlat + 15, pillX, 150, '📏 Quãng đường s = 50cm', '#facc15');
+                    drawRightCallout(ctx, 230, 80, pillX, 50, '⏱️ Đồng hồ (0.00s)', '#38bdf8');
+                } else if (st === 2) {
+                    drawRightCallout(ctx, rampTopX + 20, rampTopY - 10, pillX, 120, '🏎️ Xe ở vạch xuất phát', '#ef4444');
+                    drawRightCallout(ctx, 100, 240, pillX, 180, '📐 Mặt dốc tạo lực đẩy', '#94a3b8');
+                } else if (st === 3) {
+                    drawRightCallout(ctx, carX, carY, pillX, 150, '💨 Xe đang chuyển động', '#ef4444');
+                    drawRightCallout(ctx, 230, 80, pillX, 50, '⏱️ Thời gian t đang chạy', '#38bdf8');
+                } else if (st === 4) {
+                    drawRightCallout(ctx, 230, 80, pillX, 50, '⏱️ Thời gian t = 2.5s', '#38bdf8');
+                    drawRightCallout(ctx, finishX, carY, pillX, 130, '🏁 Xe qua vạch đích', '#10b981');
+                    drawRightCallout(ctx, 230, 180, pillX, 180, '✨ v = s/t = 20 cm/s', '#facc15');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: 4 COMPARISON CASES
+        // ==========================================
+        function drawMiniSetup(ctx, cX, cY, config) {
+            const { slopeY, timeStr, speedStr, rough, isSlow } = config;
+            
+            ctx.save();
+            ctx.translate(cX, cY);
+            
+            // Ground
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-70, 40, 140, 15);
+            
+            if (rough) {
+                // Rough surface dots
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(-20, 40, 90, 5);
+                ctx.fillStyle = '#fcd34d';
+                for(let i=0; i<30; i++) {
+                    ctx.fillRect(-20 + Math.random()*90, 40 + Math.random()*4, 2, 2);
+                }
+            }
+
+            // Ramp
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(-70, slopeY); ctx.lineTo(-20, 40); ctx.lineTo(-70, 40); ctx.fill();
+            ctx.strokeStyle = '#475569'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(-70, slopeY); ctx.lineTo(-20, 40); ctx.stroke();
+
+            // Motion Blur / Path
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(-70, slopeY - 10); ctx.lineTo(-20, 30); ctx.lineTo(isSlow? 10 : 50, 30); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Car at end
+            drawCar(ctx, isSlow ? 10 : 50, 30, 0);
+
+            // Timer display
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = '800 11px monospace';
+            ctx.fillText(timeStr, -20, -10);
+            ctx.fillStyle = '#facc15';
+            ctx.fillText(speedStr, -20, 5);
+            
+            ctx.restore();
+        }
+
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', slopeY: -10, timeStr: 't = 2.5s', speedStr: 'v = 20 cm/s', rough: false, isSlow: false }, // Normal
+                { id: 'cmpCanvasB', slopeY: -40, timeStr: 't = 1.25s', speedStr: 'v = 40 cm/s', rough: false, isSlow: false }, // Steep
+                { id: 'cmpCanvasC', slopeY: 15, timeStr: 't = 5.0s', speedStr: 'v = 10 cm/s', rough: false, isSlow: true }, // Low
+                { id: 'cmpCanvasD', slopeY: -10, timeStr: 't > 10.0s', speedStr: 'v ≈ 0 cm/s', rough: true, isSlow: true } // Rough
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                ctx.clearRect(0, 0, 185, 176);
+                drawMiniSetup(ctx, 185/2, 176/2, cfg);
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🧮',
+                qVi: '1. Công thức nào dùng để tính tốc độ chuyển động?',
+                qEn: '1. Which formula is used to calculate speed?',
+                optsVi: [
+                    'v = s + t',
+                    'v = s x t',
+                    'v = s / t (Quãng đường chia Thời gian)',
+                    'v = t / s'
+                ],
+                optsEn: [
+                    'v = s + t',
+                    'v = s x t',
+                    'v = s / t (Distance divided by Time)',
+                    'v = t / s'
+                ],
+                ans: 2
+            },
+            {
+                icon: '⏱️',
+                qVi: '2. Đồng hồ bấm giây trong thí nghiệm dùng để đo đại lượng nào?',
+                qEn: '2. What does the stopwatch measure in the experiment?',
+                optsVi: [
+                    'Quãng đường s',
+                    'Thời gian t',
+                    'Tốc độ v',
+                    'Độ dốc của mặt phẳng'
+                ],
+                optsEn: [
+                    'Distance s',
+                    'Time t',
+                    'Speed v',
+                    'Slope angle'
+                ],
+                ans: 1
+            },
+            {
+                icon: '⛰️',
+                qVi: '3. Nếu tăng độ cao của mặt dốc (dốc đứng hơn), tốc độ của xe sẽ thay đổi ra sao?',
+                qEn: '3. If the ramp is made steeper, how does the car speed change?',
+                optsVi: [
+                    'Xe chạy nhanh hơn, thời gian t nhỏ đi.',
+                    'Xe chạy chậm hơn, thời gian t lớn lên.',
+                    'Tốc độ xe không đổi.',
+                    'Xe sẽ chạy lùi.'
+                ],
+                optsEn: [
+                    'Car goes faster, time t decreases.',
+                    'Car goes slower, time t increases.',
+                    'Speed remains unchanged.',
+                    'Car goes backwards.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🧶',
+                qVi: '4. Tại sao xe chạy trên mặt nhám (thảm) lại tốn nhiều thời gian hơn (tốc độ chậm hơn)?',
+                qEn: '4. Why does the car take longer (slower speed) on a rough surface?',
+                optsVi: [
+                    'Vì thảm hút bánh xe.',
+                    'Do lực ma sát lớn cản trở chuyển động của xe.',
+                    'Vì thảm dốc hơn mặt bàn.',
+                    'Vì xe hết pin.'
+                ],
+                optsEn: [
+                    'Because carpet absorbs wheels.',
+                    'Due to high friction opposing the motion.',
+                    'Because carpet is steeper.',
+                    'Because battery is dead.'
+                ],
+                ans: 1
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-cyan-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-cyan-100 text-cyan-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn tính tốc độ rất chuẩn (+3 Điểm)!'
+                    : '🎉 Correct! You calculate speed well (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, hãy xem lại phiếu tổng kết bên trái rồi thử lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-cyan-600 text-white border-2 border-cyan-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-cyan-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Động Học',
+                    goalPill: '🎯 Mục tiêu: Xác định tốc độ chuyển động',
+                    appTitle: 'Lab 7: Đo Tốc Độ Chuyển Động (Đo Quãng Đường & Thời Gian)',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành 4 Bước Đo Tốc Độ',
+                    tab2: '2. Thử Nghiệm 4 Độ Dốc Khác Nhau',
+                    tab3: '3. Tóm Tắt Công Thức & Đố Vui',
+                    autoObsBtn: 'Xem tự động 4 bước',
+                    toolsHeader: '🧰 Dụng Cụ Đo Lường (4 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolRuler: 'Thước đo',
+                    toolRamp: 'Mặt dốc',
+                    toolCar: 'Xe đồ chơi',
+                    toolTimer: 'Đồng hồ',
+                    stepsHeader: '📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):',
+                    step1Text: '1. Bố trí thước đo quãng đường s (cm).',
+                    step2Text: '2. Đặt mặt dốc & đưa xe lên vị trí xuất phát.',
+                    step3Text: '3. Thả xe chạy & Bắt đầu bấm đồng hồ.',
+                    step4Text: '4. Dừng đồng hồ khi xe tới đích & Tính tốc độ.',
+                    resultTitle: 'Dữ liệu đo đạc:',
+                    diaryHeader: 'Sơ Đồ Quá Trình Đo Đạc (Bấm vào từng bước để xem lại)',
+                    finalConclusionBadge: '✅ Công thức: v = s / t',
+                    cmpSub: 'Phân tích các yếu tố',
+                    cmpTitle: 'Độ dốc và ma sát ảnh hưởng thế nào đến tốc độ?',
+                    cmpDesc: 'Cùng quãng đường (s = 50cm), hãy quan sát thời gian (t) ở 4 trường hợp:',
+                    cupATitle: 'Mặt dốc tiêu chuẩn',
+                    cupARes: '✅ <strong>Bình thường:</strong> Thời gian t = 2.5s. Tốc độ v = 20 cm/s. Xe chạy ổn định.',
+                    cupBTitle: 'Mặt dốc rất cao',
+                    cupBRes: '✨ <strong>Tốc độ cao:</strong> Dốc cao giúp xe tăng tốc nhanh. Thời gian t nhỏ (1.25s) -> Tốc độ v lớn (40 cm/s).',
+                    cupCTitle: 'Mặt dốc thấp',
+                    cupCRes: '🐢 <strong>Tốc độ chậm:</strong> Xe ít được gia tốc. Thời gian t lớn (5.0s) -> Tốc độ v nhỏ (10 cm/s).',
+                    cupDTitle: 'Trải thảm nhám (Ma sát)',
+                    cupDRes: '⚠️ <strong>Rất chậm/Dừng lại:</strong> Dốc như cũ nhưng lực ma sát lớn cản trở xe. Thời gian t rất lớn, v rất nhỏ.'
+                },
+                en: {
+                    labBadge: 'Kinematics Lab',
+                    goalPill: '🎯 Goal: Determine moving speed',
+                    appTitle: 'Lab 7: Measuring Speed (Distance & Time Measurement)',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Measurement',
+                    tab2: '2. 4 Different Slopes',
+                    tab3: '3. Formula Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🧰 Measurement Tools (4 items)',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    toolRuler: 'Ruler',
+                    toolRamp: 'Ramp',
+                    toolCar: 'Toy Car',
+                    toolTimer: 'Stopwatch',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Place ruler to measure distance s (cm).',
+                    step2Text: '2. Setup ramp & place car at starting point.',
+                    step3Text: '3. Release car & Start stopwatch.',
+                    step4Text: '4. Stop timer at finish line & Calculate speed.',
+                    resultTitle: 'Measurement Data:',
+                    diaryHeader: 'Measurement Process Stages',
+                    finalConclusionBadge: '✅ Formula: v = s / t',
+                    cmpSub: 'Factor Analysis',
+                    cmpTitle: 'How do slope and friction affect speed?',
+                    cmpDesc: 'For the same distance (s = 50cm), observe time (t) in 4 cases:',
+                    cupATitle: 'Standard Slope',
+                    cupARes: '✅ <strong>Normal:</strong> Time t = 2.5s. Speed v = 20 cm/s. Stable run.',
+                    cupBTitle: 'Very Steep Slope',
+                    cupBRes: '✨ <strong>High Speed:</strong> Steep slope accelerates car faster. Small t (1.25s) -> Large v (40 cm/s).',
+                    cupCTitle: 'Low Gentle Slope',
+                    cupCRes: '🐢 <strong>Slow Speed:</strong> Car accelerates less. Large t (5.0s) -> Small v (10 cm/s).',
+                    cupDTitle: 'Rough Surface (Friction)',
+                    cupDRes: '⚠️ <strong>Very Slow/Stop:</strong> Same slope but high friction opposes motion. Huge t, tiny v.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

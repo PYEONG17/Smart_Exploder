@@ -23,6 +23,7 @@ import {
   Save,
   ArrowRight,
   RefreshCw,
+  FileUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,8 @@ export default function TeacherExploreManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formTab, setFormTab] = useState<"basic" | "model" | "terms">("basic");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedModelFile, setSelectedModelFile] = useState<File | null>(null);
+  const [modelUploadError, setModelUploadError] = useState("");
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Delete confirm
@@ -103,6 +106,7 @@ export default function TeacherExploreManager() {
     subject: "physics",
     textbook: "Kết Nối Tri Thức",
     modelType: "fluid_pressure",
+    uploadedModelUrl: null as string | null,
     type: "3d_model",
     tags: "",
     aiPromptContext: "",
@@ -153,6 +157,8 @@ export default function TeacherExploreManager() {
     setFormMode("create");
     setEditingId(null);
     setFormTab("basic");
+    setSelectedModelFile(null);
+    setModelUploadError("");
     setFormData({
       title: "",
       titleEn: "",
@@ -164,6 +170,7 @@ export default function TeacherExploreManager() {
       subject: "physics",
       textbook: "Kết Nối Tri Thức",
       modelType: "fluid_pressure",
+      uploadedModelUrl: null,
       type: "3d_model",
       tags: "KHTN 8, Kết Nối Tri Thức, 3D STEM",
       aiPromptContext: "",
@@ -188,6 +195,8 @@ export default function TeacherExploreManager() {
     setFormMode("edit");
     setEditingId(item.id);
     setFormTab("basic");
+    setSelectedModelFile(null);
+    setModelUploadError("");
     setFormData({
       title: item.title,
       titleEn: item.titleEn,
@@ -199,6 +208,7 @@ export default function TeacherExploreManager() {
       subject: item.subject,
       textbook: item.textbook,
       modelType: item.modelType,
+      uploadedModelUrl: item.uploadedModelUrl ?? null,
       type: item.type,
       tags: Array.isArray(item.tags) ? item.tags.join(", ") : "",
       aiPromptContext: item.aiPromptContext || "",
@@ -237,10 +247,10 @@ export default function TeacherExploreManager() {
       };
 
       if (formMode === "create") {
-        await createExploreMaterial(payload, token || undefined);
+        await createExploreMaterial(payload, token || undefined, selectedModelFile ?? undefined);
         setNotification({ type: "success", text: "Đã thêm học liệu mới vào Database thành công!" });
       } else if (editingId) {
-        await updateExploreMaterial(editingId, payload, token || undefined);
+        await updateExploreMaterial(editingId, payload, token || undefined, selectedModelFile ?? undefined);
         setNotification({ type: "success", text: "Đã cập nhật học liệu trong Database thành công!" });
       }
 
@@ -511,7 +521,12 @@ export default function TeacherExploreManager() {
                     </p>
 
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span>Mô hình 3D: <code className="text-cyan-600 dark:text-cyan-400">{item.modelType}</code></span>
+                      <span>
+                        Mô hình 3D:{" "}
+                        <code className="text-cyan-600 dark:text-cyan-400">
+                          {item.uploadedModelUrl ? "Tệp GLB đã tải lên" : item.modelType}
+                        </code>
+                      </span>
                       <span>Từ vựng: {item.bilingualTerms?.length || 0} từ</span>
                       <span>Lượt xem: {item.viewsCount}</span>
                     </div>
@@ -766,23 +781,91 @@ export default function TeacherExploreManager() {
               {/* TAB 2: 3D MODEL CONFIG */}
               {formTab === "model" && (
                 <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-neutral-300">Chọn Mô hình 3D tương tác (*)</label>
-                    <select
-                      value={formData.modelType}
-                      onChange={(e) => setFormData({ ...formData, modelType: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-900 border border-cyan-500/40 text-cyan-300 focus:outline-none focus:border-cyan-400 font-semibold"
-                    >
-                      {MODEL_OPTIONS.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-[11px] text-neutral-400 mt-1">
-                      Mô hình được kết xuất trực tiếp bằng WebGL / Three.js với tương tác xoay 360 độ, phóng to thu nhỏ và chế độ khung dây.
-                    </p>
+                  <div className="space-y-3 rounded-2xl border border-cyan-500/25 bg-cyan-500/5 p-4">
+                    <div>
+                      <label className="text-xs font-bold text-neutral-200">
+                        Tải mô hình 3D từ thiết bị (.glb)
+                      </label>
+                      <p className="mt-1 text-[11px] text-neutral-400">
+                        Chỉ nhận tệp GLB 2.0, tối đa 100 MB. Mô hình đã tải lên sẽ được hiển thị thay cho mô hình dựng sẵn.
+                      </p>
+                    </div>
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/40 bg-neutral-900/80 px-4 py-3 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/10">
+                      <FileUp className="h-4 w-4" />
+                      <span>Chọn tệp GLB</span>
+                      <input
+                        type="file"
+                        accept=".glb,model/gltf-binary,application/octet-stream"
+                        className="sr-only"
+                        disabled={isSubmitting}
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = "";
+                          if (!file) return;
+                          if (!file.name.toLowerCase().endsWith(".glb")) {
+                            setModelUploadError("Chỉ hỗ trợ mô hình GLB (.glb).");
+                            return;
+                          }
+                          if (file.size > 100 * 1024 * 1024) {
+                            setModelUploadError("Mô hình 3D không được vượt quá 100 MB.");
+                            return;
+                          }
+                          setSelectedModelFile(file);
+                          setModelUploadError("");
+                        }}
+                      />
+                    </label>
+                    {modelUploadError ? (
+                      <p role="alert" className="text-xs text-rose-400">{modelUploadError}</p>
+                    ) : null}
+                    {selectedModelFile ? (
+                      <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-500/20 bg-neutral-900 px-3 py-2 text-xs">
+                        <span className="min-w-0 truncate text-cyan-100">
+                          {selectedModelFile.name} · {(selectedModelFile.size / (1024 * 1024)).toFixed(1)} MB
+                          <span className="ml-1 text-neutral-400">sẽ được tải lên khi lưu</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedModelFile(null)}
+                          className="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-800 hover:text-white"
+                          aria-label="Bỏ chọn mô hình GLB"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : formData.uploadedModelUrl ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/20 bg-neutral-900 px-3 py-2 text-xs">
+                        <span className="text-emerald-300">Đang sử dụng mô hình GLB đã tải lên.</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, uploadedModelUrl: null })}
+                          className="rounded-lg px-2 py-1 font-semibold text-rose-300 hover:bg-rose-500/10"
+                        >
+                          Xóa tệp GLB, dùng mô hình dựng sẵn
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
+
+                  {!selectedModelFile && !formData.uploadedModelUrl ? (
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-neutral-300">Chọn Mô hình 3D tương tác (*)</label>
+                      <select
+                        value={formData.modelType}
+                        onChange={(e) => setFormData({ ...formData, modelType: e.target.value })}
+                        className="w-full px-3 py-2.5 rounded-xl text-xs bg-neutral-900 border border-cyan-500/40 text-cyan-300 focus:outline-none focus:border-cyan-400 font-semibold"
+                      >
+                        {MODEL_OPTIONS.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-neutral-400 mt-1">
+                        Mô hình được kết xuất trực tiếp bằng WebGL / Three.js với tương tác xoay 360 độ, phóng to thu nhỏ và chế độ khung dây.
+                      </p>
+                    </div>
+                  ) : null}
 
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-neutral-300">Định dạng học liệu</label>

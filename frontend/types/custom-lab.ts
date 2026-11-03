@@ -15,7 +15,7 @@ export type CustomLabVocabulary = BilingualText & {
 
 export type CustomLabAttachment = {
   name: string;
-  type: "IMAGE" | "PDF" | "VIDEO" | "MODEL_3D" | "DOCUMENT" | "HTML";
+  type: "IMAGE" | "PDF" | "VIDEO" | "MODEL_3D" | "DOCUMENT" | "HTML" | "SIMULATION";
   url: string;
 };
 

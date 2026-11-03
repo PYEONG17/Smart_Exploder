@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Quan Sát Tế Bào Biểu Bì Hành (Onion Epidermal Cells)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 60%, #e0f2fe 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px 0 16px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: auto;
+        }
+        /* STRICT 896px -> 906px CONTAINER MANDATE */
+        .app-frame {
+            width: 900px;
+            min-width: 896px;
+            max-width: 906px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 22px;
+            border: 4px solid #059669;
+            box-shadow: 0 18px 40px -12px rgba(5, 150, 105, 0.25), 0 0 0 5px rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+
+        /* Fixed 2-Column Layout inside 900px (465px Left + 395px Right + 14px gap + 26px padding = 900px) */
+        .lab-two-col {
+            display: grid;
+            grid-template-columns: 465px 395px;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .btn-kid {
+            transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+        }
+        .btn-kid:hover:not(:disabled) {
+            transform: translateY(-1.5px);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+        }
+        .btn-kid:active:not(:disabled) {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.14);
+        }
+
+        @keyframes pulseRing {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        }
+        .pulse-next { animation: pulseRing 1.6s ease-in-out infinite; }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb { background: #059669; border-radius: 99px; }
+    </style>
+</head>
+<body>
+
+    <!-- MAIN 900PX APPLICATION CONTAINER -->
+    <div class="app-frame">
+
+        <!-- ==========================================
+             TOP HEADER BAR
+             ========================================== -->
+        <header class="bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 px-4 py-2.5 text-white flex items-center justify-between border-b-4 border-emerald-700">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white text-emerald-600 flex items-center justify-center shadow border-2 border-emerald-200 shrink-0 text-2xl">
+                    🔬
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-300 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" data-i18n="labBadge">
+                            Thực Hành Sinh Học Tế Bào
+                        </span>
+                        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" data-i18n="goalPill">
+                            🎯 Mục tiêu: Quan sát cấu trúc tế bào biểu bì hành
+                        </span>
+                    </div>
+                    <h1 class="text-lg font-black tracking-tight truncate mt-0.5" data-i18n="appTitle">
+                        Lab: Quan Sát Tế Bào Biểu Bì Hành Bằng Kính Hiển Vi
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Right Utilities -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="bg-amber-400 text-amber-950 px-3 py-1 rounded-xl font-black text-xs flex items-center gap-1 border-2 border-amber-200">
+                    <span>⭐</span>
+                    <span id="star-score" class="text-sm">0</span>
+                    <span data-i18n="starsUnit">Điểm</span>
+                </div>
+                <button onclick="toggleSound()" id="btn-sound" class="btn-kid bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl border border-white/40" title="Bật/Tắt âm thanh">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleLanguage()" class="btn-kid bg-white text-emerald-700 hover:bg-emerald-50 px-2.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 border-2 border-emerald-200">
+                    <span>🇻🇳/🇬🇧</span>
+                    <span id="lang-label">VI</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+             NAVIGATION TABS (3 MODES)
+             ========================================== -->
+        <nav class="bg-emerald-50 px-3.5 py-2 border-b-2 border-emerald-100 grid grid-cols-3 gap-2.5">
+            <button onclick="switchTab('lab')" id="tab-lab" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-emerald-600 text-white border-2 border-emerald-700">
+                <span>🔬</span>
+                <span data-i18n="tab1">1. Thực Hành 4 Bước Quan Sát</span>
+            </button>
+            <button onclick="switchTab('compare')" id="tab-compare" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
+                <span>⚖️</span>
+                <span data-i18n="tab2">2. Thử Nghiệm 4 Tiêu Bản Khác Nhau</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200">
+                <span>🏆</span>
+                <span data-i18n="tab3">3. Tóm Tắt Cấu Trúc & Đố Vui</span>
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             MAIN CONTENT AREA (STRICT 900PX FIT)
+             ========================================== -->
+        <main class="p-3 bg-gradient-to-b from-white to-emerald-50/30">
+
+            <!-- ==========================================
+                 VIEW 1: THỰC HÀNH QUAN SÁT TẾ BÀO HÀNH
+                 ========================================== -->
+            <section id="view-lab" class="space-y-3">
+
+                <div class="lab-two-col">
+
+                    <!-- LEFT COLUMN (465px): Microscope Canvas Chamber -->
+                    <div class="bg-slate-900 rounded-2xl border-3 border-emerald-500 overflow-hidden flex flex-col justify-between shadow-inner" style="height: 455px;">
+
+                        <!-- Top Chamber Bar -->
+                        <div class="px-3 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-white shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="status-step-badge" class="bg-amber-400 text-amber-950 font-black text-[11px] px-2 py-0.5 rounded-full shrink-0">
+                                    CHUẨN BỊ
+                                </span>
+                                <span id="status-step-title" class="font-extrabold text-xs text-emerald-200 truncate" data-i18n="statusReady">
+                                    Chọn dụng cụ hoặc bấm Bước 1
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas (465x345) -->
+                        <div class="relative w-full flex-1">
+                            <canvas id="mainCanvas" width="465" height="345" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Bottom Controls -->
+                        <div class="px-3 py-2 bg-slate-800 border-t border-slate-700 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleAutoPlay()" id="btn-autoplay" class="btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1">
+                                    <i data-lucide="play" id="autoplay-icon" class="w-3.5 h-3.5"></i>
+                                    <span id="autoplay-text" data-i18n="autoObsBtn">Xem tự động 4 bước</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN (395px): Tool Tray + 4 Steps + Result Box -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50/60 rounded-2xl p-3 border-2 border-emerald-200 flex flex-col justify-between" style="height: 455px;">
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-[11px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-200/80 px-2.5 py-0.5 rounded-full" data-i18n="toolsHeader">
+                                    🧰 Dụng Cụ Thí Nghiệm (4 món)
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="speakCurrentStatus()" class="btn-kid bg-amber-400 hover:bg-amber-300 text-amber-950 px-2 py-0.5 rounded-lg font-black text-[11px] flex items-center gap-1">
+                                        <i data-lucide="volume-2" class="w-3 h-3"></i>
+                                        <span data-i18n="listenBtn">Nghe</span>
+                                    </button>
+                                    <button onclick="resetLab()" class="btn-kid bg-white hover:bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg font-extrabold text-[11px] border border-slate-200 flex items-center gap-1">
+                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                        <span data-i18n="resetBtn">Làm lại</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tools Grid (4 items) -->
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <div onclick="triggerToolClick('onion')" id="tool-onion" class="cursor-pointer bg-emerald-100 border-2 border-emerald-500 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🧅</div>
+                                    <div class="font-black text-[10px] text-emerald-950 mt-1" data-i18n="toolOnion">Củ hành</div>
+                                    <div id="tool-status-onion" class="text-[9px] font-extrabold text-emerald-700">✓ Sẵn</div>
+                                </div>
+                                <div onclick="triggerToolClick('iodine')" id="tool-iodine" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🧪</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolIodine">Thuốc nhuộm</div>
+                                    <div id="tool-status-iodine" class="text-[9px] font-extrabold text-amber-600">Bước 2</div>
+                                </div>
+                                <div onclick="triggerToolClick('slide')" id="tool-slide" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🏷️</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolSlide">Lamen</div>
+                                    <div id="tool-status-slide" class="text-[9px] font-extrabold text-slate-400">Bước 3</div>
+                                </div>
+                                <div onclick="triggerToolClick('microscope')" id="tool-microscope" class="cursor-pointer bg-white border-2 border-slate-200 rounded-xl p-1 text-center transition hover:scale-105">
+                                    <div class="text-base leading-none">🔬</div>
+                                    <div class="font-black text-[10px] text-slate-800 mt-1" data-i18n="toolMicroscope">Kính hiển vi</div>
+                                    <div id="tool-status-microscope" class="text-[9px] font-extrabold text-slate-400">Bước 4</div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Header -->
+                            <div class="text-[11px] font-black uppercase tracking-wider text-emerald-900 mb-1" data-i18n="stepsHeader">
+                                📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="executeStep(1)" id="step-btn-1" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next">
+                                    <span class="w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">1</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step1Text">1. Tách lớp vảy hành, bóc lớp biểu bì mỏng.</span>
+                                    <span id="step-badge-1" class="text-xs font-black text-amber-800">👉 Làm ngay</span>
+                                </button>
+
+                                <button onclick="executeStep(2)" id="step-btn-2" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">2</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step2Text">2. Đặt lên lam kính, nhỏ 1 giọt iodine nhuộm.</span>
+                                    <span id="step-badge-2" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(3)" id="step-btn-3" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">3</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step3Text">3. Đậy lamen lên mẫu vật làm tiêu bản.</span>
+                                    <span id="step-badge-3" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+
+                                <button onclick="executeStep(4)" id="step-btn-4" class="btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0">4</span>
+                                    <span class="font-black text-xs text-slate-900 flex-1" data-i18n="step4Text">4. Đưa lên kính hiển vi quan sát tế bào.</span>
+                                    <span id="step-badge-4" class="text-xs font-bold text-slate-400">🔒</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Observation Result Box -->
+                        <div class="bg-white p-2.5 rounded-xl border-2 border-emerald-300 shadow-sm">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="text-[11px] font-black text-emerald-800 uppercase flex items-center gap-1">
+                                    <span>🔍</span>
+                                    <span data-i18n="resultTitle">Hiện tượng quan sát:</span>
+                                </span>
+                            </div>
+                            <p id="observation-desc" class="text-xs font-bold text-slate-700 leading-snug">
+                                Hãy bấm vào <strong>Bước 1: Tách lớp vảy hành</strong> để bắt đầu thí nghiệm!
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Row: 4 Stages Strip -->
+                <div class="bg-emerald-50/90 rounded-2xl p-2.5 border-2 border-emerald-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">📒</span>
+                            <h3 class="font-black text-xs text-slate-800" data-i18n="diaryHeader">
+                                Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)
+                            </h3>
+                        </div>
+                        <span class="text-[11px] font-black text-emerald-900 bg-emerald-100 px-2.5 py-0.5 rounded-full" data-i18n="finalConclusionBadge">
+                            ✅ Kết quả: Thấy rõ tế bào hình khối
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2" id="stage-cards-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==========================================
+                 VIEW 2: SO SÁNH 4 TIÊU BẢN KHÁC NHAU
+                 ========================================== -->
+            <section id="view-compare" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-2xl border-2 border-emerald-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black uppercase text-emerald-800 bg-emerald-200/70 px-2.5 py-0.5 rounded-full" data-i18n="cmpSub">
+                            Phân tích tiêu bản
+                        </span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" data-i18n="cmpTitle">
+                            Điều gì xảy ra dưới kính hiển vi trong các trường hợp sau?
+                        </h2>
+                        <p class="text-xs font-bold text-slate-600" data-i18n="cmpDesc">
+                            Hãy quan sát kết quả của 4 mẫu tiêu bản khác nhau:
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Slide A: Standard -->
+                    <div class="bg-white rounded-2xl p-3 border-3 border-emerald-500 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-emerald-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU A (Chuẩn)</span>
+                                <span class="text-xs">🧅 Có nhuộm</span>
+                            </div>
+                            <h4 class="font-black text-xs text-emerald-950 mt-1.5" data-i18n="cupATitle">Biểu bì hành + Thuốc nhuộm</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasA" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-emerald-900 bg-emerald-50 p-2 rounded-lg leading-snug" data-i18n="cupARes">
+                            ✅ <strong>Rõ tế bào:</strong> Thấy rõ thành tế bào, nhân tế bào và chất nguyên sinh nhờ thuốc nhuộm.
+                        </p>
+                    </div>
+
+                    <!-- Slide B: No Stain -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-slate-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-slate-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU B (Không nhuộm)</span>
+                                <span class="text-xs">💧 Chỉ có nước</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupBTitle">Biểu bì hành + Không nhuộm</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasB" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-slate-800 bg-slate-100 p-2 rounded-lg leading-snug" data-i18n="cupBRes">
+                            ⚠️ <strong>Mờ nhạt:</strong> Chỉ thấy mờ mờ khung thành tế bào, khó quan sát nhân tế bào bên trong.
+                        </p>
+                    </div>
+
+                    <!-- Slide C: Too Thick -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-amber-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-amber-500 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full">MẪU C (Quá dày)</span>
+                                <span class="text-xs">🧅 Lớp dày</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupCTitle">Lớp biểu bì hành quá dày</h4>
+                        </div>
+                        <div class="my-2 bg-slate-900 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-700">
+                            <canvas id="cmpCanvasC" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-amber-900 bg-amber-50 p-2 rounded-lg leading-snug" data-i18n="cupCRes">
+                            ❌ <strong>Chồng chéo:</strong> Các tế bào chồng lên nhau tối thui, không phân biệt được từng tế bào riêng lẻ.
+                        </p>
+                    </div>
+
+                    <!-- Slide D: Human Cheek Cell -->
+                    <div class="bg-white rounded-2xl p-3 border-2 border-purple-300 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="bg-purple-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full">MẪU D (Tế bào động vật)</span>
+                                <span class="text-xs">👤 Tế bào má</span>
+                            </div>
+                            <h4 class="font-black text-xs text-slate-800 mt-1.5" data-i18n="cupDTitle">Tế bào biểu bì má người</h4>
+                        </div>
+                        <div class="my-2 bg-slate-950 rounded-xl h-44 flex items-center justify-center overflow-hidden border border-slate-800">
+                            <canvas id="cmpCanvasD" width="185" height="176"></canvas>
+                        </div>
+                        <p class="text-[11px] font-bold text-purple-900 bg-purple-50 p-2 rounded-lg leading-snug" data-i18n="cupDRes">
+                            ✨ <strong>Khác biệt:</strong> Tế bào động vật có hình tròn/oval, không có thành tế bào cứng như tế bào thực vật.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 VIEW 3: TÓM TẮT & ĐỐ VUI
+                 ========================================== -->
+            <section id="view-quiz" class="hidden">
+                <div class="lab-two-col">
+
+                    <!-- Left: Summary Sheet -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 border-2 border-emerald-300 space-y-3">
+                        <div class="flex items-center gap-2 border-b border-emerald-200 pb-2">
+                            <span class="text-2xl">📋</span>
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-emerald-800">Phiếu Tổng Kết Bài Học</span>
+                                <h3 class="text-base font-black text-emerald-950">Tóm Tắt Lab: Quan Sát Tế Bào Hành</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-800">🎯 1. Mục tiêu bài học:</div>
+                            <p class="text-xs font-bold text-slate-700">Làm quen với kính hiển vi và quan sát cấu trúc tế bào thực vật (tế bào hành).</p>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-800">🧰 2. Dụng cụ chính:</div>
+                            <div class="grid grid-cols-2 gap-1 pt-1 text-xs font-bold text-slate-700">
+                                <div>• 🧅 Củ hành tươi</div>
+                                <div>• 🧪 Thuốc nhuộm (Iodine)</div>
+                                <div>• 🏷️ Lam kính & lamen</div>
+                                <div>• 🔬 Kính hiển vi quang học</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-1">
+                            <div class="text-xs font-black text-emerald-800">👣 3. Các bước tiến hành:</div>
+                            <ol class="text-xs font-bold text-slate-700 space-y-0.5 list-decimal list-inside">
+                                <li>Tách lớp biểu bì hành mỏng.</li>
+                                <li>Đặt lên lam kính, nhỏ thuốc nhuộm.</li>
+                                <li>Đậy lamen lên mẫu vật.</li>
+                                <li>Quan sát qua kính hiển vi.</li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-300 space-y-1">
+                            <div class="text-xs font-black text-amber-900">🔬 4. Kết luận khoa học:</div>
+                            <p class="text-xs font-black text-amber-950">
+                                Tế bào thực vật có hình khối rõ rệt, gồm thành tế bào, chất nguyên sinh và nhân tế bào!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quiz -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-amber-300 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <div>
+                                    <span id="quiz-num-badge" class="text-[11px] font-black uppercase text-amber-600">CÂU HỎI 1 / 4</span>
+                                    <h3 class="text-sm font-black text-slate-800">Đố Vui Kiểm Tra Kiến Thức</h3>
+                                </div>
+                                <button onclick="resetQuiz()" class="btn-kid px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">
+                                    Làm lại
+                                </button>
+                            </div>
+
+                            <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-center space-y-1">
+                                <div id="quiz-icon" class="text-3xl">🔬</div>
+                                <p id="quiz-q-text" class="font-black text-xs sm:text-sm text-slate-800 leading-snug"></p>
+                            </div>
+
+                            <div id="quiz-opts-box" class="space-y-2"></div>
+                        </div>
+
+                        <div id="quiz-msg-box" class="hidden p-2.5 rounded-xl font-black text-xs text-center"></div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & ANIMATIONS
+         ========================================== -->
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // 1. WEB AUDIO API SOUND EFFECTS
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(freq = 523.25, type = 'sine', duration = 0.14, vol = 0.14) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(vol, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playChime() {
+            playTone(523.25, 'triangle', 0.11);
+            setTimeout(() => playTone(659.25, 'triangle', 0.11), 90);
+            setTimeout(() => playTone(783.99, 'triangle', 0.22), 180);
+            setTimeout(() => playTone(1046.5, 'triangle', 0.3), 270);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 2. LAB STATE & CONTROLS
+        // ==========================================
+        let currentLang = 'vi';
+        let activeTab = 'lab';
+        let score = 0;
+        let autoPlayTimer = null;
+
+        const labState = {
+            step: 0           // 0: Prep, 1: Onion peeled, 2: Iodine stained, 3: Slide covered, 4: Observed under microscope
+        };
+
+        const stageData = {
+            1: { shortVi: '1. Tách biểu bì', shortEn: '1. Peel Epidermis', icon: '🧅' },
+            2: { shortVi: '2. Nhuộm iodine', shortEn: '2. Add Stain', icon: '🧪' },
+            3: { shortVi: '3. Đậy lamen', shortEn: '3. Cover Slide', icon: '🏷️' },
+            4: { shortVi: '4. Quan sát', shortEn: '4. Microscope', icon: '🔬' }
+        };
+
+        function addScore(pts) {
+            score += pts;
+            document.getElementById('star-score').textContent = score;
+        }
+
+        function triggerToolClick(toolKey) {
+            if (toolKey === 'onion' && labState.step === 0) {
+                executeStep(1);
+            }
+        }
+
+        function executeStep(targetStep) {
+            if (targetStep > labState.step + 1) return;
+            labState.step = targetStep;
+
+            if (targetStep === 1) {
+                playTone(450, 'sine', 0.12);
+            } else if (targetStep === 2) {
+                playTone(520, 'triangle', 0.14);
+            } else if (targetStep === 3) {
+                playTone(620, 'sine', 0.12);
+            } else if (targetStep === 4) {
+                playChime();
+            }
+
+            addScore(2);
+            updateLabUI();
+        }
+
+        function toggleAutoPlay() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+                return;
+            }
+
+            resetLab();
+            updateAutoPlayButton(true);
+
+            let s = 1;
+            const playNext = () => {
+                executeStep(s);
+                s++;
+                if (s <= 4) {
+                    autoPlayTimer = setTimeout(playNext, 2100);
+                } else {
+                    autoPlayTimer = null;
+                    updateAutoPlayButton(false);
+                }
+            };
+            autoPlayTimer = setTimeout(playNext, 600);
+        }
+
+        function updateAutoPlayButton(isRunning) {
+            const btn = document.getElementById('btn-autoplay');
+            const txt = document.getElementById('autoplay-text');
+            if (isRunning) {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '⏸ Đang chạy...' : '⏸ Playing...';
+            } else {
+                btn.className = 'btn-kid px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center gap-1';
+                txt.textContent = currentLang === 'vi' ? '▶ Xem tự động 4 bước' : '▶ Auto Play';
+            }
+        }
+
+        function resetLab() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                updateAutoPlayButton(false);
+            }
+            labState.step = 0;
+            playTone(360, 'sine', 0.12);
+            updateLabUI();
+        }
+
+        function updateLabUI() {
+            const st = labState.step;
+            const titlesVi = [
+                'Chuẩn bị củ hành tươi và dụng cụ',
+                'Bước 1: Tách lớp vảy hành, bóc lớp biểu bì mỏng trong suốt',
+                'Bước 2: Đặt lên lam kính, nhỏ 1 giọt iodine nhuộm màu',
+                'Bước 3: Đậy lamen lên mẫu vật hoàn chỉnh tiêu bản',
+                'Bước 4: Đưa tiêu bản lên kính hiển vi quan sát rõ tế bào'
+            ];
+
+            document.getElementById('status-step-badge').textContent = st === 0 ? 'CHUẨN BỊ' : `BƯỚC ${st}/4`;
+            document.getElementById('status-step-title').textContent = titlesVi[st];
+
+            // Tool status
+            const onionCard = document.getElementById('tool-onion');
+            onionCard.className = st >= 1
+                ? 'cursor-pointer bg-emerald-100 border-2 border-emerald-500 rounded-xl p-1 text-center transition'
+                : 'cursor-pointer bg-emerald-50 border-2 border-emerald-400 rounded-xl p-1 text-center transition pulse-next';
+            document.getElementById('tool-status-onion').textContent = st >= 1 ? '✓ Đã bóc' : '👉 Bấm chọn';
+
+            // 4 Steps buttons
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                const bdg = document.getElementById(`step-badge-${i}`);
+                const icon = btn.querySelector('span');
+
+                if (i < st || (st === 4 && i <= 4)) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-left flex items-center gap-2';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-emerald-700';
+                    bdg.textContent = '✅ Xong';
+                } else if (i === st + 1) {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-100 text-left flex items-center gap-2 pulse-next';
+                    icon.className = 'w-5 h-5 rounded-md bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-black text-amber-800';
+                    bdg.textContent = '👉 Bấm làm';
+                } else {
+                    btn.className = 'btn-kid w-full py-1.5 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-left flex items-center gap-2 opacity-85';
+                    icon.className = 'w-5 h-5 rounded-md bg-slate-400 text-white font-black text-xs flex items-center justify-center shrink-0';
+                    bdg.className = 'text-xs font-bold text-slate-400';
+                    bdg.textContent = '🔒';
+                }
+            }
+
+            // Description box
+            const obsEl = document.getElementById('observation-desc');
+            if (st === 0) obsEl.innerHTML = 'Hãy bấm vào <strong>Bước 1: Tách lớp vảy hành</strong> để bắt đầu thí nghiệm!';
+            if (st === 1) obsEl.innerHTML = 'Đã bóc được một lớp biểu bì hành mỏng trong suốt. Tiếp theo bấm <strong>Bước 2</strong>!';
+            if (st === 2) obsEl.innerHTML = 'Đã nhỏ giọt thuốc nhuộm iodine giúp làm nổi rõ nhân và thành tế bào. Tiếp theo bấm <strong>Bước 3</strong>!';
+            if (st === 3) obsEl.innerHTML = 'Đã đậy lamen lên lam kính tạo thành một tiêu bản hoàn chỉnh. Tiếp theo bấm <strong>Bước 4</strong>!';
+            if (st === 4) obsEl.innerHTML = '🎉 <strong>KẾT QUẢ:</strong> Quan sát qua kính hiển vi thấy rõ các <strong>tế bào thực vật hình khối xếp sát nhau</strong> gồm thành tế bào, chất nguyên sinh và nhân!';
+
+            renderStageStrip();
+        }
+
+        function renderStageStrip() {
+            const grid = document.getElementById('stage-cards-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const info = stageData[i];
+                const isPassed = labState.step >= i;
+                const card = document.createElement('div');
+
+                if (labState.step === i) {
+                    card.className = 'p-1.5 rounded-xl bg-amber-400 border-2 border-amber-600 text-center shadow';
+                } else if (isPassed) {
+                    card.className = 'p-1.5 rounded-xl bg-emerald-100 text-emerald-950 border-2 border-emerald-300 text-center';
+                } else {
+                    card.className = 'p-1.5 rounded-xl bg-white text-slate-400 border border-slate-200 text-center opacity-70';
+                }
+
+                card.innerHTML = `
+                    <span class="text-base">${info.icon}</span>
+                    <div class="text-[10px] font-black leading-tight mt-0.5 ${labState.step === i ? 'text-amber-950' : ''}">${currentLang === 'vi' ? info.shortVi : info.shortEn}</div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function speakCurrentStatus() {
+            const text = document.getElementById('observation-desc').innerText;
+            playTone(580, 'sine', 0.1);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+                u.rate = 0.95;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ==========================================
+        // 3. CANVAS RENDERER (465x345)
+        // ==========================================
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+
+        function setupHiDPICanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            mainCanvas.width = 465 * dpr;
+            mainCanvas.height = 345 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function drawMicroscopeCells(c, cx, cy, stained = true) {
+            c.save();
+            c.translate(cx, cy);
+            // Circular microscope field of view
+            c.fillStyle = stained ? '#fef9c3' : '#f1f5f9';
+            c.beginPath();
+            c.arc(0, 0, 110, 0, Math.PI * 2);
+            c.fill();
+            c.strokeStyle = '#059669';
+            c.lineWidth = 4;
+            c.stroke();
+
+            // Draw onion cells grid (rectangular blocks)
+            c.strokeStyle = stained ? '#ca8a04' : '#94a3b8';
+            c.lineWidth = stained ? 2 : 1.5;
+
+            const cols = 5;
+            const rows = 4;
+            const w = 36;
+            const h = 26;
+
+            for (let r = -rows/2; r < rows/2; r++) {
+                for (let col = -cols/2; col < cols/2; col++) {
+                    c.save();
+                    c.translate(col * w + 10, r * h + 8);
+                    c.strokeRect(-w/2, -h/2, w, h);
+
+                    // Cell nucleus
+                    if (stained) {
+                        c.fillStyle = '#b45309';
+                        c.beginPath();
+                        c.arc(4, 2, 3.5, 0, Math.PI * 2);
+                        c.fill();
+                    }
+                    c.restore();
+                }
+            }
+            c.restore();
+        }
+
+        function drawRightCallout(c, targetX, targetY, pillX, pillY, text, color) {
+            c.save();
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.setLineDash([3, 3]);
+            c.beginPath();
+            c.moveTo(targetX, targetY);
+            c.lineTo(pillX, pillY + 12);
+            c.stroke();
+            c.setLineDash([]);
+
+            c.fillStyle = color;
+            c.beginPath();
+            c.arc(targetX, targetY, 3, 0, Math.PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            c.strokeStyle = color;
+            c.lineWidth = 1.5;
+            c.beginPath();
+            c.roundRect(pillX, pillY, 172, 24, 7);
+            c.fill();
+            c.stroke();
+
+            c.fillStyle = '#f8fafc';
+            c.font = '800 10.5px Nunito, sans-serif';
+            c.textAlign = 'left';
+            c.textBaseline = 'middle';
+            c.fillText(text, pillX + 7, pillY + 12.5);
+            c.restore();
+        }
+
+        function renderMainLabCanvas() {
+            if (activeTab === 'lab') {
+                ctx.clearRect(0, 0, 465, 345);
+
+                // Bench
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(0, 310, 465, 35);
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(0, 310, 465, 4);
+
+                const st = labState.step;
+
+                // Microscope body illustration on left/center
+                const mX = 180;
+                const mY = 175;
+
+                // Base
+                ctx.fillStyle = '#64748b';
+                ctx.beginPath();
+                ctx.roundRect(mX - 50, mY + 90, 100, 16, 6);
+                ctx.fill();
+
+                // Arm
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 14;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(mX - 30, mY + 90);
+                ctx.lineTo(mX - 30, mY - 20);
+                ctx.stroke();
+
+                // Stage
+                ctx.fillStyle = '#334155';
+                ctx.fillRect(mX - 45, mY + 30, 90, 10);
+
+                if (st === 4) {
+                    // Microscope eyepiece view (rendered on stage/eyepiece)
+                    drawMicroscopeCells(ctx, mX, mY - 30, true);
+                } else {
+                    // Stage object depending on step
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fillRect(mX - 25, mY + 24, 50, 6);
+
+                    if (st >= 1) {
+                        ctx.fillStyle = '#a7f3d0';
+                        ctx.fillRect(mX - 16, mY + 25, 32, 4);
+                    }
+                    if (st >= 2) {
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.beginPath(); ctx.arc(mX, mY + 27, 4, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+
+                // Callouts (Right side x=278..450)
+                const pillX = 278;
+                if (st === 0) {
+                    drawRightCallout(ctx, mX, mY, pillX, 150, '🔬 Kính hiển vi quang học', '#059669');
+                } else if (st === 1) {
+                    drawRightCallout(ctx, mX, mY + 25, pillX, 150, '🧅 Mẫu biểu bì vảy hành', '#34d399');
+                } else if (st === 2) {
+                    drawRightCallout(ctx, mX, mY + 25, pillX, 150, '🧪 Nhuộm dung dịch iodine', '#fbbf24');
+                } else if (st === 3) {
+                    drawRightCallout(ctx, mX, mY + 25, pillX, 150, '🏷️ Đã đậy lamen hoàn chỉnh', '#38bdf8');
+                } else if (st === 4) {
+                    drawRightCallout(ctx, mX, mY - 30, pillX, 120, '✨ Tế bào hành hình khối', '#facc15');
+                    drawRightCallout(ctx, mX, mY + 10, pillX, 155, '🔍 Thấy rõ nhân & thành tế bào', '#34d399');
+                }
+            }
+            requestAnimationFrame(renderMainLabCanvas);
+        }
+
+        // ==========================================
+        // 4. TAB 2: 4 COMPARISON SLIDES
+        // ==========================================
+        function renderComparisonSlides() {
+            const configs = [
+                { id: 'cmpCanvasA', stained: true, isThick: false, isAnimal: false },
+                { id: 'cmpCanvasB', stained: false, isThick: false, isAnimal: false },
+                { id: 'cmpCanvasC', stained: true, isThick: true, isAnimal: false },
+                { id: 'cmpCanvasD', stained: true, isThick: false, isAnimal: true }
+            ];
+
+            configs.forEach(cfg => {
+                const c = document.getElementById(cfg.id);
+                if (!c) return;
+                const ctx = c.getContext('2d');
+                const w = 185, h = 176;
+                ctx.clearRect(0, 0, w, h);
+
+                const cX = w / 2;
+                const cY = h / 2;
+
+                ctx.fillStyle = cfg.stained ? '#fef9c3' : '#f1f5f9';
+                ctx.beginPath(); ctx.arc(cX, cY, 78, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#059669'; ctx.lineWidth = 3; ctx.stroke();
+
+                if (cfg.isAnimal) {
+                    // Animal cheek cells (roundish)
+                    ctx.fillStyle = '#f472b6';
+                    ctx.strokeStyle = '#db2777';
+                    ctx.lineWidth = 1.5;
+                    [[-24, -20], [18, -16], [-10, 22], [26, 20]].forEach(pt => {
+                        ctx.beginPath(); ctx.arc(cX + pt[0], cY + pt[1], 14, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#831843'; ctx.beginPath(); ctx.arc(cX + pt[0], cY + pt[1], 3, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#f472b6';
+                    });
+                } else if (cfg.isThick) {
+                    // Overlapping dark messy cells
+                    ctx.fillStyle = 'rgba(120, 53, 15, 0.45)';
+                    ctx.fillRect(cX - 65, cY - 65, 130, 130);
+                } else {
+                    // Onion cells grid
+                    ctx.strokeStyle = cfg.stained ? '#ca8a04' : '#cbd5e1';
+                    ctx.lineWidth = cfg.stained ? 2 : 1;
+                    for (let r = -2; r <= 2; r++) {
+                        for (let col = -2; col <= 2; col++) {
+                            ctx.strokeRect(cX + col * 32 - 16, cY + r * 22 - 11, 30, 20);
+                            if (cfg.stained) {
+                                ctx.fillStyle = '#b45309';
+                                ctx.beginPath(); ctx.arc(cX + col * 32, cY + r * 22, 2.5, 0, Math.PI*2); ctx.fill();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. TAB 3: QUIZ LOGIC
+        // ==========================================
+        let quizIdx = 0;
+        const quizList = [
+            {
+                icon: '🧅',
+                qVi: '1. Khi quan sát tế bào biểu bì hành, vì sao phải tách một lớp thật mỏng?',
+                qEn: '1. Why must we peel a very thin layer of onion epidermis?',
+                optsVi: [
+                    'Vì lớp dày sẽ làm các tế bào chồng chéo lên nhau, khó quan sát.',
+                    'Vì lớp dày sẽ làm hỏng kính hiển vi.',
+                    'Vì củ hành chỉ có lớp mỏng là có tế bào.',
+                    'Để hành không bị cay mắt.'
+                ],
+                optsEn: [
+                    'Thick layers cause cells to overlap, making observation impossible.',
+                    'Thick layers break the microscope.',
+                    'Only thin layers contain cells.',
+                    'To avoid crying.'
+                ],
+                ans: 0
+            },
+            {
+                icon: '🧪',
+                qVi: '2. Tác dụng của thuốc nhuộm iodine (hoặc xanh methylene) khi làm tiêu bản là gì?',
+                qEn: '2. What is the purpose of iodine stain in slide preparation?',
+                optsVi: [
+                    'Làm cho tế bào biến mất.',
+                    'Làm nổi rõ các thành phần bên trong tế bào như nhân và thành tế bào.',
+                    'Làm cho tế bào di chuyển nhanh hơn.',
+                    'Làm sạch kính hiển vi.'
+                ],
+                optsEn: [
+                    'Make cells disappear.',
+                    'Highlight cell structures like nucleus and cell wall clearly.',
+                    'Make cells move faster.',
+                    'Clean the microscope.'
+                ],
+                ans: 1
+            },
+            {
+                icon: '🔬',
+                qVi: '3. Tế bào thực vật (như tế bào hành) có cấu trúc đặc trưng nào mà tế bào động vật không có?',
+                qEn: '3. What characteristic structure do plant cells have that animal cells lack?',
+                optsVi: [
+                    'Nhân tế bào',
+                    'Thành tế bào cứng bao bọc bên ngoài',
+                    'Chất nguyên sinh',
+                    'Màng sinh chất'
+                ],
+                optsEn: [
+                    'Cell nucleus',
+                    'Rigid cell wall enclosing the outside',
+                    'Cytoplasm',
+                    'Cell membrane'
+                ],
+                ans: 1
+            },
+            {
+                icon: '🏷️',
+                qVi: '4. Khi đậy lamen lên lam kính chứa mẫu vật, thao tác đúng là gì để tránh bọt khí?',
+                qEn: '4. When covering the slide with a coverslip, how do you avoid air bubbles?',
+                optsVi: [
+                    'Đập mạnh lamen xuống mẫu vật.',
+                    'Đặt một cạnh lamen nghiêng 45 độ rồi hạ từ từ xuống.',
+                    'Ném lamen từ trên cao xuống.',
+                    'Không cần đậy lamen.'
+                ],
+                optsEn: [
+                    'Hit coverslip hard.',
+                    'Lower one edge at a 45-degree angle slowly.',
+                    'Throw it from above.',
+                    'No need for coverslip.'
+                ],
+                ans: 1
+            }
+        ];
+
+        function renderQuiz() {
+            const q = quizList[quizIdx];
+            document.getElementById('quiz-num-badge').textContent =
+                currentLang === 'vi' ? `CÂU HỎI ${quizIdx + 1} / ${quizList.length}` : `QUESTION ${quizIdx + 1} / ${quizList.length}`;
+            document.getElementById('quiz-icon').textContent = q.icon;
+            document.getElementById('quiz-q-text').textContent = currentLang === 'vi' ? q.qVi : q.qEn;
+
+            const box = document.getElementById('quiz-opts-box');
+            box.innerHTML = '';
+            const opts = currentLang === 'vi' ? q.optsVi : q.optsEn;
+
+            opts.forEach((txt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-kid w-full p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50 border-2 border-slate-200 text-slate-800 font-black text-xs text-left flex items-center gap-2';
+                btn.innerHTML = `<span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">${idx + 1}</span> <span>${txt}</span>`;
+                btn.onclick = () => checkQuiz(idx);
+                box.appendChild(btn);
+            });
+
+            document.getElementById('quiz-msg-box').classList.add('hidden');
+        }
+
+        function checkQuiz(idx) {
+            const q = quizList[quizIdx];
+            const msg = document.getElementById('quiz-msg-box');
+            msg.classList.remove('hidden');
+
+            if (idx === q.ans) {
+                playChime();
+                addScore(3);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-emerald-100 text-emerald-800 border-2 border-emerald-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🎉 Chính xác! Bạn đã nắm rất vững kiến thức tế bào (+3 Điểm)!'
+                    : '🎉 Correct! Great job (+3 Points)!';
+                setTimeout(() => {
+                    quizIdx = (quizIdx + 1) % quizList.length;
+                    renderQuiz();
+                }, 1300);
+            } else {
+                playTone(230, 'sawtooth', 0.2);
+                msg.className = 'p-2.5 rounded-xl font-black text-xs text-center bg-rose-100 text-rose-800 border-2 border-rose-300';
+                msg.textContent = currentLang === 'vi'
+                    ? '🤔 Chưa chính xác, hãy xem lại phiếu tổng kết bên trái rồi thử lại nhé!'
+                    : '🤔 Not quite right, check the summary sheet!';
+            }
+        }
+
+        function resetQuiz() {
+            quizIdx = 0;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 6. TABS & BILINGUAL TOGGLE
+        // ==========================================
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            playTone(520, 'sine', 0.1);
+            ['lab', 'compare', 'quiz'].forEach(k => {
+                const v = document.getElementById(`view-${k}`);
+                const b = document.getElementById(`tab-${k}`);
+                if (k === tabKey) {
+                    v.classList.remove('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-emerald-600 text-white border-2 border-emerald-700';
+                } else {
+                    v.classList.add('hidden');
+                    b.className = 'btn-kid py-1.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 bg-white text-slate-700 hover:bg-emerald-100 border-2 border-slate-200';
+                }
+            });
+            if (tabKey === 'compare') renderComparisonSlides();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            document.getElementById('lang-label').textContent = currentLang.toUpperCase();
+
+            const dict = {
+                vi: {
+                    labBadge: 'Thực Hành Sinh Học Tế Bào',
+                    goalPill: '🎯 Mục tiêu: Quan sát cấu trúc tế bào biểu bì hành',
+                    appTitle: 'Lab: Quan Sát Tế Bào Biểu Bì Hành Bằng Kính Hiển Vi',
+                    starsUnit: 'Điểm',
+                    tab1: '1. Thực Hành 4 Bước Quan Sát',
+                    tab2: '2. Thử Nghiệm 4 Tiêu Bản Khác Nhau',
+                    tab3: '3. Tóm Tắt Cấu Trúc & Đố Vui',
+                    autoObsBtn: 'Xem tự động 4 bước',
+                    toolsHeader: '🧰 Dụng Cụ Thí Nghiệm (4 món)',
+                    listenBtn: 'Nghe',
+                    resetBtn: 'Làm lại',
+                    toolOnion: 'Củ hành',
+                    toolIodine: 'Thuốc nhuộm',
+                    toolSlide: 'Lamen',
+                    toolMicroscope: 'Kính hiển vi',
+                    stepsHeader: '📋 Các Bước Thực Hiện (Bấm lần lượt 1 → 4):',
+                    step1Text: '1. Tách lớp vảy hành, bóc lớp biểu bì mỏng.',
+                    step2Text: '2. Đặt lên lam kính, nhỏ 1 giọt iodine nhuộm.',
+                    step3Text: '3. Đậy lamen lên mẫu vật làm tiêu bản.',
+                    step4Text: '4. Đưa lên kính hiển vi quan sát tế bào.',
+                    resultTitle: 'Hiện tượng quan sát:',
+                    diaryHeader: 'Sơ Đồ Các Giai Đoạn Thí Nghiệm (Bấm vào từng bước để xem lại)',
+                    finalConclusionBadge: '✅ Kết quả: Thấy rõ tế bào hình khối',
+                    cmpSub: 'Phân tích tiêu bản',
+                    cmpTitle: 'Điều gì xảy ra dưới kính hiển vi trong các trường hợp sau?',
+                    cmpDesc: 'Hãy quan sát kết quả của 4 mẫu tiêu bản khác nhau:',
+                    cupATitle: 'Biểu bì hành + Thuốc nhuộm',
+                    cupARes: '✅ <strong>Rõ tế bào:</strong> Thấy rõ thành tế bào, nhân tế bào và chất nguyên sinh nhờ thuốc nhuộm.',
+                    cupBTitle: 'Biểu bì hành + Không nhuộm',
+                    cupBRes: '⚠️ <strong>Mờ nhạt:</strong> Chỉ thấy mờ mờ khung thành tế bào, khó quan sát nhân tế bào bên trong.',
+                    cupCTitle: 'Lớp biểu bì hành quá dày',
+                    cupCRes: '❌ <strong>Chồng chéo:</strong> Các tế bào chồng lên nhau tối thui, không phân biệt được từng tế bào riêng lẻ.',
+                    cupDTitle: 'Tế bào biểu bì má người',
+                    cupDRes: '✨ <strong>Khác biệt:</strong> Tế bào động vật có hình tròn/oval, không có thành tế bào cứng như tế bào thực vật.'
+                },
+                en: {
+                    labBadge: 'Cell Biology Lab',
+                    goalPill: '🎯 Goal: Observe onion epidermal cell structure',
+                    appTitle: 'Lab: Observing Onion Epidermal Cells Under Microscope',
+                    starsUnit: 'Pts',
+                    tab1: '1. 4-Step Observation',
+                    tab2: '2. 4 Slide Scenarios',
+                    tab3: '3. Summary & Quiz',
+                    autoObsBtn: 'Auto Play 4 Steps',
+                    toolsHeader: '🧰 Tools (4 items)',
+                    listenBtn: 'Listen',
+                    resetBtn: 'Reset',
+                    toolOnion: 'Onion',
+                    toolIodine: 'Iodine Stain',
+                    toolSlide: 'Coverslip',
+                    toolMicroscope: 'Microscope',
+                    stepsHeader: '📋 Procedure (Click Steps 1 → 4):',
+                    step1Text: '1. Peel thin onion epidermis layer.',
+                    step2Text: '2. Place on slide and add iodine stain.',
+                    step3Text: '3. Cover with coverslip.',
+                    step4Text: '4. View under microscope.',
+                    resultTitle: 'Observation:',
+                    diaryHeader: 'Experiment Stages',
+                    finalConclusionBadge: '✅ Result: Clear cellular structures',
+                    cmpSub: 'Slide Analysis',
+                    cmpTitle: 'What is seen under the microscope in these cases?',
+                    cmpDesc: 'Observe 4 different slide preparations:',
+                    cupATitle: 'Onion Epidermis + Iodine Stain',
+                    cupARes: '✅ <strong>Clear cells:</strong> Cell walls, nucleus, and cytoplasm are clearly visible.',
+                    cupBTitle: 'Onion Epidermis + No Stain',
+                    cupBRes: '⚠️ <strong>Faint:</strong> Only faint outlines of cell walls are seen without distinct nuclei.',
+                    cupCTitle: 'Too Thick Epidermis Layer',
+                    cupCRes: '❌ <strong>Overlapping:</strong> Cells overlap and block light, obscuring individual cell structure.',
+                    cupDTitle: 'Human Cheek Epithelial Cells',
+                    cupDRes: '✨ <strong>Different:</strong> Animal cells are rounded and lack the rigid cell walls of plant cells.'
+                }
+            }[currentLang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const k = el.getAttribute('data-i18n');
+                if (dict[k]) el.innerHTML = dict[k];
+            });
+
+            updateLabUI();
+            if (activeTab === 'compare') renderComparisonSlides();
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 7. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            setupHiDPICanvas();
+            updateLabUI();
+            renderComparisonSlides();
+            renderQuiz();
+            requestAnimationFrame(renderMainLabCanvas);
+        };
+    </script>
+</body>
+</html>

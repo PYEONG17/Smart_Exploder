@@ -4,7 +4,6 @@ import { AppError } from "../../utils/app-error.js";
 import { toBilingualText } from "../ai/translate.js";
 import { refreshLessonDuration } from "../../utils/lesson-duration.js";
 import type {
-  CreateLessonQuizInput,
   CreateLessonVideoInput,
   SaveProgressInput,
   SubmitInteractiveEventInput,
@@ -84,37 +83,6 @@ async function assertLessonUnlocked(userId: string, lessonId: string) {
 }
 
 export const learningService = {
-  async createLessonQuiz(
-    lessonId: string,
-    userId: string,
-    input: CreateLessonQuizInput,
-  ) {
-    await getManagedLesson(lessonId, userId);
-    const title = input.title
-      ? input.sourceLanguage
-        ? await toBilingualText(input.title, input.sourceLanguage)
-        : { vi: input.title, en: input.titleEn }
-      : { vi: "Bài tập", en: "Assignment" };
-    return prisma.quiz.create({
-      data: {
-        lessonId,
-        title: title.vi,
-        titleEn: title.en,
-        questions: {
-          create: input.questions.map((question) => ({
-            question: question.question,
-            questionEn: question.questionEn,
-            type: question.type,
-            answers: { create: question.answers },
-          })),
-        },
-      },
-      include: {
-        questions: { include: { answers: true } },
-      },
-    });
-  },
-
   async createLessonVideo(
     lessonId: string,
     userId: string,

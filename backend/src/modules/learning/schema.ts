@@ -14,33 +14,6 @@ export const saveProgressSchema = z.object({
   status: z.enum(["IN_PROGRESS", "COMPLETED"]),
 });
 
-const answerSchema = z.object({
-  content: z.string().trim().min(1).max(500),
-  contentEn: z.string().trim().max(500).optional(),
-  isCorrect: z.boolean(),
-});
-
-const questionSchema = z.object({
-  question: z.string().trim().min(2).max(2000),
-  questionEn: z.string().trim().max(2000).optional(),
-  type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "FILL_IN_BLANK"]),
-  answers: z
-    .array(answerSchema)
-    .min(2)
-    .max(6)
-    .refine(
-      (answers) => answers.filter((answer) => answer.isCorrect).length === 1,
-      "Each question must have exactly one correct answer",
-    ),
-});
-
-export const createLessonQuizSchema = z.object({
-  title: z.string().trim().max(150).optional(),
-  titleEn: z.string().trim().max(150).optional(),
-  sourceLanguage: z.enum(["vi", "en"]).optional(),
-  questions: z.array(questionSchema).min(1).max(40),
-});
-
 // rewindSeconds: how far back "rewatch" jumps (0 hides it); skipAfterAttempts: wrong tries before skipping is allowed.
 const retryPolicyFields = {
   rewindSeconds: z.number().int().min(0).max(3600).optional(),
@@ -388,7 +361,6 @@ export const submitInteractiveEventSchema = z.object({
 
 export type SubmitQuizInput = z.infer<typeof submitQuizSchema>;
 export type SaveProgressInput = z.infer<typeof saveProgressSchema>;
-export type CreateLessonQuizInput = z.infer<typeof createLessonQuizSchema>;
 export type CreateLessonVideoInput = z.infer<typeof createLessonVideoSchema>;
 export type SubmitVideoActivityInput = z.infer<
   typeof submitVideoActivitySchema

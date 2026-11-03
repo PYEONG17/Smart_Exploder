@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThreeDViewer } from "@/components/ui/ThreeDViewer";
+import { Uploaded3DModelViewer } from "@/components/ui/Uploaded3DModelViewer";
 import { useLang } from "@/contexts/LanguageContext";
 import type { ExploreMaterial, AutoTourStop, BilingualTerm, MiniQuizQuestion } from "@/lib/explore-data.config";
 import Link from "next/link";
@@ -267,10 +268,18 @@ export default function ExploreViewerModal({
           {/* Left Column: 3D Canvas Studio Viewport */}
           <div className="lg:col-span-7 xl:col-span-8 relative flex flex-col bg-black">
             <div className="flex-1 relative w-full h-full min-h-[300px]">
-              <ThreeDViewer
-                modelType={material.modelType}
-                hideQuickSelector={true}
-              />
+              {material.uploadedModelUrl ? (
+                <Uploaded3DModelViewer
+                  url={material.uploadedModelUrl}
+                  title={material.title}
+                  className="h-full !min-h-0 rounded-none"
+                />
+              ) : (
+                <ThreeDViewer
+                  modelType={material.modelType}
+                  hideQuickSelector={true}
+                />
+              )}
 
               {/* Watermark/Badge */}
               <div className="absolute top-4 left-4 pointer-events-none flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-xs">

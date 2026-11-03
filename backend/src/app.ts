@@ -41,22 +41,40 @@ const uploadedHtmlContentSecurityPolicy = [
   "base-uri 'none'",
   "object-src 'none'",
 ].join("; ");
+const uploadedTsxContentSecurityPolicy = [
+  "sandbox allow-scripts",
+  "default-src 'none'",
+  "script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+  "style-src 'unsafe-inline'",
+  "img-src data: blob:",
+  "font-src data:",
+  "media-src data: blob:",
+  "connect-src https://cdn.jsdelivr.net",
+  "frame-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
+  "object-src 'none'",
+  "worker-src 'none'",
+].join("; ");
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── Static files: serve uploaded avatars ──────────────────────────────────────
-// Files in backend/uploads/ are accessible at /uploads/
+// ──  uploaded avatars ──────────────────────────────────────
+
 app.use(
   "/uploads",
   express.static(path.resolve("uploads"), {
     setHeaders(res, filePath) {
-      if (/\.html?$/i.test(filePath)) {
-        res.setHeader("Content-Security-Policy", uploadedHtmlContentSecurityPolicy);
+    if (/\.tsx\.html$/i.test(filePath)) {
+      res.setHeader("Content-Security-Policy", uploadedTsxContentSecurityPolicy);
         res.setHeader("X-Content-Type-Options", "nosniff");
-      }
+    } else if (/\.html?$/i.test(filePath)) {
+      res.setHeader("Content-Security-Policy", uploadedHtmlContentSecurityPolicy);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    }
     },
   }),
 );
@@ -108,7 +126,7 @@ app.use(errorHandler);
 // ── Start server ──────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(` Server is running on http://localhost:${PORT}`);
 });
 
 export default app;

@@ -46,6 +46,7 @@ import {
 } from "@/lib/explore-data.config";
 import ExploreViewerModal from "@/components/explore/ExploreViewerModal";
 import { ThreeDViewer } from "@/components/ui/ThreeDViewer";
+import { Uploaded3DModelViewer } from "@/components/ui/Uploaded3DModelViewer";
 
 export default function ExplorePage() {
   const { locale } = useLang();
@@ -646,10 +647,18 @@ export default function ExplorePage() {
                     >
                       {/* Subtle WebGL Preview */}
                       <div className="absolute inset-0 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 pointer-events-none">
-                        <ThreeDViewer
-                          modelType={item.modelType}
-                          hideQuickSelector={true}
-                        />
+                        {item.uploadedModelUrl ? (
+                          <Uploaded3DModelViewer
+                            url={item.uploadedModelUrl}
+                            title={item.title}
+                            className="h-full !min-h-0 rounded-none"
+                          />
+                        ) : (
+                          <ThreeDViewer
+                            modelType={item.modelType}
+                            hideQuickSelector={true}
+                          />
+                        )}
                       </div>
 
                       {/* Card Overlay Badges */}

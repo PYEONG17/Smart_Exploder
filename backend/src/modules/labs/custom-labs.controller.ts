@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
-import { unlink } from "node:fs/promises";
+import { rm, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "../../config/db.js";
@@ -11,6 +12,7 @@ import {
   isValidGlbFile,
   removeCourseMediaByUrls,
 } from "../../utils/course-media.js";
+import { compileLabTsxFile } from "../../utils/lab-tsx.js";
 
 const bilingualTextSchema = z.object({
   vi: z.string().trim().max(2000),
@@ -26,20 +28,20 @@ const pairedTextSchema = bilingualTextSchema.superRefine((value, context) => {
   }
 });
 
-const equipmentSchema = z.array(pairedTextSchema).max(30).default([]);
-const stepSchema = pairedTextSchema.extend({
+const equipmentSchema = z.array(bilingualTextSchema).max(30).default([]);
+const stepSchema = bilingualTextSchema.extend({
   safety: z.boolean().default(false),
 });
 const vocabularySchema = z.array(
-  pairedTextSchema.extend({
+  bilingualTextSchema.extend({
     ipa: z.string().trim().max(100).default(""),
     definitionVi: z.string().trim().max(1000).default(""),
     definitionEn: z.string().trim().max(1000).default(""),
   }),
-).max(50);
+).max(50).default([]);
 const attachmentSchema = z.object({
   name: z.string().trim().min(1).max(150),
-  type: z.enum(["IMAGE", "PDF", "VIDEO", "MODEL_3D", "DOCUMENT", "HTML"]),
+  type: z.enum(["IMAGE", "PDF", "VIDEO", "MODEL_3D", "DOCUMENT", "HTML", "SIMULATION"]),
   url: z.string().url().max(2000),
 });
 
@@ -48,6 +50,78 @@ function isHtmlLabFile(file: Express.Multer.File): boolean {
     /\.(?:html?)$/i.test(file.originalname) &&
     ["", "text/html", "application/octet-stream"].includes(file.mimetype)
   );
+}
+
+function isTsxLabFile(file: Express.Multer.File): boolean {
+  return path.extname(file.originalname).toLowerCase() === ".tsx";
+}
+
+async function storeUploadedLabAttachment(
+  req: Request,
+  userId: string,
+  file: Express.Multer.File,
+  generatedFiles: string[],
+): Promise<z.infer<typeof attachmentSchema>> {
+  let type: z.infer<typeof attachmentSchema>["type"];
+  let filename = file.filename;
+  if (isTsxLabFile(file)) {
+    type = "SIMULATION";
+    if (file.size > 10 * 1024 * 1024) {
+      throw new AppError("TSX Lab files must not exceed 10 MB", 400);
+    }
+    const compiledPath = `${file.path}.html`;
+    const html = await compileLabTsxFile(file.path);
+    generatedFiles.push(compiledPath);
+    await writeFile(compiledPath, html, { encoding: "utf8", flag: "wx" });
+    await rm(file.path, { force: true });
+    filename = path.basename(compiledPath);
+  } else if (file.mimetype.startsWith("image/")) {
+    type = "IMAGE";
+    if (file.size > 15 * 1024 * 1024) {
+      throw new AppError("Images must not exceed 15 MB", 400);
+    }
+  } else if (file.mimetype.startsWith("video/")) {
+    type = "VIDEO";
+  } else if (isHtmlLabFile(file)) {
+    type = "HTML";
+    if (file.size > 10 * 1024 * 1024) {
+      throw new AppError("HTML Lab files must not exceed 10 MB", 400);
+    }
+  } else if (file.mimetype === "application/pdf") {
+    type = "PDF";
+    if (file.size > 50 * 1024 * 1024) {
+      throw new AppError("Documents must not exceed 50 MB", 400);
+    }
+  } else if (
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    file.mimetype === "text/plain"
+  ) {
+    type = "DOCUMENT";
+    if (file.size > 50 * 1024 * 1024) {
+      throw new AppError("Documents must not exceed 50 MB", 400);
+    }
+  } else {
+    type = "MODEL_3D";
+    if (file.size > 100 * 1024 * 1024) {
+      throw new AppError("3D models must not exceed 100 MB", 400);
+    }
+    if (!(await isValidGlbFile(file.path))) {
+      throw new AppError("The uploaded file is not a valid GLB 2.0 model", 400);
+    }
+  }
+
+  return {
+    name: file.originalname
+      .replace(/[\\/]/g, "")
+      .replace(/[\u0000-\u001f]/g, "")
+      .trim()
+      .slice(0, 150) || "Lab attachment",
+    type,
+    url: getCourseMediaUrl(req, userId, filename),
+  };
 }
 
 const activityBase = {
@@ -379,20 +453,43 @@ const activitySchema = z.discriminatedUnion("type", [
 ]);
 
 const customLabSchema = z.object({
-  title: z.string().trim().min(2).max(150),
-  titleEn: z.string().trim().min(2).max(150),
-  subject: z.enum(["science", "physics", "chemistry", "biology"]),
-  grade: z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9"]),
-  summary: z.string().trim().min(1).max(2000),
-  summaryEn: z.string().trim().min(1).max(2000),
+  title: z.string().trim().max(150).default(""),
+  titleEn: z.string().trim().max(150).default(""),
+  subject: z.enum(["science", "physics", "chemistry", "biology"]).default("science"),
+  grade: z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9"]).default("7"),
+  summary: z.string().trim().max(2000).default(""),
+  summaryEn: z.string().trim().max(2000).default(""),
   safetyNotice: z.string().trim().max(2000).default(""),
   safetyNoticeEn: z.string().trim().max(2000).default(""),
   equipment: equipmentSchema,
-  steps: z.array(stepSchema).min(1).max(40),
+  steps: z.array(stepSchema).max(40).default([]),
   vocabulary: vocabularySchema,
-  activities: z.array(activitySchema).max(30),
+  activities: z.array(activitySchema).max(30).default([]),
   attachments: z.array(attachmentSchema).max(10).default([]),
+}).superRefine((input, context) => {
+  if (!input.title.trim() && !input.titleEn.trim()) {
+    context.addIssue({
+      code: "custom",
+      path: ["title"],
+      message: "Provide a Lab title in Vietnamese or English",
+    });
+  }
 });
+
+function normalizeCustomLabInput(input: z.infer<typeof customLabSchema>) {
+  const hasText = (item: { vi: string; en: string }) =>
+    Boolean(item.vi.trim() || item.en.trim());
+  const title = input.title.trim() || input.titleEn.trim();
+
+  return {
+    ...input,
+    title,
+    titleEn: input.titleEn.trim() || title,
+    equipment: input.equipment.filter(hasText),
+    steps: input.steps.filter(hasText),
+    vocabulary: input.vocabulary.filter(hasText),
+  };
+}
 
 const customLabSelect = {
   id: true,
@@ -487,63 +584,24 @@ export async function createCustomLab(req: Request, res: Response) {
     return;
   }
 
-  const input = parsed.data;
+  const input = normalizeCustomLabInput(parsed.data);
   let thumbnailUrl: string | null = null;
+  const generatedFiles: string[] = [];
   try {
+    if (input.attachments.some(({ type }) => type === "SIMULATION")) {
+      throw new AppError("Upload TSX simulation files directly to this Lab", 400);
+    }
+    if (uploadedFiles.filter(isTsxLabFile).length > 1) {
+      throw new AppError("A Lab can contain only one TSX simulation", 400);
+    }
     if (input.attachments.length + uploadedFiles.length > 10) {
       throw new AppError("A Lab can contain at most 10 attachments", 400);
     }
     const attachments = [];
     for (const file of uploadedFiles) {
-      let type: z.infer<typeof attachmentSchema>["type"];
-      if (file.mimetype.startsWith("image/")) {
-        type = "IMAGE";
-        if (file.size > 15 * 1024 * 1024) {
-          throw new AppError("Images must not exceed 15 MB", 400);
-        }
-      } else if (file.mimetype.startsWith("video/")) {
-        type = "VIDEO";
-      } else if (isHtmlLabFile(file)) {
-        type = "HTML";
-        if (file.size > 10 * 1024 * 1024) {
-          throw new AppError("HTML Lab files must not exceed 10 MB", 400);
-        }
-      } else if (file.mimetype === "application/pdf") {
-        type = "PDF";
-        if (file.size > 50 * 1024 * 1024) {
-          throw new AppError("Documents must not exceed 50 MB", 400);
-        }
-      } else if (
-        file.mimetype ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        file.mimetype ===
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
-        file.mimetype === "text/plain"
-      ) {
-        type = "DOCUMENT";
-        if (file.size > 50 * 1024 * 1024) {
-          throw new AppError("Documents must not exceed 50 MB", 400);
-        }
-      } else {
-        type = "MODEL_3D";
-        if (file.size > 100 * 1024 * 1024) {
-          throw new AppError("3D models must not exceed 100 MB", 400);
-        }
-        const validGlb = await isValidGlbFile(file.path);
-        if (!validGlb) {
-          throw new AppError("The uploaded file is not a valid GLB 2.0 model", 400);
-        }
-      }
-
-      attachments.push({
-        name: file.originalname
-          .replace(/[\\/]/g, "")
-          .replace(/[\u0000-\u001f]/g, "")
-          .trim()
-          .slice(0, 150) || "Lab attachment",
-        type,
-        url: getCourseMediaUrl(req, req.user.id, file.filename),
-      });
+      attachments.push(
+        await storeUploadedLabAttachment(req, req.user.id, file, generatedFiles),
+      );
     }
 
     thumbnailUrl = await createCustomLabThumbnail(
@@ -573,10 +631,12 @@ export async function createCustomLab(req: Request, res: Response) {
       },
       select: customLabSelect,
     });
-
     res.status(201).json(success(lab, "Lab experiment created"));
   } catch (error) {
-    await Promise.all(uploadedFiles.map((file) => unlink(file.path)));
+    await Promise.all([
+      ...uploadedFiles.map((file) => rm(file.path, { force: true })),
+      ...generatedFiles.map((file) => rm(file, { force: true })),
+    ]);
     await removeCourseMediaByUrls([thumbnailUrl]);
     throw error;
   }
@@ -618,8 +678,9 @@ export async function updateCustomLab(req: Request, res: Response) {
     return;
   }
 
-  const input = parsed.data;
+  const input = normalizeCustomLabInput(parsed.data);
   let thumbnailUrl: string | null = null;
+  const generatedFiles: string[] = [];
   const existingAttachments = Array.isArray(existing.attachments)
     ? existing.attachments.flatMap((attachment) => {
         const result = attachmentSchema.safeParse(attachment);
@@ -632,60 +693,23 @@ export async function updateCustomLab(req: Request, res: Response) {
       if (!saved) throw new AppError("Attachments can only be retained from this Lab", 400);
       return saved;
     });
+    const retainedSimulations = retainedAttachments.filter(
+      ({ type }) => type === "SIMULATION",
+    ).length;
+    if (
+      retainedSimulations + uploadedFiles.filter(isTsxLabFile).length > 1
+    ) {
+      throw new AppError("A Lab can contain only one TSX simulation", 400);
+    }
     if (retainedAttachments.length + uploadedFiles.length > 10) {
       throw new AppError("A Lab can contain at most 10 attachments", 400);
     }
 
     const newAttachments: z.infer<typeof attachmentSchema>[] = [];
     for (const file of uploadedFiles) {
-      let type: z.infer<typeof attachmentSchema>["type"];
-      if (file.mimetype.startsWith("image/")) {
-        type = "IMAGE";
-        if (file.size > 15 * 1024 * 1024) {
-          throw new AppError("Images must not exceed 15 MB", 400);
-        }
-      } else if (file.mimetype.startsWith("video/")) {
-        type = "VIDEO";
-      } else if (isHtmlLabFile(file)) {
-        type = "HTML";
-        if (file.size > 10 * 1024 * 1024) {
-          throw new AppError("HTML Lab files must not exceed 10 MB", 400);
-        }
-      } else if (file.mimetype === "application/pdf") {
-        type = "PDF";
-        if (file.size > 50 * 1024 * 1024) {
-          throw new AppError("Documents must not exceed 50 MB", 400);
-        }
-      } else if (
-        file.mimetype ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        file.mimetype ===
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
-        file.mimetype === "text/plain"
-      ) {
-        type = "DOCUMENT";
-        if (file.size > 50 * 1024 * 1024) {
-          throw new AppError("Documents must not exceed 50 MB", 400);
-        }
-      } else {
-        type = "MODEL_3D";
-        if (file.size > 100 * 1024 * 1024) {
-          throw new AppError("3D models must not exceed 100 MB", 400);
-        }
-        if (!(await isValidGlbFile(file.path))) {
-          throw new AppError("The uploaded file is not a valid GLB 2.0 model", 400);
-        }
-      }
-
-      newAttachments.push({
-        name: file.originalname
-          .replace(/[\\/]/g, "")
-          .replace(/[\u0000-\u001f]/g, "")
-          .trim()
-          .slice(0, 150) || "Lab attachment",
-        type,
-        url: getCourseMediaUrl(req, req.user.id, file.filename),
-      });
+      newAttachments.push(
+        await storeUploadedLabAttachment(req, req.user.id, file, generatedFiles),
+      );
     }
 
     thumbnailUrl = await createCustomLabThumbnail(
@@ -725,7 +749,10 @@ export async function updateCustomLab(req: Request, res: Response) {
     await removeCourseMediaByUrls([existing.thumbnailUrl]);
     res.status(200).json(success(updatedLab, "Lab experiment updated"));
   } catch (error) {
-    await Promise.all(uploadedFiles.map((file) => unlink(file.path)));
+    await Promise.all([
+      ...uploadedFiles.map((file) => rm(file.path, { force: true })),
+      ...generatedFiles.map((file) => rm(file, { force: true })),
+    ]);
     await removeCourseMediaByUrls([thumbnailUrl]);
     throw error;
   }
