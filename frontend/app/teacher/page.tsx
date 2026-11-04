@@ -118,7 +118,7 @@ export default function TeacherDashboardPage() {
   return (
     <div className="min-h-screen bg-background pb-16 pt-10 md:pt-14">
       <div className="mx-auto max-w-7xl px-6">
-        {/* Header */}
+        {/* Tiêu đề */}
         <motion.div
           className="premium-card relative mb-8 flex flex-col justify-between gap-6 overflow-hidden bg-gradient-to-br from-violet-50 via-card to-sky-50 p-6 dark:from-violet-950/25 dark:via-card dark:to-sky-950/20 md:flex-row md:items-center md:p-9"
           initial={{ opacity: 0, y: -20 }}
@@ -152,18 +152,12 @@ export default function TeacherDashboardPage() {
               }`}
             >
               <Database className="mr-2 h-4 w-4 text-cyan-500" />
-              <span>{locale === "vi" ? "Kho Học Liệu 3D (DB)" : "3D Materials DB"}</span>
+              <span>{locale === "vi" ? "Mô hình 3D" : "3D Models"}</span>
             </Button>
             <Button variant="outline" className="rounded-xl py-5" asChild>
               <Link href="/teacher/labs/new">
                 <Plus className="mr-2 h-4 w-4" />
                 {locale === "vi" ? "Tạo thí nghiệm Lab" : "Create a Lab"}
-              </Link>
-            </Button>
-            <Button variant="outline" className="rounded-xl py-5" asChild>
-              <Link href="/teacher/assessment-generator">
-                <Sparkles className="mr-2 h-4 w-4" />
-                {locale === "vi" ? "Tạo đề bằng AI" : "AI Assessment Generator"}
               </Link>
             </Button>
             <Button
@@ -232,9 +226,9 @@ export default function TeacherDashboardPage() {
             }`}
           >
             <Box className="h-4 w-4" />
-            <span>{locale === "vi" ? "Kho Học Liệu 3D & Song Ngữ (Database)" : "3D Materials DB Manager"}</span>
+            <span>{locale === "vi" ? "Mô hình 3D" : "3D Models"}</span>
             <Badge variant="outline" className="ml-1 text-[10px] py-0 px-2 border-cyan-400/50 text-cyan-400">
-              PostgreSQL
+              {locale === "vi" ? "Danh sách mô hình" : "Model list"}
             </Badge>
           </button>
         </div>
@@ -273,7 +267,7 @@ export default function TeacherDashboardPage() {
                       className={`w-16 h-16 rounded-xl bg-gradient-to-br ${course.color || "from-blue-500 to-indigo-600"} flex items-center justify-center text-white shrink-0 shadow-md overflow-hidden`}
                     >
                       {course.thumbnail ? (
-                        // Thumbnails can be uploaded files or arbitrary external URLs.
+                        // Ảnh thu nhỏ có thể là tệp tải lên hoặc URL bên ngoài.
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={course.thumbnail}

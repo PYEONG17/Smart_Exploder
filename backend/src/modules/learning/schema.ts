@@ -14,7 +14,18 @@ export const saveProgressSchema = z.object({
   status: z.enum(["IN_PROGRESS", "COMPLETED"]),
 });
 
-// rewindSeconds: how far back "rewatch" jumps (0 hides it); skipAfterAttempts: wrong tries before skipping is allowed.
+export const saveVideoStudyMarkerSchema = z
+  .object({
+    timestampSeconds: z.number().int().min(0).max(24 * 60 * 60),
+    note: z.string().trim().max(3000).nullable().optional(),
+    isBookmarked: z.boolean().optional(),
+  })
+  .refine(
+    (input) => input.note !== undefined || input.isBookmarked !== undefined,
+    "A note or bookmark update is required",
+  );
+
+// rewindSeconds: số giây lùi lại khi "xem lại" (0 sẽ ẩn tùy chọn này); skipAfterAttempts: số lần trả lời sai trước khi cho phép bỏ qua.
 const retryPolicyFields = {
   rewindSeconds: z.number().int().min(0).max(3600).optional(),
   skipAfterAttempts: z.number().int().min(1).max(10).optional(),
@@ -290,10 +301,27 @@ export const createLessonVideoSchema = z
     titleEn: z.string().trim().max(150).optional(),
     sourceLanguage: z.enum(["vi", "en"]).optional(),
     url: z.string().trim().url().max(2000),
+    contentType: z.enum(["VIDEO", "H5P"]).default("VIDEO"),
     durationSeconds: z.number().int().positive().max(24 * 60 * 60).optional(),
     activities: z.array(videoActivitySchema).max(20).optional(),
   })
   .superRefine((input, context) => {
+    if (input.contentType === "H5P") {
+      if (!input.url.startsWith("https://")) {
+        context.addIssue({
+          code: "custom",
+          path: ["url"],
+          message: "H5P embeds must use HTTPS",
+        });
+      }
+      if (input.activities?.length) {
+        context.addIssue({
+          code: "custom",
+          path: ["activities"],
+          message: "Video checkpoints are not supported for H5P embeds",
+        });
+      }
+    }
     const timestamps = input.activities?.map((activity) =>
       activity.timestampMs ?? (activity.timestamp ?? 0) * 1000,
     );
@@ -361,6 +389,9 @@ export const submitInteractiveEventSchema = z.object({
 
 export type SubmitQuizInput = z.infer<typeof submitQuizSchema>;
 export type SaveProgressInput = z.infer<typeof saveProgressSchema>;
+export type SaveVideoStudyMarkerInput = z.infer<
+  typeof saveVideoStudyMarkerSchema
+>;
 export type CreateLessonVideoInput = z.infer<typeof createLessonVideoSchema>;
 export type SubmitVideoActivityInput = z.infer<
   typeof submitVideoActivitySchema

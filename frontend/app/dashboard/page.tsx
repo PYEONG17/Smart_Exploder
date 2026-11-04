@@ -104,7 +104,7 @@ export default function DashboardPage() {
     };
   }, [token, user?.role]);
 
-  // Show loading skeleton while auth state hydrates
+  // Hiển thị khung tải trong lúc khôi phục trạng thái xác thực.
   if (isLoading || isDataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -202,7 +202,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background pb-16 pt-10 md:pt-14">
       <div className="mx-auto max-w-7xl px-6">
-        {/* Header */}
+        {/* Tiêu đề */}
         <motion.div
           className="relative mb-8 flex flex-col justify-between gap-5 overflow-hidden rounded-[2rem] border border-blue-200/70 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-6 shadow-[0_24px_70px_-48px_rgba(37,99,235,0.5)] dark:border-blue-400/15 dark:from-blue-950/45 dark:via-card dark:to-cyan-950/30 md:flex-row md:items-center md:p-9"
           initial={{ opacity: 0, y: -20 }}

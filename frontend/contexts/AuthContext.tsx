@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { ApiError, getMe } from "@/lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Loại dữ liệu ────────────────────────────────────────────────────────────────
 
 export type AuthUser = {
   id: string;
@@ -37,7 +37,7 @@ interface AuthContextValue {
   updateUser: (updatedUser: Partial<AuthUser>) => void;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// ─── Bối cảnh ─────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -48,14 +48,14 @@ export function getRoleHomePath(role: AuthUser["role"]): string {
   return role === "STUDENT" ? "/assignments" : "/teacher";
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+// ─── Nhà cung cấp ─────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate from localStorage after mount (avoids SSR mismatch)
+  // Tải dữ liệu từ localStorage sau khi mount (tránh xung đột SSR)
   useEffect(() => {
     let isActive = true;
     queueMicrotask(() => {
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(currentUser);
         })
         .catch((error: unknown) => {
-          // Temporary API/network failures should not discard a cached session.
+          // Lỗi API/mạng tạm thời không nên xóa phiên đã lưu trong bộ nhớ cache.
           if (!isActive || !(error instanceof ApiError) || error.status !== 401) {
             return;
           }
@@ -105,8 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Called after a successful login or register response.
-   * Stores token + user in state AND localStorage.
+   * Gọi sau khi đăng nhập hoặc đăng ký thành công.
+   * Lưu mã thông báo và người dùng vào trạng thái ứng dụng cùng localStorage.
    */
   const login = useCallback((result: AuthResult) => {
     localStorage.setItem(TOKEN_KEY, result.token);
@@ -116,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Clears auth state and localStorage.
-   * The UI is responsible for redirecting afterwards.
+   * Xóa trạng thái xác thực và dữ liệu trong localStorage.
+   * Giao diện sẽ chịu trách nhiệm chuyển hướng sau đó.
    */
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -127,8 +127,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Patch user fields in state + localStorage without re-login.
-   * Useful after profile update (name change, etc.).
+   * Cập nhật các trường người dùng trong trạng thái ứng dụng và localStorage mà không cần đăng nhập lại.
+   * Dùng sau khi hồ sơ được cập nhật, chẳng hạn khi đổi tên.
    */
   const updateUser = useCallback((updatedFields: Partial<AuthUser>) => {
     setUser((prev) => {

@@ -534,7 +534,7 @@ export default function CourseDetailClient({
                     rating: 5,
                     date: "2 tuần trước",
                     comment:
-                      "Em thích nhất phần mô hình 3D, giúp hiểu bài nhanh hơn nhiều so với sách giáo khoa.",
+                      "Video bài giảng dễ theo dõi, em có thể ghi chú và xem lại phần chưa hiểu.",
                   },
                 ].map((review, i) => (
                   <div key={i} className={i > 0 ? "mt-6" : ""}>

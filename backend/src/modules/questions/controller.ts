@@ -8,6 +8,8 @@ import { toBilingualText } from "../ai/translate.js";
 const questionSchema = z.object({
   text: z.string().trim().min(3).max(3000),
   language: z.enum(["vi", "en"]),
+  videoId: z.string().uuid().optional(),
+  timestampSeconds: z.number().int().min(0).max(24 * 60 * 60).optional(),
 });
 
 const answerSchema = z.object({
@@ -42,6 +44,8 @@ export async function listLessonQuestions(req: Request, res: Response) {
       answeredById: true,
       answeredAt: true,
       createdAt: true,
+      videoId: true,
+      timestampSeconds: true,
       author: { select: { name: true } },
       answeredBy: { select: { name: true } },
     },
@@ -58,6 +62,25 @@ export async function askLessonQuestion(req: Request, res: Response) {
     select: { id: true },
   });
   if (!lesson) throw new AppError("Lesson not found", 404);
+  if (input.videoId) {
+    const video = await prisma.video.findFirst({
+      where: { id: input.videoId, lessonId },
+      select: { id: true, durationSeconds: true, contentType: true },
+    });
+    if (!video) throw new AppError("Video does not belong to this lesson", 400);
+    if (video.contentType !== "VIDEO") {
+      throw new AppError("Timestamped questions require a video lesson", 400);
+    }
+    if (
+      input.timestampSeconds !== undefined &&
+      video.durationSeconds !== null &&
+      input.timestampSeconds > video.durationSeconds
+    ) {
+      throw new AppError("Question timestamp is beyond the video duration", 400);
+    }
+  } else if (input.timestampSeconds !== undefined) {
+    throw new AppError("A video is required for a timestamped question", 400);
+  }
 
   const bilingual = await toBilingualText(input.text, input.language);
   const translation = input.language === "vi" ? bilingual.en : bilingual.vi;
@@ -68,6 +91,8 @@ export async function askLessonQuestion(req: Request, res: Response) {
       question: input.text,
       questionLanguage: input.language,
       questionTranslated: translation,
+      videoId: input.videoId,
+      timestampSeconds: input.timestampSeconds,
     },
     select: {
       id: true,
@@ -82,6 +107,8 @@ export async function askLessonQuestion(req: Request, res: Response) {
       answeredById: true,
       answeredAt: true,
       createdAt: true,
+      videoId: true,
+      timestampSeconds: true,
       author: { select: { name: true } },
       answeredBy: { select: { name: true } },
     },
@@ -135,6 +162,8 @@ export async function answerLessonQuestion(req: Request, res: Response) {
       answeredById: true,
       answeredAt: true,
       createdAt: true,
+      videoId: true,
+      timestampSeconds: true,
       author: { select: { name: true } },
       answeredBy: { select: { name: true } },
     },

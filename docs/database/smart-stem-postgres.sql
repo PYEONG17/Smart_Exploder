@@ -1,6 +1,6 @@
--- Smart STEM AI target schema (PostgreSQL 15+).
--- Reference DDL only: review and migrate existing Prisma data before applying.
--- Execute as a schema owner in a dedicated database/schema.
+-- Lược đồ đích của Smart STEM AI (PostgreSQL 15 trở lên).
+-- Chỉ dùng để tham khảo DDL: hãy rà soát và chuyển đổi dữ liệu Prisma hiện có trước khi áp dụng.
+-- Thực thi bằng tài khoản chủ sở hữu trong một cơ sở dữ liệu hoặc lược đồ riêng.
 
 BEGIN;
 
@@ -41,7 +41,7 @@ CREATE TABLE schools (
     UNIQUE (tenant_id, external_code)
 );
 
--- Global identity; tenant-specific access is exclusively through memberships.
+-- Danh tính người dùng dùng chung; quyền truy cập theo tenant chỉ được cấp thông qua tư cách thành viên.
 CREATE TABLE users (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     display_name text NOT NULL,
@@ -770,7 +770,7 @@ CREATE TABLE report_runs (
 );
 CREATE INDEX report_runs_requester_idx ON report_runs (tenant_id, requested_by_membership_id, requested_at DESC);
 
--- High-volume append-only analytics. Create future monthly partitions in advance.
+-- Bảng phân tích chỉ ghi nối thêm với lưu lượng lớn. Hãy tạo trước các phân vùng cho những tháng sắp tới.
 CREATE TABLE learning_events (
     tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     occurred_at timestamptz NOT NULL,
@@ -791,7 +791,7 @@ CREATE INDEX learning_events_actor_time_idx ON learning_events
 CREATE INDEX learning_events_name_time_idx ON learning_events
     (tenant_id, event_name, occurred_at DESC);
 
--- Audit snapshots are restricted and must not contain credentials or full AI content.
+-- Quyền truy cập ảnh chụp kiểm toán bị hạn chế; không lưu thông tin xác thực hoặc toàn bộ nội dung AI tại đây.
 CREATE TABLE audit_log (
     occurred_at timestamptz NOT NULL DEFAULT now(),
     id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -813,7 +813,7 @@ CREATE TABLE audit_log_default PARTITION OF audit_log DEFAULT;
 CREATE INDEX audit_log_tenant_time_idx ON audit_log (tenant_id, occurred_at DESC);
 CREATE INDEX audit_log_record_idx ON audit_log (tenant_id, table_name, record_id, occurred_at DESC);
 
--- Reusable audit trigger. Configure actor/request with SET LOCAL before writes.
+-- Trigger kiểm toán có thể tái sử dụng. Cấu hình người thực hiện và yêu cầu bằng SET LOCAL trước khi ghi dữ liệu.
 CREATE FUNCTION write_audit_log() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -894,8 +894,8 @@ BEGIN
 END
 $$;
 
--- Enable tenant RLS for every table with a tenant_id column, except append-only
--- audit, which receives an explicit tenant policy below.
+-- Bật RLS theo tenant cho mọi bảng có cột tenant_id, ngoại trừ bảng kiểm toán
+-- chỉ ghi nối thêm; bảng này được áp dụng chính sách tenant riêng ở bên dưới.
 DO $$
 DECLARE
     table_record record;
@@ -918,8 +918,8 @@ BEGIN
 END
 $$;
 
--- Policies on partition roots apply when accessed through the root. Do not grant
--- direct access to partitions; if that is required, add a policy to each partition.
+-- Các chính sách trên bảng phân vùng gốc được áp dụng khi truy cập qua bảng gốc. Không cấp quyền
+-- truy cập trực tiếp vào từng phân vùng; nếu cần, hãy thêm chính sách cho mỗi phân vùng.
 ALTER TABLE learning_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON learning_events
     USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
@@ -935,17 +935,17 @@ CREATE POLICY tenant_isolation ON audit_log_default
 
 COMMIT;
 
--- Monthly partition example (run before the month begins; use UTC boundaries):
+-- Ví dụ tạo phân vùng theo tháng (chạy trước khi tháng bắt đầu; dùng mốc thời gian UTC):
 -- CREATE TABLE learning_events_2026_11 PARTITION OF learning_events
 --   FOR VALUES FROM ('2026-11-01 00:00:00+00') TO ('2026-12-01 00:00:00+00');
 -- CREATE TABLE audit_log_2026_11 PARTITION OF audit_log
 --   FOR VALUES FROM ('2026-11-01 00:00:00+00') TO ('2026-12-01 00:00:00+00');
 --
--- Set context inside the same transaction/pooled connection:
+-- Thiết lập ngữ cảnh trong cùng giao dịch/kết nối thuộc nhóm kết nối:
 -- BEGIN;
 -- SET LOCAL app.tenant_id = '00000000-0000-0000-0000-000000000000';
 -- SET LOCAL app.user_id = '00000000-0000-0000-0000-000000000000';
 -- SET LOCAL app.membership_id = '00000000-0000-0000-0000-000000000000';
 -- SET LOCAL app.request_id = '00000000-0000-0000-0000-000000000000';
--- ... tenant-scoped statements ...
+-- ... các câu lệnh giới hạn theo tenant ...
 -- COMMIT;

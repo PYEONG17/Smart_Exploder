@@ -22,7 +22,7 @@ export async function updateProfile(req: Request, res: Response) {
   res.json(success(data, "Profile updated successfully"));
 }
 
-// ───avatar ───────────────────────────────────────────────
+// ─── ảnh đại diện ──────────────────────────────────────────
 
 export async function uploadAvatar(req: Request, res: Response) {
   if (!req.user) throw new AppError("Authentication required", 401);
@@ -50,7 +50,7 @@ export async function randomAvatar(req: Request, res: Response) {
 
   const targetId = String(req.params.id);
 
-  // Only the account owner can change their avatar.
+  // Chỉ chủ tài khoản mới có thể thay đổi ảnh đại diện.
   if (req.user.id !== targetId) {
     throw new AppError("Forbidden: you can only change your own avatar", 403);
   }

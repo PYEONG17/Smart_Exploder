@@ -1,6 +1,6 @@
 /**
- * Mock data for all frontend pages.
- * Will be replaced by API calls when backend is ready.
+ * Dữ liệu mẫu cho tất cả trang frontend.
+ * Sẽ được thay thế bằng các yêu cầu API khi máy chủ sẵn sàng.
  */
 
 // ─────────────────────────────────────────────
@@ -264,7 +264,7 @@ export const mockCourses: Course[] = [
 ];
 
 // ─────────────────────────────────────────────
-// LESSONS (for course c1)
+// BÀI HỌC (cho khóa học c1)
 // ─────────────────────────────────────────────
 export interface Lesson {
   id: string;
@@ -398,7 +398,7 @@ export const mockLessons: Lesson[] = [
 ];
 
 // ─────────────────────────────────────────────
-// LESSON CONTENT (for lesson l3)
+// NỘI DUNG BÀI HỌC (cho bài l3)
 // ─────────────────────────────────────────────
 export const mockLessonContent = {
   contentVi: `
@@ -464,7 +464,7 @@ $$\\frac{2}{3} + \\frac{1}{4} = \\frac{8}{12} + \\frac{3}{12} = \\frac{11}{12}$$
 };
 
 // ─────────────────────────────────────────────
-// MATERIALS (for lesson l3)
+// TÀI LIỆU (cho bài l3)
 // ─────────────────────────────────────────────
 export interface Material {
   id: string;

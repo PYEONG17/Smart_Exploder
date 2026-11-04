@@ -1,10 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { Router } from "express";
 import { requireAuth, requireRole, optionalAuth } from "../../middlewares/auth.middleware.js";
-import {
-  chatWithGemini,
-  generateAssessmentWithGemini,
-} from "./controller.js";
+import { chatWithGemini } from "./controller.js";
 import {
   findLessonResources,
   generateCourseOutline,
@@ -75,11 +72,6 @@ const limitLabTranslationRequests = createUserRateLimiter(
   10,
   "Bạn đã yêu cầu dịch quá nhiều lần. Vui lòng thử lại sau một phút.",
 );
-const limitAssessmentRequests = createUserRateLimiter(
-  3,
-  "Bạn đã tạo nhiều đề liên tiếp. Vui lòng thử lại sau một phút.",
-);
-
 const limitStudioRequests = createUserRateLimiter(
   6,
   "Bạn đã dùng AI quá nhiều lần liên tiếp. Vui lòng thử lại sau một phút.",
@@ -123,12 +115,4 @@ router.post(
   generateBilingualLessonDraft,
 );
 router.post("/studio/lessons/:lessonId/resources", ...teacherAi, findLessonResources);
-router.post(
-  "/assessments/generate",
-  requireAuth,
-  requireRole("TEACHER"),
-  limitAssessmentRequests,
-  generateAssessmentWithGemini,
-);
-
 export default router;

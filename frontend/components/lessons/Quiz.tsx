@@ -156,7 +156,7 @@ export function Quiz({ quiz }: QuizProps) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header Info */}
+      {/* Thông tin tiêu đề */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
           <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
@@ -176,7 +176,7 @@ export function Quiz({ quiz }: QuizProps) {
         </div>
       </div>
 
-      {/* Question Card */}
+      {/* Thẻ câu hỏi */}
       <div className="rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-xs">
         <div className="mb-6">
           <span className="text-xs font-semibold uppercase tracking-wider text-primary">
@@ -194,7 +194,7 @@ export function Quiz({ quiz }: QuizProps) {
           )}
         </div>
 
-        {/* Options */}
+        {/* Lựa chọn */}
         <div className="grid gap-3 mb-8 sm:grid-cols-2">
           {question.answers.map((answer, answerIndex) => {
             const isSelected = selectedAnswer === answer.id;
@@ -249,7 +249,7 @@ export function Quiz({ quiz }: QuizProps) {
           })}
         </div>
 
-        {/* Actions */}
+        {/* Hành động */}
         <div className="flex items-center justify-between border-t border-border/70 pt-5">
           <span className="text-xs text-muted-foreground">
             {selectedAnswer

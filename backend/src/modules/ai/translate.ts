@@ -56,7 +56,7 @@ export async function toBilingualText(
 
 const LIST_SEPARATOR = "\n@@@\n";
 
-// Translates several short texts in one request to stay within free-tier rate limits.
+// Dịch nhiều đoạn văn bản ngắn trong một yêu cầu để không vượt giới hạn tốc độ của gói miễn phí.
 export async function toBilingualList(
   texts: string[],
   sourceLanguage: LearningLanguage,

@@ -82,7 +82,7 @@ export default function CreateCoursePage() {
     );
   }
 
-  // Each lecture becomes a lesson that can hold several videos.
+  // Mỗi bài giảng được tạo thành một bài học và có thể chứa nhiều video.
   const createLectures = async (authToken: string, courseId: string) => {
     const failures: string[] = [];
     let order = 1;

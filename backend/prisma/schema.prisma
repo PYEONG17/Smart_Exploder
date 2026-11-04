@@ -8,7 +8,7 @@ datasource db {
 }
 
 // -----------------------------------------------------------------------------
-// USER MODELS
+// CÁC MÔ HÌNH NGƯỜI DÙNG
 // -----------------------------------------------------------------------------
 enum Role {
   STUDENT
@@ -23,84 +23,85 @@ enum MembershipStatus {
 }
 
 model User {
-  id           String     @id @default(uuid())
+  id           String  @id @default(uuid())
   name         String
-  email        String     @unique
+  email        String  @unique
   passwordHash String?
-  googleSub    String?    @unique
-  role         Role       @default(STUDENT)
-  avatar       String?    // URL to avatar image (uploaded or DiceBear)
-  bio          String?    // Short bio, max 200 chars
+  googleSub    String? @unique
+  role         Role    @default(STUDENT)
+  avatar       String? // URL ảnh đại diện (đã tải lên hoặc từ DiceBear)
+  bio          String? // Tiểu sử ngắn, tối đa 200 ký tự
 
-  // Relations
-  progress     Progress[]
-  quizAttempts QuizAttempt[]
-  createdCourses Course[]
-  aiConversations AIConversation[]
-  memberships  TenantMembership[]
-  interactiveResponses InteractiveResponse[]
-  videoWatchEvents VideoWatchEvent[]
-  labStudyEvents LabStudyEvent[]
-  lessonQuestions LessonQuestion[] @relation("LessonQuestionAuthor")
-  lessonAnswers LessonQuestion[] @relation("LessonQuestionAnswerer")
-  studyFlashcards StudyFlashcard[]
-  practiceQuestions PracticeQuestion[]
+  // Các mối quan hệ
+  progress               Progress[]
+  quizAttempts           QuizAttempt[]
+  createdCourses         Course[]
+  aiConversations        AIConversation[]
+  memberships            TenantMembership[]
+  interactiveResponses   InteractiveResponse[]
+  videoWatchEvents       VideoWatchEvent[]
+  labStudyEvents         LabStudyEvent[]
+  lessonQuestions        LessonQuestion[]        @relation("LessonQuestionAuthor")
+  lessonAnswers          LessonQuestion[]        @relation("LessonQuestionAnswerer")
+  videoStudyMarkers      VideoStudyMarker[]
+  studyFlashcards        StudyFlashcard[]
+  practiceQuestions      PracticeQuestion[]
   practiceAnswerAttempts PracticeAnswerAttempt[]
-  uploadedLabModels LabModel[] @relation("LabModelUploader")
-  createdCustomLabs CustomLab[] @relation("CustomLabCreator")
+  uploadedLabModels      LabModel[]              @relation("LabModelUploader")
+  createdCustomLabs      CustomLab[]             @relation("CustomLabCreator")
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Tenant {
-  id          String             @id @default(uuid()) @db.Uuid
-  slug        String             @unique
-  name        String
-  status      String             @default("ACTIVE")
-  createdAt   DateTime           @default(now()) @db.Timestamptz(3) @map("created_at")
-  updatedAt   DateTime           @updatedAt @db.Timestamptz(3) @map("updated_at")
-  deletedAt   DateTime?          @db.Timestamptz(3) @map("deleted_at")
-  school      School?
-  memberships TenantMembership[]
-  roles       TenantRole[]
+  id               String             @id @default(uuid()) @db.Uuid
+  slug             String             @unique
+  name             String
+  status           String             @default("ACTIVE")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?          @map("deleted_at") @db.Timestamptz(3)
+  school           School?
+  memberships      TenantMembership[]
+  roles            TenantRole[]
   videoWatchEvents VideoWatchEvent[]
-  labStudyEvents LabStudyEvent[]
+  labStudyEvents   LabStudyEvent[]
 
   @@map("tenants")
 }
 
 model School {
-  tenantId      String    @id @db.Uuid @map("tenant_id")
-  officialName  String    @map("official_name")
-  shortName     String?   @map("short_name")
-  externalCode  String?   @map("external_code")
-  address       Json      @default("{}")
-  settings      Json      @default("{}")
-  createdAt     DateTime  @default(now()) @db.Timestamptz(3) @map("created_at")
-  updatedAt     DateTime  @updatedAt @db.Timestamptz(3) @map("updated_at")
-  deletedAt     DateTime? @db.Timestamptz(3) @map("deleted_at")
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenantId     String    @id @map("tenant_id") @db.Uuid
+  officialName String    @map("official_name")
+  shortName    String?   @map("short_name")
+  externalCode String?   @map("external_code")
+  address      Json      @default("{}")
+  settings     Json      @default("{}")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@unique([tenantId, externalCode])
   @@map("schools")
 }
 
 model TenantMembership {
-  id            String           @id @default(uuid()) @db.Uuid
-  tenantId      String           @db.Uuid @map("tenant_id")
-  userId        String           @map("user_id")
-  status        MembershipStatus @default(INVITED)
-  memberCode    String?          @map("member_code")
-  joinedAt      DateTime?        @db.Timestamptz(3) @map("joined_at")
-  endedAt       DateTime?        @db.Timestamptz(3) @map("ended_at")
-  createdAt     DateTime         @default(now()) @db.Timestamptz(3) @map("created_at")
-  updatedAt     DateTime         @updatedAt @db.Timestamptz(3) @map("updated_at")
-  deletedAt     DateTime?        @db.Timestamptz(3) @map("deleted_at")
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
-  userRoles     UserRole[]       @relation("MembershipRoles")
-  grantedRoles  UserRole[]       @relation("RoleGrantedBy")
+  id           String           @id @default(uuid()) @db.Uuid
+  tenantId     String           @map("tenant_id") @db.Uuid
+  userId       String           @map("user_id")
+  status       MembershipStatus @default(INVITED)
+  memberCode   String?          @map("member_code")
+  joinedAt     DateTime?        @map("joined_at") @db.Timestamptz(3)
+  endedAt      DateTime?        @map("ended_at") @db.Timestamptz(3)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userRoles    UserRole[]       @relation("MembershipRoles")
+  grantedRoles UserRole[]       @relation("RoleGrantedBy")
 
   @@unique([tenantId, id])
   @@unique([tenantId, userId])
@@ -111,16 +112,16 @@ model TenantMembership {
 }
 
 model TenantRole {
-  id              String           @id @default(uuid()) @db.Uuid
-  tenantId        String           @db.Uuid @map("tenant_id")
-  roleKey         String           @map("role_key")
-  displayName     String           @map("display_name")
-  isSystemRole    Boolean          @default(false) @map("is_system_role")
-  createdAt       DateTime         @default(now()) @db.Timestamptz(3) @map("created_at")
-  deletedAt       DateTime?        @db.Timestamptz(3) @map("deleted_at")
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  userRoles       UserRole[]
-  permissions     RolePermission[]
+  id           String           @id @default(uuid()) @db.Uuid
+  tenantId     String           @map("tenant_id") @db.Uuid
+  roleKey      String           @map("role_key")
+  displayName  String           @map("display_name")
+  isSystemRole Boolean          @default(false) @map("is_system_role")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt    DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles    UserRole[]
+  permissions  RolePermission[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, roleKey])
@@ -137,10 +138,10 @@ model Permission {
 }
 
 model RolePermission {
-  tenantId     String     @db.Uuid @map("tenant_id")
-  roleId       String     @db.Uuid @map("role_id")
+  tenantId     String     @map("tenant_id") @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
   permissionId Int        @map("permission_id")
-  createdAt    DateTime   @default(now()) @db.Timestamptz(3) @map("created_at")
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   role         TenantRole @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
 
@@ -149,15 +150,15 @@ model RolePermission {
 }
 
 model UserRole {
-  tenantId              String           @db.Uuid @map("tenant_id")
-  membershipId          String           @db.Uuid @map("membership_id")
-  roleId                String           @db.Uuid @map("role_id")
-  grantedByMembershipId String?          @db.Uuid @map("granted_by_membership_id")
-  grantedAt             DateTime         @default(now()) @db.Timestamptz(3) @map("granted_at")
-  revokedAt             DateTime?        @db.Timestamptz(3) @map("revoked_at")
-  membership            TenantMembership @relation("MembershipRoles", fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
-  role                  TenantRole       @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
-  grantedByMembership  TenantMembership? @relation("RoleGrantedBy", fields: [tenantId, grantedByMembershipId], references: [tenantId, id], onDelete: Restrict)
+  tenantId              String            @map("tenant_id") @db.Uuid
+  membershipId          String            @map("membership_id") @db.Uuid
+  roleId                String            @map("role_id") @db.Uuid
+  grantedByMembershipId String?           @map("granted_by_membership_id") @db.Uuid
+  grantedAt             DateTime          @default(now()) @map("granted_at") @db.Timestamptz(3)
+  revokedAt             DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  membership            TenantMembership  @relation("MembershipRoles", fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  role                  TenantRole        @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
+  grantedByMembership   TenantMembership? @relation("RoleGrantedBy", fields: [tenantId, grantedByMembershipId], references: [tenantId, id], onDelete: Restrict)
 
   @@id([tenantId, membershipId, roleId])
   @@index([tenantId, roleId, revokedAt])
@@ -165,57 +166,57 @@ model UserRole {
 }
 
 // -----------------------------------------------------------------------------
-// COURSE MODELS
+// CÁC MÔ HÌNH KHÓA HỌC
 // -----------------------------------------------------------------------------
 model Course {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
-  titleEn     String?  // Bilingual support
+  titleEn     String? // Hỗ trợ song ngữ
   description String?
-  descEn      String?  // Bilingual support
+  descEn      String? // Hỗ trợ song ngữ
   thumbnail   String?
   subject     String
   level       String
 
   createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  
-  // Relations
-  lessons     Lesson[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  // Các mối quan hệ
+  lessons Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([createdById])
 }
 
 model Lesson {
-  id          String     @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
   titleEn     String?
   description String?
   descEn      String?
-  vocabulary  Json       @default("[]")
+  vocabulary  Json    @default("[]")
   order       Int
   duration    String?
-  
-  // Foreign Keys
-  courseId    String
-  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  // Relations
-  materials   Material[]
-  videos      Video[]
-  quizzes     Quiz[]
-  progress    Progress[]
-  questions   LessonQuestion[]
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+
+  // Khóa ngoại
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Các mối quan hệ
+  materials Material[]
+  videos    Video[]
+  quizzes   Quiz[]
+  progress  Progress[]
+  questions LessonQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -----------------------------------------------------------------------------
-// LEARNING MATERIAL MODELS
+// CÁC MÔ HÌNH TÀI LIỆU HỌC TẬP
 // -----------------------------------------------------------------------------
 enum MaterialType {
   PDF
@@ -225,120 +226,149 @@ enum MaterialType {
 }
 
 model Material {
-  id          String       @id @default(uuid())
-  title       String
-  titleEn     String?
-  type        MaterialType
-  url         String
-  
-  // Foreign Keys
-  lessonId    String
-  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id      String       @id @default(uuid())
+  title   String
+  titleEn String?
+  type    MaterialType
+  url     String
+
+  // Khóa ngoại
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model LabModel {
-  id            String   @id @default(uuid())
-  experimentId  String   @unique
-  title         String
-  url           String
-  uploadedById  String
-  uploadedBy    User     @relation("LabModelUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(uuid())
+  experimentId String   @unique
+  title        String
+  url          String
+  uploadedById String
+  uploadedBy   User     @relation("LabModelUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([uploadedById])
 }
 
 model CustomLab {
-  id            String   @id @default(uuid())
-  title         String
-  titleEn       String
-  subject       String
-  grade         String
-  summary       String   @db.Text
-  summaryEn     String   @db.Text
-  safetyNotice  String?  @db.Text
-  safetyNoticeEn String? @db.Text
-  equipment     Json
-  steps         Json
-  vocabulary    Json
-  activities    Json
-  attachments   Json     @default("[]")
-  thumbnailUrl  String?
-  createdById   String
-  createdBy     User     @relation("CustomLabCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  studyEvents   LabStudyEvent[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String          @id @default(uuid())
+  title          String
+  titleEn        String
+  subject        String
+  grade          String
+  summary        String          @db.Text
+  summaryEn      String          @db.Text
+  safetyNotice   String?         @db.Text
+  safetyNoticeEn String?         @db.Text
+  equipment      Json
+  steps          Json
+  vocabulary     Json
+  activities     Json
+  attachments    Json            @default("[]")
+  thumbnailUrl   String?
+  createdById    String
+  createdBy      User            @relation("CustomLabCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  studyEvents    LabStudyEvent[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([subject, grade])
   @@index([createdById, createdAt])
 }
 
 model LessonQuestion {
-  id                String   @id @default(uuid())
-  lessonId          String
-  authorId          String
-  question          String   @db.Text
-  questionLanguage  String   @default("vi") @db.VarChar(2)
-  questionTranslated String  @db.Text
-  answer            String?  @db.Text
-  answerLanguage    String?  @db.VarChar(2)
-  answerTranslated  String?  @db.Text
-  answeredById      String?
-  answeredAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  lesson            Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  author            User     @relation("LessonQuestionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  answeredBy        User?    @relation("LessonQuestionAnswerer", fields: [answeredById], references: [id], onDelete: SetNull)
+  id                 String    @id @default(uuid())
+  lessonId           String
+  authorId           String
+  question           String    @db.Text
+  questionLanguage   String    @default("vi") @db.VarChar(2)
+  questionTranslated String    @db.Text
+  answer             String?   @db.Text
+  answerLanguage     String?   @db.VarChar(2)
+  answerTranslated   String?   @db.Text
+  answeredById       String?
+  videoId            String?
+  timestampSeconds   Int?
+  answeredAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  lesson             Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  author             User      @relation("LessonQuestionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  answeredBy         User?     @relation("LessonQuestionAnswerer", fields: [answeredById], references: [id], onDelete: SetNull)
+  video              Video?    @relation(fields: [videoId], references: [id], onDelete: SetNull)
 
   @@index([lessonId, createdAt])
   @@index([authorId, createdAt])
   @@index([answeredById, answeredAt])
+  @@index([videoId, timestampSeconds])
 }
 
 model InteractiveResponse {
-  id             String              @id @default(uuid())
-  userId         String              @map("user_id")
-  activityId     String              @map("activity_id")
-  clientEventId  String              @map("client_event_id")
-  response       Json
-  isCorrect      Boolean?            @map("is_correct")
-  score          Float?
-  durationMs     Int                 @map("duration_ms")
-  submittedAt    DateTime            @default(now()) @map("submitted_at")
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activity       InteractiveActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  id            String              @id @default(uuid())
+  userId        String              @map("user_id")
+  activityId    String              @map("activity_id")
+  clientEventId String              @map("client_event_id")
+  response      Json
+  isCorrect     Boolean?            @map("is_correct")
+  score         Float?
+  durationMs    Int                 @map("duration_ms")
+  submittedAt   DateTime            @default(now()) @map("submitted_at")
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity      InteractiveActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@unique([userId, clientEventId])
   @@index([activityId, submittedAt])
   @@index([userId, submittedAt])
 }
 
+enum VideoContentType {
+  VIDEO
+  H5P
+}
+
 model Video {
-    id          String                @id @default(uuid())
-    title       String
-    titleEn     String?
-    url         String
-    durationSeconds Int?
-    order       Int                   @default(0)
-  
-  // Foreign Keys
-  lessonId    String
-  lesson      Lesson                @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
-  // Relations
-  activities  InteractiveActivity[]
-  watchEvents VideoWatchEvent[]
-  
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id              String           @id @default(uuid())
+  title           String
+  titleEn         String?
+  url             String
+  contentType     VideoContentType @default(VIDEO)
+  durationSeconds Int?
+  order           Int              @default(0)
+
+  // Khóa ngoại
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Các mối quan hệ
+  activities   InteractiveActivity[]
+  watchEvents  VideoWatchEvent[]
+  questions    LessonQuestion[]
+  studyMarkers VideoStudyMarker[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([lessonId, order])
+}
+
+model VideoStudyMarker {
+  id               String   @id @default(uuid())
+  userId           String
+  videoId          String
+  timestampSeconds Int
+  note             String?  @db.Text
+  isBookmarked     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video            Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId, timestampSeconds])
+  @@index([userId, updatedAt])
+  @@index([videoId, timestampSeconds])
 }
 
 model VideoWatchEvent {
@@ -351,7 +381,7 @@ model VideoWatchEvent {
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   userId           String   @map("user_id")
   videoId          String   @map("video_id")
-  tenantId         String?  @db.Uuid @map("tenant_id")
+  tenantId         String?  @map("tenant_id") @db.Uuid
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   video            Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
@@ -364,19 +394,19 @@ model VideoWatchEvent {
 }
 
 model LabStudyEvent {
-  id               String   @id @default(uuid())
-  clientEventId    String   @unique @map("client_event_id")
-  sessionId        String   @map("session_id")
-  positionMs       Int      @map("position_ms")
-  studiedMs        Int      @default(0) @map("studied_ms")
-  clientOccurredAt DateTime @map("client_occurred_at") @db.Timestamptz(3)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  userId           String   @map("user_id")
-  labId            String   @map("lab_id")
-  tenantId         String?  @db.Uuid @map("tenant_id")
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid())
+  clientEventId    String    @unique @map("client_event_id")
+  sessionId        String    @map("session_id")
+  positionMs       Int       @map("position_ms")
+  studiedMs        Int       @default(0) @map("studied_ms")
+  clientOccurredAt DateTime  @map("client_occurred_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  userId           String    @map("user_id")
+  labId            String    @map("lab_id")
+  tenantId         String?   @map("tenant_id") @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lab              CustomLab @relation(fields: [labId], references: [id], onDelete: Cascade)
-  tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenant           Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@index([userId, createdAt])
   @@index([userId, sessionId, clientOccurredAt])
@@ -400,40 +430,40 @@ enum ActivityType {
 
 model InteractiveActivity {
   id          String       @id @default(uuid())
-  timestamp   Int          // Time in seconds when the activity appears
+  timestamp   Int // Thời điểm hoạt động xuất hiện, tính bằng giây
   timestampMs Int          @map("timestamp_ms")
   type        ActivityType
-  content     String       // JSON string storing the activity content
-  
-  // Foreign Keys
-  videoId     String
-  video       Video        @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  responses   InteractiveResponse[]
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  content     String // Chuỗi JSON lưu nội dung hoạt động
+
+  // Khóa ngoại
+  videoId   String
+  video     Video                 @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  responses InteractiveResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([videoId, timestampMs])
 }
 
 // -----------------------------------------------------------------------------
-// QUIZ & PROGRESS MODELS
+// CÁC MÔ HÌNH BÀI KIỂM TRA VÀ TIẾN ĐỘ
 // -----------------------------------------------------------------------------
 model Quiz {
-  id          String     @id @default(uuid())
-  title       String
-  titleEn     String?
-  
-  // Foreign Keys
-  lessonId    String
-  lesson      Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
-  // Relations
-  questions   Question[]
-  attempts    QuizAttempt[]
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id      String  @id @default(uuid())
+  title   String
+  titleEn String?
+
+  // Khóa ngoại
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Các mối quan hệ
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum QuestionType {
@@ -443,34 +473,34 @@ enum QuestionType {
 }
 
 model Question {
-  id          String       @id @default(uuid())
-  question    String
-  questionEn  String?
-  type        QuestionType
-  
-  // Foreign Keys
-  quizId      String
-  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  
-  // Relations
-  answers     Answer[]
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id         String       @id @default(uuid())
+  question   String
+  questionEn String?
+  type       QuestionType
+
+  // Khóa ngoại
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  // Các mối quan hệ
+  answers Answer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Answer {
-  id          String   @id @default(uuid())
-  content     String
-  contentEn   String?
-  isCorrect   Boolean  @default(false)
-  
-  // Foreign Keys
-  questionId  String
-  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String  @id @default(uuid())
+  content   String
+  contentEn String?
+  isCorrect Boolean @default(false)
+
+  // Khóa ngoại
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum ProgressStatus {
@@ -482,37 +512,37 @@ enum ProgressStatus {
 model Progress {
   id          String         @id @default(uuid())
   status      ProgressStatus @default(NOT_STARTED)
-  score       Int?           // Optional score if there was a quiz
+  score       Int? // Điểm tùy chọn nếu có bài kiểm tra
   completedAt DateTime?
-  
-  // Foreign Keys
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  lessonId    String
-  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  
-  // Ensure a user has only one progress record per lesson
+
+  // Khóa ngoại
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Đảm bảo mỗi người dùng chỉ có một bản ghi tiến độ cho mỗi bài học
   @@unique([userId, lessonId])
 }
 
 model QuizAttempt {
-  id             String   @id @default(uuid())
+  id             String @id @default(uuid())
   answers        Json
   score          Int
   totalQuestions Int
   percentage     Int
 
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  quizId         String
-  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([quizId, userId])
@@ -534,72 +564,72 @@ model StudyFlashcard {
 }
 
 model PracticeQuestion {
-  id                 String   @id @default(uuid())
-  question           String   @db.Text
+  id                 String                  @id @default(uuid())
+  question           String                  @db.Text
   options            String[]
   correctAnswerIndex Int
-  explanation        String   @db.Text
-  topic              String   @db.VarChar(100)
+  explanation        String                  @db.Text
+  topic              String                  @db.VarChar(100)
   userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   attempts           PracticeAnswerAttempt[]
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
 
   @@index([userId, createdAt])
 }
 
 model PracticeAnswerAttempt {
-  id                 String           @id @default(uuid())
+  id                  String           @id @default(uuid())
   selectedAnswerIndex Int
-  isCorrect          Boolean
-  userId             String
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questionId         String
-  question           PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  createdAt          DateTime         @default(now())
+  isCorrect           Boolean
+  userId              String
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId          String
+  question            PracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt           DateTime         @default(now())
 
   @@index([userId, createdAt])
   @@index([questionId, createdAt])
 }
 
 // -----------------------------------------------------------------------------
-// 3D/XR EXPLORE LEARNING MATERIALS (YOOBOOK STYLE)
+// TÀI LIỆU HỌC TẬP KHÁM PHÁ 3D/XR (KIỂU YOOBOOK)
 // -----------------------------------------------------------------------------
 model ExploreMaterial {
-  id              String   @id @default(uuid())
-  slug            String   @unique
-  title           String
-  titleEn         String
-  description     String   @db.Text
-  descriptionEn   String   @db.Text
-  category        String   // "natural_science" | "social_science" | "teaching_support" | "virtual_lab" | "sandbox" | "question_bank"
-  categoryLabelVi String   @default("Khoa học tự nhiên K12")
-  categoryLabelEn String   @default("Natural Science K12")
-  grade           String   @default("all") // "6" | "7" | "8" | "9" | "all"
-  subject         String   @default("science") // "math" | "physics" | "chemistry" | "biology" | "history_geo" | "stem" | "science"
-  subjectLabelVi  String   @default("Khoa học")
-  subjectLabelEn  String   @default("Science")
-  type            String   @default("3d_model") // "3d_model" | "virtual_lab" | "interactive_video" | "sandbox" | "quiz"
-  typeLabelVi     String   @default("Mô hình 3D")
-  typeLabelEn     String   @default("3D Model")
-  modelType       String   @default("sphere")
+  id               String   @id @default(uuid())
+  slug             String   @unique
+  title            String
+  titleEn          String
+  description      String   @db.Text
+  descriptionEn    String   @db.Text
+  category         String // "natural_science" | "social_science" | "teaching_support" | "virtual_lab" | "sandbox" | "question_bank"
+  categoryLabelVi  String   @default("Khoa học tự nhiên K12")
+  categoryLabelEn  String   @default("Natural Science K12")
+  grade            String   @default("all") // "6" | "7" | "8" | "9" | "all"
+  subject          String   @default("science") // "math" | "physics" | "chemistry" | "biology" | "history_geo" | "stem" | "science"
+  subjectLabelVi   String   @default("Khoa học")
+  subjectLabelEn   String   @default("Science")
+  type             String   @default("3d_model") // "3d_model" | "virtual_lab" | "interactive_video" | "sandbox" | "quiz"
+  typeLabelVi      String   @default("Mô hình 3D")
+  typeLabelEn      String   @default("3D Model")
+  modelType        String   @default("sphere")
   uploadedModelUrl String?
-  thumbnailUrl    String?
-  curriculum      String   @default("GDPT 2018")
-  textbook        String   @default("Kết Nối Tri Thức")
-  viewsCount      Int      @default(0)
-  rating          Float    @default(5.0)
-  tags            String[] @default([])
-  bilingualTerms  Json     @default("[]") // Array of BilingualTerm
-  autoTourStops   Json     @default("[]") // Array of AutoTourStop
-  miniQuiz        Json     @default("[]") // Array of MiniQuizQuestion
-  aiPromptContext String?  @db.Text
-  relatedCourseId String?
-  relatedLessonId String?
-  isPublished     Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  thumbnailUrl     String?
+  curriculum       String   @default("GDPT 2018")
+  textbook         String   @default("Kết Nối Tri Thức")
+  viewsCount       Int      @default(0)
+  rating           Float    @default(5.0)
+  tags             String[] @default([])
+  bilingualTerms   Json     @default("[]") // Mảng BilingualTerm
+  autoTourStops    Json     @default("[]") // Mảng AutoTourStop
+  miniQuiz         Json     @default("[]") // Mảng MiniQuizQuestion
+  aiPromptContext  String?  @db.Text
+  relatedCourseId  String?
+  relatedLessonId  String?
+  isPublished      Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([category])
   @@index([grade])

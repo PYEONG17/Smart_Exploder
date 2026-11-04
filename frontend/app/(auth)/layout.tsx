@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
 /**
- * Auth layout: updated to a split-screen premium design
+ * Bố cục xác thực với thiết kế cao cấp chia thành hai phần.
  */
 export default function AuthLayout({
   children,
@@ -12,7 +12,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left panel - Branding / Decorative */}
+      {/* Khung bên trái - thương hiệu và trang trí */}
       <div className="hidden lg:flex w-1/2 relative bg-blue-600 overflow-hidden items-center justify-center p-12">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_50%,white,transparent)]" />
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1632516643720-e7f0d7e6a739?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-30" />

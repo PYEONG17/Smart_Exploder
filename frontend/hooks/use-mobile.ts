@@ -11,7 +11,7 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
     mql.addEventListener("change", onChange)
-    // Use the media query state directly instead of calling setState synchronously
+    // Dùng trạng thái truy vấn media trực tiếp thay vì gọi setState đồng bộ.
     setIsMobile(mql.matches)
     return () => mql.removeEventListener("change", onChange)
   }, [])

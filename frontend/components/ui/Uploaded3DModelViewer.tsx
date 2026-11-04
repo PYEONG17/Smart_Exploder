@@ -36,20 +36,24 @@ export function Uploaded3DModelViewer({
   url,
   title,
   className = "",
+  interactive = true,
+  showControlsHint = true,
 }: {
   url: string;
   title: string;
   className?: string;
+  interactive?: boolean;
+  showControlsHint?: boolean;
 }) {
   return (
     <div
-      className={`relative min-h-64 overflow-hidden rounded-xl bg-gradient-to-br from-slate-950 via-slate-900 to-black ${className}`}
+      className={`relative min-h-64 overflow-hidden rounded-xl bg-neutral-200 ${className}`}
       aria-label={`Interactive 3D model: ${title}`}
       aria-roledescription="interactive 3D model viewer"
     >
       <ModelErrorBoundary key={url}>
         <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-          <color attach="background" args={["#080d18"]} />
+          <color attach="background" args={["#e5e7eb"]} />
           <ambientLight intensity={1.2} />
           <directionalLight position={[5, 8, 6]} intensity={2} />
           <directionalLight position={[-5, -3, -4]} intensity={0.8} color="#67e8f9" />
@@ -60,12 +64,20 @@ export function Uploaded3DModelViewer({
               </Center>
             </Bounds>
           </Suspense>
-          <OrbitControls makeDefault enableDamping enablePan enableZoom />
+          <OrbitControls
+            makeDefault
+            enabled={interactive}
+            enableDamping
+            enablePan={interactive}
+            enableZoom={interactive}
+          />
         </Canvas>
       </ModelErrorBoundary>
-      <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-[10px] text-white/80">
-        Drag to rotate · scroll to zoom
-      </span>
+      {showControlsHint ? (
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-[10px] text-white/80">
+          Drag to rotate · scroll to zoom
+        </span>
+      ) : null}
     </div>
   );
 }

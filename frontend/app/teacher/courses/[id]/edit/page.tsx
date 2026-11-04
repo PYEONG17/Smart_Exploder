@@ -276,13 +276,13 @@ export default function CourseEditStudioPage({
     };
   }, [id, token]);
 
-  // Modals state
+  // Trạng thái các hộp thoại.
   const [isAddLessonOpen, setIsAddLessonOpen] = useState(false);
   const [isUploadMaterialOpen, setIsUploadMaterialOpen] = useState<
     string | null
   >(null);
 
-  // Form states
+  // Trạng thái của biểu mẫu.
   const [contentLanguage, setContentLanguage] = useState<AuthoringLanguage>(
     locale === "en" ? "en" : "vi",
   );
@@ -2710,6 +2710,11 @@ export default function CourseEditStudioPage({
                                   locale === "vi" ? "vi-VN" : "en-US",
                                 )}
                               </p>
+                              {question.videoId && question.timestampSeconds !== null ? (
+                                <p className="mt-1 text-xs font-semibold text-primary">
+                                  Mốc bài giảng: {Math.floor(question.timestampSeconds / 60)}:{String(question.timestampSeconds % 60).padStart(2, "0")}
+                                </p>
+                              ) : null}
                               <p className="mt-1 whitespace-pre-wrap text-sm">
                                 {questionText}
                               </p>

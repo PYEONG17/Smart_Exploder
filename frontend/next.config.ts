@@ -3,13 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      // DiceBear random avatars
+      // Ảnh đại diện ngẫu nhiên từ DiceBear
       {
         protocol: "https",
         hostname: "api.dicebear.com",
         pathname: "/**",
       },
-      // Local backend avatar uploads
+      // Tải lên ảnh đại diện từ backend cục bộ
       {
         protocol: "http",
         hostname: "localhost",

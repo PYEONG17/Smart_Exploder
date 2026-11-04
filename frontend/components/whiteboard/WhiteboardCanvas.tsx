@@ -195,7 +195,7 @@ export default function WhiteboardCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Board Pages state
+  // Trạng thái trang bảng vẽ
   const [pages, setPages] = useState<BoardPage[]>([
     {
       id: "page-1",
@@ -209,7 +209,7 @@ export default function WhiteboardCanvas() {
   ]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  // Active Tool & Style State
+  // Trạng thái công cụ & kiểu dáng đang hoạt động
   const [activeTool, setActiveTool] = useState<DrawingTool>("pen");
   const [eraserMode, setEraserMode] = useState<EraserMode>("stroke");
   const [eraserSize, setEraserSize] = useState<number>(36);
@@ -221,43 +221,43 @@ export default function WhiteboardCanvas() {
   const [fillMode, setFillMode] = useState<"none" | "semi" | "solid">("none");
   const [boardTheme, setBoardTheme] = useState<BoardTheme>("grid");
 
-  // Zoom and Pan State
+  // Trạng thái thu phóng và dịch chuyển.
   const [zoom, setZoom] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
   const isPanningRef = useRef(false);
   const panStartRef = useRef<Point>({ x: 0, y: 0 });
 
-  // History Undo/Redo stacks for current page
+  // Ngăn xếp Hoàn tác/Làm lại cho trang hiện tại
   const [undoStack, setUndoStack] = useState<BoardPage[]>([]);
   const [redoStack, setRedoStack] = useState<BoardPage[]>([]);
 
-  // Drawing runtime state
+  // Trạng thái thời gian chạy của quá trình vẽ
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<Stroke | null>(null);
 
-  // Pointer position for cursor visualizer (e.g. Eraser circle)
+  // Vị trí con trỏ cho trình hiển thị con trỏ (ví dụ: vòng xóa)
   const [cursorPos, setCursorPos] = useState<Point | null>(null);
 
-  // Laser Pointer trail
+  // Đường đi của con trỏ tia laser.
   const [laserPoint, setLaserPoint] = useState<{ x: number; y: number; time: number } | null>(null);
   const laserTrailRef = useRef<{ x: number; y: number; alpha: number }[]>([]);
 
-  // Area Erase marquee box
+  // Hộp chọn vùng xóa
   const [eraseMarquee, setEraseMarquee] = useState<{ start: Point; current: Point } | null>(null);
 
-  // Interactive Text insertion popup
+  // Hộp thoại chèn văn bản tương tác
   const [textInputPos, setTextInputPos] = useState<Point | null>(null);
   const [textInputValue, setTextInputValue] = useState("");
   const [textInputSize, setTextInputSize] = useState(20);
 
-  // Dragging Sticky note state
+  // Trạng thái kéo ghi chú dán
   const [activeStickyDrag, setActiveStickyDrag] = useState<{
     id: string;
     offsetX: number;
     offsetY: number;
   } | null>(null);
 
-  // UI Modals and Panels
+  // Hộp thoại và các bảng công cụ
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [isFormulaBarOpen, setIsFormulaBarOpen] = useState(false);
@@ -266,44 +266,44 @@ export default function WhiteboardCanvas() {
   const [isEraserSettingsOpen, setIsEraserSettingsOpen] = useState(false);
   const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
 
-  // Classroom Timer Widget
+  // Tiện ích đồng hồ lớp học
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [timerSecondsLeft, setTimerSecondsLeft] = useState(300); // 5 mins
   const [timerRunning, setTimerRunning] = useState(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Floating 3D PiP Window
+  // Cửa sổ 3D nổi dạng hình-trong-hình
   const [is3DWindowOpen, setIs3DWindowOpen] = useState(false);
   const [selected3DModel, setSelected3DModel] = useState<ModelType>("crystal_nacl");
   const [pipPosition, setPipPosition] = useState<Point>({ x: 24, y: 76 });
 
-  // Loaded Images cache for Canvas 2D
+  // Bộ nhớ đệm ảnh đã tải cho Canvas 2D
   const imageElementsMapRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const currentPage = pages[currentPageIndex] || pages[0];
 
-  // Sync theme when switching pages
+  // Đồng bộ giao diện khi chuyển trang
   useEffect(() => {
     if (currentPage) {
       setBoardTheme(currentPage.theme);
     }
   }, [currentPageIndex]);
 
-  // Adjust theme color palette defaults
+  // Điều chỉnh màu mặc định theo giao diện
   useEffect(() => {
     if (boardTheme === "greenboard" || boardTheme === "blackboard") {
       if (strokeColor === "#0f172a" || strokeColor === "#2563eb") setStrokeColor("#ffffff");
     }
   }, [boardTheme]);
 
-  // Classroom Timer logic
+  // Logic đồng hồ lớp học
   useEffect(() => {
     if (timerRunning) {
       timerIntervalRef.current = setInterval(() => {
         setTimerSecondsLeft((prev) => {
           if (prev <= 1) {
             setTimerRunning(false);
-            // Play gentle web audio synthetic beep
+            // Phát tiếng bíp nhẹ bằng âm thanh tổng hợp trên web.
             playTimerAlarmSound();
             return 0;
           }
@@ -334,17 +334,17 @@ export default function WhiteboardCanvas() {
       osc.start();
       osc.stop(audioCtx.currentTime + 0.5);
     } catch (e) {
-      // AudioContext unavailable or blocked by browser
+      // AudioContext không khả dụng hoặc bị trình duyệt chặn.
     }
   }
 
-  // Save state snapshot for undo
+  // Lưu bản chụp trạng thái để có thể hoàn tác.
   const pushUndoSnapshot = useCallback(() => {
     setUndoStack((prev) => [...prev.slice(-30), JSON.parse(JSON.stringify(currentPage))]);
     setRedoStack([]);
   }, [currentPage]);
 
-  // Coordinate conversion: Screen -> World
+  // Chuyển đổi tọa độ: màn hình -> thế giới.
   const screenToWorld = useCallback(
     (screenX: number, screenY: number): Point => {
       return {
@@ -355,14 +355,14 @@ export default function WhiteboardCanvas() {
     [panOffset, zoom]
   );
 
-  // Redraw entire canvas
+  // Vẽ lại toàn bộ canvas.
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Reset transform & clear
+    // Đặt lại phép biến đổi và xóa nội dung canvas.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -370,16 +370,16 @@ export default function WhiteboardCanvas() {
     const logicalW = canvas.width / dpr;
     const logicalH = canvas.height / dpr;
 
-    // 1. Draw Background & Grid in screen space or world space
+    // 1. Vẽ nền và lưới trong hệ tọa độ màn hình hoặc thế giới.
     ctx.scale(dpr, dpr);
     drawBackground(ctx, logicalW, logicalH, boardTheme, zoom, panOffset);
 
-    // Apply World Coordinate Transform (Pan + Zoom)
+    // Áp dụng phép biến đổi tọa độ thế giới (dịch chuyển + thu phóng).
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoom, zoom);
 
-    // 2. Draw Images placed on board
+    // 2. Vẽ các ảnh đã đặt lên bảng.
     currentPage.images?.forEach((imgItem) => {
       let htmlImg = imageElementsMapRef.current.get(imgItem.id);
       if (!htmlImg) {
@@ -390,26 +390,26 @@ export default function WhiteboardCanvas() {
       }
       if (htmlImg.complete) {
         ctx.drawImage(htmlImg, imgItem.x, imgItem.y, imgItem.width, imgItem.height);
-        // Subtle border around image
+        // Vẽ viền mảnh quanh ảnh.
         ctx.strokeStyle = "rgba(100, 116, 139, 0.4)";
         ctx.lineWidth = 1 / zoom;
         ctx.strokeRect(imgItem.x, imgItem.y, imgItem.width, imgItem.height);
       }
     });
 
-    // 3. Draw Committed Strokes
+    // 3. Vẽ các nét đã hoàn tất.
     currentPage.strokes.forEach((stroke) => {
       drawStroke(ctx, stroke);
     });
 
-    // 4. Draw Active In-progress Stroke
+    // 4. Vẽ nét đang thực hiện.
     if (currentStrokeRef.current) {
       drawStroke(ctx, currentStrokeRef.current);
     }
 
     ctx.restore();
 
-    // 5. Draw Area Erase Marquee Box (Screen Coordinates)
+    // 5. Vẽ khung chọn vùng xóa (tọa độ màn hình).
     if (eraseMarquee) {
       ctx.save();
       const x = Math.min(eraseMarquee.start.x, eraseMarquee.current.x);
@@ -427,7 +427,7 @@ export default function WhiteboardCanvas() {
     }
   }, [currentPage, boardTheme, zoom, panOffset, eraseMarquee]);
 
-  // Handle Resize
+  // Xử lý khi kích thước thay đổi.
   const updateCanvasSize = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -454,7 +454,7 @@ export default function WhiteboardCanvas() {
     redrawCanvas();
   }, [redrawCanvas]);
 
-  // Laser Pointer fading animation loop
+  // Vòng lặp hoạt ảnh làm mờ con trỏ laser.
   useEffect(() => {
     if (activeTool !== "laser") return;
 
@@ -470,7 +470,7 @@ export default function WhiteboardCanvas() {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.scale(dpr, dpr);
 
-          // Update trail
+          // Cập nhật vệt con trỏ.
           laserTrailRef.current = laserTrailRef.current
             .map((pt) => ({ ...pt, alpha: pt.alpha - 0.04 }))
             .filter((pt) => pt.alpha > 0);
@@ -485,7 +485,7 @@ export default function WhiteboardCanvas() {
             ctx.shadowBlur = 0;
           });
 
-          // Glow current point
+          // Tạo quầng sáng cho điểm hiện tại.
           if (laserPoint && Date.now() - laserPoint.time < 300) {
             ctx.beginPath();
             ctx.arc(laserPoint.x, laserPoint.y, 8, 0, Math.PI * 2);
@@ -506,7 +506,7 @@ export default function WhiteboardCanvas() {
   }, [activeTool, laserPoint, redrawCanvas]);
 
   // ─────────────────────────────────────────────────────────────
-  // Canvas Background Renderers
+  // Các hàm vẽ nền bảng.
   // ─────────────────────────────────────────────────────────────
   function drawBackground(
     ctx: CanvasRenderingContext2D,
@@ -540,11 +540,11 @@ export default function WhiteboardCanvas() {
       }
       ctx.stroke();
     } else if (theme === "coordinate") {
-      // Cartesian Oxy Coordinate Grid
+      // Lưới tọa độ Descartes Oxy.
       ctx.fillStyle = "#f8fafc";
       ctx.fillRect(0, 0, width, height);
 
-      // Minor grid
+      // Lưới phụ.
       ctx.strokeStyle = "#e2e8f0";
       ctx.lineWidth = 0.8;
       const step = 28 * scale;
@@ -562,14 +562,14 @@ export default function WhiteboardCanvas() {
       }
       ctx.stroke();
 
-      // Major axes centered at world (width/2, height/2)
+      // Các trục chính đặt tại tâm hệ tọa độ thế giới (width/2, height/2).
       const cx = offset.x + (width / 2) * scale;
       const cy = offset.y + (height / 2) * scale;
 
       ctx.strokeStyle = "#0284c7";
       ctx.lineWidth = 2.5;
 
-      // X-axis
+      // Trục X.
       ctx.beginPath();
       ctx.moveTo(0, cy);
       ctx.lineTo(width - 10, cy);
@@ -578,7 +578,7 @@ export default function WhiteboardCanvas() {
       ctx.lineTo(width - 20, cy + 6);
       ctx.stroke();
 
-      // Y-axis
+      // Trục Y.
       ctx.beginPath();
       ctx.moveTo(cx, height);
       ctx.lineTo(cx, 10);
@@ -587,7 +587,7 @@ export default function WhiteboardCanvas() {
       ctx.lineTo(cx + 6, 20);
       ctx.stroke();
 
-      // Labels
+      // Nhãn trục.
       ctx.font = "bold 13px Inter, sans-serif";
       ctx.fillStyle = "#0284c7";
       ctx.fillText("x", width - 24, cy - 10);
@@ -609,7 +609,7 @@ export default function WhiteboardCanvas() {
         }
       }
     } else if (theme === "greenboard") {
-      // Classic Classroom Chalkboard Green
+      // Bảng xanh lớp học truyền thống.
       ctx.fillStyle = "#164e29";
       ctx.fillRect(0, 0, width, height);
 
@@ -624,7 +624,7 @@ export default function WhiteboardCanvas() {
       }
       ctx.stroke();
     } else if (theme === "blackboard") {
-      // Cosmic Blackboard Dark
+      // Bảng đen chủ đề vũ trụ.
       ctx.fillStyle = "#0a0f1d";
       ctx.fillRect(0, 0, width, height);
 
@@ -647,7 +647,7 @@ export default function WhiteboardCanvas() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Individual Stroke Renderer
+  // Hàm vẽ từng nét.
   // ─────────────────────────────────────────────────────────────
   function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
     if (stroke.points.length === 0) return;
@@ -659,7 +659,7 @@ export default function WhiteboardCanvas() {
     ctx.strokeStyle = stroke.color;
     ctx.globalAlpha = stroke.opacity;
 
-    // Line Styles
+    // Kiểu nét vẽ.
     if (stroke.lineStyle === "dashed") {
       ctx.setLineDash([stroke.size * 3, stroke.size * 2]);
     } else if (stroke.lineStyle === "dotted") {
@@ -668,12 +668,12 @@ export default function WhiteboardCanvas() {
       ctx.setLineDash([]);
     }
 
-    // Brush Tool Customizations
+    // Tùy chỉnh công cụ cọ.
     if (stroke.tool === "highlighter") {
       ctx.globalAlpha = Math.min(stroke.opacity, 0.35);
       ctx.lineWidth = Math.max(stroke.size * 2.8, 20);
     } else if (stroke.tool === "neon") {
-      // Neon Glow effect
+      // Hiệu ứng phát sáng neon.
       ctx.shadowColor = stroke.color;
       ctx.shadowBlur = stroke.size * 3;
     } else if (stroke.tool === "brush") {
@@ -858,7 +858,7 @@ export default function WhiteboardCanvas() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Object Eraser Collision Checker
+  // Kiểm tra va chạm của công cụ xóa đối tượng.
   // ─────────────────────────────────────────────────────────────
   const eraseStrokeAtPoint = (worldPt: Point, radius: number): boolean => {
     let erasedAny = false;
@@ -868,12 +868,12 @@ export default function WhiteboardCanvas() {
         if (idx !== currentPageIndex) return page;
 
         const remainingStrokes = page.strokes.filter((stroke) => {
-          // Check if worldPt is within radius of any segment in stroke
+          // Kiểm tra worldPt có nằm trong bán kính của đoạn nào thuộc nét vẽ không.
           for (const pt of stroke.points) {
             const dist = Math.hypot(pt.x - worldPt.x, pt.y - worldPt.y);
             if (dist <= radius + stroke.size / 2) {
               erasedAny = true;
-              return false; // delete this stroke
+              return false; // Xóa nét vẽ này.
             }
           }
           return true;
@@ -887,7 +887,7 @@ export default function WhiteboardCanvas() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // Pointer Event Handlers
+  // Các hàm xử lý sự kiện con trỏ.
   // ─────────────────────────────────────────────────────────────
   const getCanvasScreenCoords = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current;
@@ -906,7 +906,7 @@ export default function WhiteboardCanvas() {
     const screenPt = getCanvasScreenCoords(e);
     const worldPt = screenToWorld(screenPt.x, screenPt.y);
 
-    // Pan Mode
+    // Chế độ dịch chuyển bảng.
     if (activeTool === "pan" || e.button === 1) {
       isPanningRef.current = true;
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
@@ -929,13 +929,13 @@ export default function WhiteboardCanvas() {
       return;
     }
 
-    // Area Eraser Marquee
+    // Khung chọn vùng xóa.
     if (activeTool === "eraser" && eraserMode === "area") {
       setEraseMarquee({ start: screenPt, current: screenPt });
       return;
     }
 
-    // Object Eraser
+    // Công cụ xóa đối tượng.
     if (activeTool === "eraser" && eraserMode === "object") {
       pushUndoSnapshot();
       eraseStrokeAtPoint(worldPt, eraserSize / zoom);
@@ -965,7 +965,7 @@ export default function WhiteboardCanvas() {
     setCursorPos(screenPt);
     const worldPt = screenToWorld(screenPt.x, screenPt.y);
 
-    // Pan in progress
+    // Đang dịch chuyển bảng.
     if (isPanningRef.current) {
       setPanOffset({
         x: e.clientX - panStartRef.current.x,
@@ -980,13 +980,13 @@ export default function WhiteboardCanvas() {
       return;
     }
 
-    // Area Erase Marquee updating
+    // Đang cập nhật khung chọn vùng xóa.
     if (eraseMarquee) {
       setEraseMarquee((prev) => (prev ? { ...prev, current: screenPt } : null));
       return;
     }
 
-    // Object Eraser Dragging
+    // Đang kéo công cụ xóa đối tượng.
     if (activeTool === "eraser" && eraserMode === "object" && (e.buttons === 1)) {
       eraseStrokeAtPoint(worldPt, eraserSize / zoom);
       redrawCanvas();
@@ -1022,7 +1022,7 @@ export default function WhiteboardCanvas() {
       return;
     }
 
-    // Area Eraser Marquee execution
+    // Thực thi thao tác xóa vùng.
     if (eraseMarquee) {
       const startW = screenToWorld(
         Math.min(eraseMarquee.start.x, eraseMarquee.current.x),
@@ -1075,7 +1075,7 @@ export default function WhiteboardCanvas() {
   };
 
   // ─────────────────────────────────────────────────────────────
-  // Action Handlers (Undo, Redo, Clear, Pages, Zoom, Images)
+  // Xử lý thao tác (hoàn tác, làm lại, xóa, trang, thu phóng, ảnh).
   // ─────────────────────────────────────────────────────────────
   const handleUndo = () => {
     if (undoStack.length === 0) return;
@@ -1162,7 +1162,7 @@ export default function WhiteboardCanvas() {
     }
   };
 
-  // Zoom Controls
+  // Điều khiển thu phóng.
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3.0));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.4));
   const handleResetZoom = () => {
@@ -1170,7 +1170,7 @@ export default function WhiteboardCanvas() {
     setPanOffset({ x: 0, y: 0 });
   };
 
-  // Image Upload onto Board
+  // Tải ảnh lên bảng.
   const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1230,7 +1230,7 @@ export default function WhiteboardCanvas() {
     }
   };
 
-  // Add sticky note
+  // Thêm ghi chú dán.
   const handleAddSticky = (color: StickyNoteItem["color"] = "yellow") => {
     pushUndoSnapshot();
     const newNote: StickyNoteItem = {
@@ -1252,7 +1252,7 @@ export default function WhiteboardCanvas() {
     );
   };
 
-  // Confirm Text input
+  // Xác nhận nội dung văn bản.
   const handleConfirmText = () => {
     if (!textInputPos || !textInputValue.trim()) {
       setTextInputPos(null);
@@ -1281,7 +1281,7 @@ export default function WhiteboardCanvas() {
     setTextInputValue("");
   };
 
-  // Insert formula directly
+  // Chèn công thức trực tiếp.
   const handleInsertFormula = (formula: string) => {
     pushUndoSnapshot();
     const newText: TextLabelItem = {
@@ -1304,7 +1304,7 @@ export default function WhiteboardCanvas() {
     setIsFormulaBarOpen(false);
   };
 
-  // Load STEM Preset Template
+  // Tải mẫu STEM có sẵn.
   const handleLoadTemplate = (
     templateKey: "mindmap" | "tchart" | "experiment" | "kntt_archimedes" | "kntt_circuit"
   ) => {

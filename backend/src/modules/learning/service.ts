@@ -6,6 +6,7 @@ import { refreshLessonDuration } from "../../utils/lesson-duration.js";
 import type {
   CreateLessonVideoInput,
   SaveProgressInput,
+  SaveVideoStudyMarkerInput,
   SubmitInteractiveEventInput,
   SubmitQuizInput,
   SubmitVideoActivityInput,
@@ -83,6 +84,74 @@ async function assertLessonUnlocked(userId: string, lessonId: string) {
 }
 
 export const learningService = {
+  async listVideoStudyMarkers(userId: string, videoId: string) {
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, contentType: true, durationSeconds: true },
+    });
+    if (!video) throw new AppError("Video not found", 404);
+    if (video.contentType !== "VIDEO") {
+      throw new AppError("Notes and bookmarks require a video lesson", 400);
+    }
+    return prisma.videoStudyMarker.findMany({
+      where: { userId, videoId },
+      orderBy: { timestampSeconds: "asc" },
+    });
+  },
+
+  async saveVideoStudyMarker(
+    userId: string,
+    videoId: string,
+    input: SaveVideoStudyMarkerInput,
+  ) {
+    const video = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, contentType: true, durationSeconds: true },
+    });
+    if (!video) throw new AppError("Video not found", 404);
+    if (video.contentType !== "VIDEO") {
+      throw new AppError("Notes and bookmarks require a video lesson", 400);
+    }
+    if (
+      video.durationSeconds !== null &&
+      input.timestampSeconds > video.durationSeconds
+    ) {
+      throw new AppError("Study marker is beyond the video duration", 400);
+    }
+
+    const marker = await prisma.videoStudyMarker.upsert({
+      where: {
+        userId_videoId_timestampSeconds: {
+          userId,
+          videoId,
+          timestampSeconds: input.timestampSeconds,
+        },
+      },
+      create: {
+        userId,
+        videoId,
+        timestampSeconds: input.timestampSeconds,
+        note: input.note?.trim() || null,
+        isBookmarked: input.isBookmarked ?? false,
+      },
+      update: {
+        ...(input.note !== undefined
+          ? { note: input.note?.trim() || null }
+          : {}),
+        ...(input.isBookmarked !== undefined
+          ? { isBookmarked: input.isBookmarked }
+          : {}),
+      },
+    });
+
+    if (!marker.note && !marker.isBookmarked) {
+      await prisma.videoStudyMarker.delete({ where: { id: marker.id } });
+      return null;
+    }
+
+    return marker;
+  },
+
   async createLessonVideo(
     lessonId: string,
     userId: string,
@@ -105,6 +174,7 @@ export const learningService = {
         title: title.vi,
         titleEn: title.en,
         url: input.url,
+        contentType: input.contentType,
         durationSeconds: input.durationSeconds,
         activities: {
           create: (input.activities ?? []).map((activity) => {
@@ -170,7 +240,7 @@ export const learningService = {
     input: SubmitInteractiveEventInput,
     role: string = "STUDENT",
   ) {
-    // Teachers previewing their own lesson get graded feedback but nothing is stored.
+    // Giáo viên xem trước bài học của mình sẽ nhận phản hồi chấm điểm nhưng không lưu dữ liệu.
     const isPreview = role !== "STUDENT";
     const priorResponse = isPreview ? null : await prisma.interactiveResponse.findUnique({
       where: {
@@ -699,7 +769,7 @@ export const learningService = {
       throw new AppError("An answer does not belong to this quiz", 400);
     }
 
-    // Unanswered questions (for example when a timed test runs out) score zero.
+    // Câu hỏi chưa được trả lời (ví dụ khi hết giờ làm bài) được tính 0 điểm.
     let score = 0;
     const review = quiz.questions.map((question) => {
       const selectedAnswerId = input.answers[question.id] ?? null;

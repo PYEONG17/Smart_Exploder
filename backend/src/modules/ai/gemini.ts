@@ -77,7 +77,7 @@ export type GroundedAnswer = {
   sources: { title: string; url: string }[];
 };
 
-// Uses Gemini's built-in Google Search grounding to find real web sources.
+// Sử dụng tính năng grounding Google Search tích hợp của Gemini để tìm nguồn thực tế trên web.
 export async function generateGroundedText(
   prompt: string,
 ): Promise<GroundedAnswer> {

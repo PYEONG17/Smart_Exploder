@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { mockCourses, mockLessons } from "@/lib/mock-data";
 import type { Course as ApiCourse, Lesson as ApiLesson } from "@/types";
 import { fetchCourseById } from "@/lib/api";
 import CourseDetailClient, {
@@ -41,50 +40,12 @@ async function loadCourse(id: string): Promise<{
   course: CourseDetailCourse;
   lessons: CourseDetailLesson[];
 } | null> {
-  try {
-    const course = await fetchCourseById(id);
-    if (course) {
-      return {
-        course: toDisplayCourse(course),
-        lessons: (course.lessons || []).map(toDisplayLesson),
-      };
-    }
-  } catch {
-    // Keep the existing demo courses available when the API is offline.
-  }
+  const course = await fetchCourseById(id);
+  if (!course) return null;
 
-  const demoCourse = mockCourses.find((item) => item.id === id);
-  if (!demoCourse) return null;
-
-  const lessons =
-    demoCourse.id === "c1"
-      ? mockLessons
-      : Array.from({ length: demoCourse.lessonCount }, (_, index) => ({
-          id: `${demoCourse.id}-l${index + 1}`,
-          title: `Bài ${index + 1}: Nội dung bài học ${index + 1}`,
-          titleEn: `Lesson ${index + 1}: Lesson content ${index + 1}`,
-          description: `Mô tả ngắn cho bài học ${index + 1} của khóa ${demoCourse.title}`,
-          descriptionEn: `Short description for lesson ${index + 1} of ${demoCourse.titleEn}`,
-          order: index + 1,
-          duration: "20 phút",
-          courseId: demoCourse.id,
-          isLocked: index > 2,
-          isCompleted: index < 2,
-        }));
-
-  const course: CourseDetailCourse = {
-    ...demoCourse,
-    descEn: demoCourse.descriptionEn,
-    descriptionEn: demoCourse.descriptionEn,
-    lessons: lessons.map((lesson) => ({
-      ...lesson,
-      descEn: lesson.descriptionEn,
-      descriptionEn: lesson.descriptionEn,
-    })),
-  };
   return {
-    course,
-    lessons: (course.lessons ?? []).map(toDisplayLesson),
+    course: toDisplayCourse(course),
+    lessons: (course.lessons || []).map(toDisplayLesson),
   };
 }
 

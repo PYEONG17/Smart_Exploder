@@ -1,27 +1,38 @@
 import { Router } from "express";
-import { requireAuth, requireRole } from "../../middlewares/auth.middleware.js";
+import {
+  optionalAuth,
+  requireAuth,
+  requireRole,
+} from "../../middlewares/auth.middleware.js";
 import { lab3DModelUpload } from "../../utils/course-media.js";
 import {
   listExploreMaterials,
+  listManageableExploreMaterials,
+  getManageableExploreMaterialById,
   getExploreFilters,
   getExploreMaterialById,
   createExploreMaterial,
   updateExploreMaterial,
   deleteExploreMaterial,
-  triggerSeedMaterials,
 } from "./controller.js";
 
 const router = Router();
 
 router.get("/filters", getExploreFilters);
-router.post(
-  "/seed",
+router.get(
+  "/management",
   requireAuth,
   requireRole("TEACHER"),
-  triggerSeedMaterials,
+  listManageableExploreMaterials,
+);
+router.get(
+  "/management/:id",
+  requireAuth,
+  requireRole("TEACHER"),
+  getManageableExploreMaterialById,
 );
 router.get("/", listExploreMaterials);
-router.get("/:id", getExploreMaterialById);
+router.get("/:id", optionalAuth, getExploreMaterialById);
 router.post(
   "/",
   requireAuth,

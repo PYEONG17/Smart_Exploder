@@ -264,7 +264,7 @@ export async function createCustomLabThumbnail(
   return getCourseMediaUrl(req, userId, filename);
 }
 
-// Best-effort removal of files previously saved by this server; external URLs are ignored.
+// Cố gắng xóa các tệp đã được máy chủ này lưu trước đó; bỏ qua URL bên ngoài.
 export async function removeCourseMediaByUrls(urls: (string | null | undefined)[]) {
   const marker = "/uploads/course-media/";
   await Promise.all(

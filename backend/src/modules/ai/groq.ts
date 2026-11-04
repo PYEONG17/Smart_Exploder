@@ -49,7 +49,7 @@ export type GroqChatMessage = {
 };
 
 /**
- * Send a chat request to Groq and return the assistant's reply as plain text.
+ * Gửi yêu cầu trò chuyện đến Groq và trả về phản hồi của trợ lý dưới dạng văn bản thuần.
  */
 export async function chatWithGroq(
   messages: GroqChatMessage[],

@@ -11,6 +11,8 @@ import {
   submitQuizAttempt,
   submitInteractiveEventResponse,
   submitVideoActivityAnswer,
+  listVideoStudyMarkers,
+  saveVideoStudyMarker,
 } from "./controller.js";
 
 const router = Router();
@@ -25,6 +27,16 @@ router.post(
   "/videos/:videoId/activities/:activityId/answer",
   requireRole("STUDENT"),
   submitVideoActivityAnswer,
+);
+router.get(
+  "/videos/:videoId/study-markers",
+  requireRole("STUDENT"),
+  listVideoStudyMarkers,
+);
+router.put(
+  "/videos/:videoId/study-markers",
+  requireRole("STUDENT"),
+  saveVideoStudyMarker,
 );
 router.post(
   "/videos/:videoId/activities/:activityId/responses",

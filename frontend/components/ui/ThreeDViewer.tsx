@@ -46,7 +46,7 @@ interface ThreeDViewerProps {
 }
 
 // ============================================================================
-// 1. ATOM MODEL (KHTN 7 KNTT - Bài 2: Cấu tạo Nguyên tử Rutherford - Bohr)
+// 1. MÔ HÌNH NGUYÊN TỬ (KHTN 7 KNTT - Bài 2: Cấu tạo Nguyên tử Rutherford - Bohr)
 // ============================================================================
 function AtomModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -133,7 +133,7 @@ function AtomModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 2. SOLAR SYSTEM MODEL (KHTN 6 KNTT - Chương VI: Trái Đất và Bầu Trời)
+// 2. MÔ HÌNH HỆ MẶT TRỜI (KHTN 6 KNTT - Chương VI: Trái Đất và Bầu Trời)
 // ============================================================================
 function SolarSystemModel({ wireframe }: { wireframe: boolean }) {
   const sunRef = useRef<THREE.Mesh>(null);
@@ -206,7 +206,7 @@ function SolarSystemModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 3. DNA MODEL (Sinh học 9 KNTT - Bài 4: Cấu trúc Chuỗi Xoắn Kép ADN Watson - Crick)
+// 3. MÔ HÌNH ADN (Sinh học 9 KNTT - Bài 4: Cấu trúc Chuỗi Xoắn Kép ADN Watson - Crick)
 // ============================================================================
 function DNAModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -263,7 +263,7 @@ function DNAModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 4. WATER MOLECULE (H2O) (KHTN 7 KNTT - Bài 6: Liên kết phân tử & Phân cực)
+// 4. PHÂN TỬ NƯỚC (H2O) (KHTN 7 KNTT - Bài 6: Liên kết phân tử và phân cực)
 // ============================================================================
 function WaterMoleculeModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -305,7 +305,7 @@ function WaterMoleculeModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 5. PLANT CELL (KHTN 6 KNTT - Bài 17: Tế Bào Thực Vật Quang Hợp)
+// 5. TẾ BÀO THỰC VẬT (KHTN 6 KNTT - Bài 17: Tế Bào Thực Vật Quang Hợp)
 // ============================================================================
 function PlantCellModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -355,7 +355,7 @@ function PlantCellModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 6. EARTH LAYERS (Địa lý & KHTN 6 KNTT - Bài 9: Cấu Tạo Cắt Lớp Trái Đất)
+// 6. CÁC LỚP CẤU TẠO TRÁI ĐẤT (Địa lý và KHTN 6 KNTT - Bài 9: Cấu Tạo Cắt Lớp Trái Đất)
 // ============================================================================
 function EarthLayersModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -385,7 +385,7 @@ function EarthLayersModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 7. LIGHT PRISM (KHTN 7 KNTT - Bài 17: Tán Sắc Ánh Sáng Qua Lăng Kính)
+// 7. LĂNG KÍNH TÁN SẮC ÁNH SÁNG (KHTN 7 KNTT - Bài 17: Tán Sắc Ánh Sáng Qua Lăng Kính)
 // ============================================================================
 function LightPrismModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -426,7 +426,7 @@ function LightPrismModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 8. MAGNETIC FIELD (KHTN 8 KNTT - Bài 19: Từ Trường Của Nam Châm Thẳng)
+// 8. TỪ TRƯỜNG (KHTN 8 KNTT - Bài 19: Từ Trường Của Nam Châm Thẳng)
 // ============================================================================
 function MagneticFieldModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -462,7 +462,7 @@ function MagneticFieldModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 9. METHANE (CH4) (Hóa học 8 & 9 KNTT - Bài 36: Metan & Cấu trúc Tứ diện đều)
+// 9. METAN (CH4) (Hóa học 8 và 9 KNTT - Bài 36: Metan và cấu trúc tứ diện đều)
 // ============================================================================
 function MethaneMoleculeModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -507,7 +507,7 @@ function MethaneMoleculeModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 10. STATES OF MATTER (KHTN 6 KNTT - Bài 10: Ba Trạng Thái Rắn - Lỏng - Khí)
+// 10. CÁC TRẠNG THÁI VẬT CHẤT (KHTN 6 KNTT - Bài 10: Ba Trạng Thái Rắn - Lỏng - Khí)
 // ============================================================================
 function StatesOfMatterModel({ wireframe }: { wireframe: boolean }) {
   const [phase, setPhase] = useState<"solid" | "liquid" | "gas">("solid");
@@ -580,7 +580,7 @@ function StatesOfMatterModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 11. CRYSTAL NACL (KHTN 7 KNTT - Bài 10: Tinh Thể Muối Ăn & Mạng Tinh Thể Ion)
+// 11. TINH THỂ NaCl (KHTN 7 KNTT - Bài 10: Tinh Thể Muối Ăn và Mạng Tinh Thể Ion)
 // ============================================================================
 function CrystalNaClModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -591,7 +591,7 @@ function CrystalNaClModel({ wireframe }: { wireframe: boolean }) {
     }
   });
 
-  // 3x3x3 lattice coordinates
+  // Tọa độ mạng tinh thể 3x3x3.
   const ions = useMemo(() => {
     const list = [];
     for (let x = -1; x <= 1; x++) {
@@ -659,7 +659,7 @@ function CrystalNaClModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 12. SOLAR ECLIPSE (KHTN 6 KNTT - Bài 53: Mặt Trăng, Nhật Thực & Nguyệt Thực)
+// 12. NHẬT THỰC (KHTN 6 KNTT - Bài 53: Mặt Trăng, Nhật Thực và Nguyệt Thực)
 // ============================================================================
 function SolarEclipseModel({ wireframe }: { wireframe: boolean }) {
   const moonOrbitRef = useRef<THREE.Group>(null);
@@ -710,7 +710,7 @@ function SolarEclipseModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 13. ARCHIMEDES BUOYANCY (KHTN 8 KNTT - Bài 17: Lực Đẩy Ác-si-mét & Sự Nổi)
+// 13. LỰC ĐẨY ÁC-SI-MÉT (KHTN 8 KNTT - Bài 17: Lực Đẩy Ác-si-mét và Sự Nổi)
 // ============================================================================
 function ArchimedesBuoyancyModel({ wireframe }: { wireframe: boolean }) {
   const cubeRef = useRef<THREE.Mesh>(null);
@@ -763,7 +763,7 @@ function ArchimedesBuoyancyModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 14. ELECTRIC CIRCUIT (KHTN 8 KNTT - Bài 22: Mạch Điện & Dòng Điện)
+// 14. MẠCH ĐIỆN (KHTN 8 KNTT - Bài 22: Mạch Điện và Dòng Điện)
 // ============================================================================
 function ElectricCircuitModel({ wireframe }: { wireframe: boolean }) {
   const electronRef = useRef<THREE.Group>(null);
@@ -825,7 +825,7 @@ function ElectricCircuitModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 15. CHROMOSOME MODEL (Sinh học 9 KNTT - Bài 8: Nhiễm Sắc Thể Kép Hình Chữ X)
+// 15. MÔ HÌNH NHIỄM SẮC THỂ (Sinh học 9 KNTT - Bài 8: Nhiễm Sắc Thể Kép Hình Chữ X)
 // ============================================================================
 function ChromosomeModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -875,7 +875,7 @@ function ChromosomeModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 16. ETHENE (C2H4) (Hóa học 9 KNTT - Bài 37: Etilen & Liên Kết Đôi Phẳng)
+// 16. ETILEN (C2H4) (Hóa học 9 KNTT - Bài 37: Etilen và Liên Kết Đôi Phẳng)
 // ============================================================================
 function EtheneMoleculeModel({ wireframe }: { wireframe: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -936,7 +936,7 @@ function EtheneMoleculeModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 17. HUMAN HEART & CIRCULATORY SYSTEM (KHTN 8 KNTT - Bài 31 & 32: Cấu tạo Tim & Hệ tuần hoàn)
+// 17. TIM VÀ HỆ TUẦN HOÀN (KHTN 8 KNTT - Bài 31 và 32: Cấu tạo Tim và Hệ tuần hoàn)
 // ============================================================================
 function HumanHeartModel({ wireframe }: { wireframe: boolean }) {
   const heartGroupRef = useRef<THREE.Group>(null);
@@ -945,7 +945,7 @@ function HumanHeartModel({ wireframe }: { wireframe: boolean }) {
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    // Physiological cardiac cycle (Lub-Dub rhythm)
+    // Chu kỳ tim sinh lý (nhịp Lub-Dub).
     const beat = Math.sin(t * 3.5);
     const lubDub = 1 + (beat > 0.4 ? 0.06 : 0) + (Math.sin(t * 7) > 0.7 ? 0.03 : 0);
     if (heartGroupRef.current) {
@@ -953,7 +953,7 @@ function HumanHeartModel({ wireframe }: { wireframe: boolean }) {
       heartGroupRef.current.rotation.y = Math.sin(t * 0.3) * 0.15;
     }
 
-    // Circulating blood flow particles
+    // Các hạt mô phỏng dòng máu tuần hoàn.
     if (bloodOxygenatedRef.current) {
       bloodOxygenatedRef.current.children.forEach((child, i) => {
         const offset = (t * 0.8 + i * 0.3) % 1;
@@ -1100,7 +1100,7 @@ function HumanHeartModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 18. FLUID PRESSURE & HYDROSTATICS (KHTN 8 KNTT - Bài 16: Áp suất chất lỏng p = d.h)
+// 18. ÁP SUẤT CHẤT LỎNG VÀ THỦY TĨNH HỌC (KHTN 8 KNTT - Bài 16: Áp suất chất lỏng p = d.h)
 // ============================================================================
 function FluidPressureModel({ wireframe }: { wireframe: boolean }) {
   const bubblesGroupRef = useRef<THREE.Group>(null);
@@ -1110,7 +1110,7 @@ function FluidPressureModel({ wireframe }: { wireframe: boolean }) {
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    // Rising bubbles inside liquid column
+    // Các bọt khí nổi lên bên trong cột chất lỏng.
     if (bubblesGroupRef.current) {
       bubblesGroupRef.current.children.forEach((b, idx) => {
         b.position.y = -1.2 + ((t * 0.6 + idx * 0.45) % 2.5);
@@ -1118,7 +1118,7 @@ function FluidPressureModel({ wireframe }: { wireframe: boolean }) {
       });
     }
 
-    // Dynamic water jet ripple pulses
+    // Các gợn sóng lan truyền từ tia nước biến đổi theo thời gian.
     if (jet1Ref.current) jet1Ref.current.scale.set(1, 1 + Math.sin(t * 4) * 0.08, 1);
     if (jet2Ref.current) jet2Ref.current.scale.set(1, 1 + Math.sin(t * 4.5) * 0.08, 1);
     if (jet3Ref.current) jet3Ref.current.scale.set(1, 1 + Math.sin(t * 5) * 0.08, 1);
@@ -1259,7 +1259,7 @@ function FluidPressureModel({ wireframe }: { wireframe: boolean }) {
 }
 
 // ============================================================================
-// 19. BASIC GEOMETRY MODELS
+// 19. CÁC MÔ HÌNH HÌNH HỌC CƠ BẢN
 // ============================================================================
 function BasicModel({ type, wireframe }: { type: string; wireframe: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -1300,7 +1300,7 @@ function BasicModel({ type, wireframe }: { type: string; wireframe: boolean }) {
 }
 
 // ============================================================================
-// MAIN VIEWER EXPORT
+// XUẤT THÀNH PHẦN TRÌNH XEM CHÍNH
 // ============================================================================
 export function ThreeDViewer({
   modelType = "sphere",

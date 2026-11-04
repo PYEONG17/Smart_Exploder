@@ -126,7 +126,7 @@ export default function QuizHubPage() {
 
   const [activeTab, setActiveTab] = useState<"flashcards" | "practice">("flashcards");
 
-  // ── Flashcard state ───────────────────────────────────────────────
+  // ── Trạng thái thẻ ghi nhớ ───────────────────────────────────────
   const [savedFlashcards, setSavedFlashcards] =
     useState<Flashcard[]>(defaultFlashcards);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -151,7 +151,7 @@ export default function QuizHubPage() {
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
 
-  // Quick Create question state
+  // Trạng thái tạo nhanh câu hỏi.
   const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
   const [newQTitle, setNewQTitle] = useState("");
   const [newQOptions, setNewQOptions] = useState(["", "", "", ""]);
@@ -197,7 +197,7 @@ export default function QuizHubPage() {
   const questions =
     token && studyDataToken === token ? savedQuestions : defaultQuestions;
 
-  // Flashcard controls
+  // Các nút điều khiển thẻ ghi nhớ.
   const handleNextCard = () => {
     setIsFlipped(false);
     setCurrentCardIndex((prev) => (prev + 1) % flashcards.length);
@@ -297,7 +297,7 @@ export default function QuizHubPage() {
     }
   };
 
-  // Practice Quiz controls
+  // Các nút điều khiển phần luyện tập trắc nghiệm.
   const handleSelectOption = (idx: number) => {
     if (isAnswerSubmitted || isSubmittingAnswer) return;
     setSelectedAnswer(idx);

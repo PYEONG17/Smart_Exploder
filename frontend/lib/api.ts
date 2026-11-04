@@ -11,6 +11,7 @@ import type {
   ActivityType,
 } from "@/types";
 import type { CustomLabInput, CustomLabRecord } from "@/types/custom-lab";
+import type { ExploreMaterial } from "@/lib/explore-data.config";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -177,6 +178,8 @@ export type LessonQuestion = {
   question: string;
   questionLanguage: "vi" | "en";
   questionTranslated: string;
+  videoId: string | null;
+  timestampSeconds: number | null;
   answer: string | null;
   answerLanguage: "vi" | "en" | null;
   answerTranslated: string | null;
@@ -184,6 +187,58 @@ export type LessonQuestion = {
   answeredAt: string | null;
   createdAt: string;
 };
+
+export type VideoStudyMarker = {
+  id: string;
+  videoId: string;
+  timestampSeconds: number;
+  note: string | null;
+  isBookmarked: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchVideoStudyMarkers(
+  token: string,
+  videoId: string,
+): Promise<VideoStudyMarker[]> {
+  const res = await fetch(
+    `${API_URL}/videos/${encodeURIComponent(videoId)}/study-markers`,
+    { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to fetch video notes and bookmarks");
+  }
+  return json.data;
+}
+
+export async function saveVideoStudyMarker(
+  token: string,
+  videoId: string,
+  input: {
+    timestampSeconds: number;
+    note?: string | null;
+    isBookmarked?: boolean;
+  },
+): Promise<VideoStudyMarker | null> {
+  const res = await fetch(
+    `${API_URL}/videos/${encodeURIComponent(videoId)}/study-markers`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to save video note or bookmark");
+  }
+  return json.data;
+}
 
 async function readLessonQuestionResponse(
   res: Response,
@@ -213,7 +268,12 @@ export async function fetchLessonQuestions(
 export async function postLessonQuestion(
   token: string,
   lessonId: string,
-  input: { text: string; language: "vi" | "en" },
+  input: {
+    text: string;
+    language: "vi" | "en";
+    videoId?: string;
+    timestampSeconds?: number;
+  },
 ): Promise<LessonQuestion> {
   const res = await fetch(
     `${API_URL}/lessons/${encodeURIComponent(lessonId)}/questions`,
@@ -236,7 +296,12 @@ export async function postLessonQuestion(
 export async function answerLessonQuestion(
   token: string,
   questionId: string,
-  input: { text: string; language: "vi" | "en" },
+  input: {
+    text: string;
+    language: "vi" | "en";
+    videoId?: string;
+    timestampSeconds?: number;
+  },
 ): Promise<LessonQuestion> {
   const res = await fetch(
     `${API_URL}/questions/${encodeURIComponent(questionId)}/answer`,
@@ -257,12 +322,9 @@ export async function answerLessonQuestion(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── GIAO TIẾP VỚI BACKEND (DATABASE THẬT) VÀ DỮ LIỆU GIẢ (MOCK DATA)
-// Hướng dẫn:
-// - Hiện tại các hàm đang sử dụng cơ chế "Fallback": Nghĩa là nếu backend chết
-//   hoặc DB PostgreSQL chưa có dữ liệu, code sẽ tự động trả về `mockData` để không bị trắng màn hình.
-// - KHI BẠN ĐÃ CÓ DATA THẬT TRONG DB: Bạn có thể bỏ các khối try-catch fallback này
-//   để đảm bảo luồng lỗi (throw Error) diễn ra bình thường và xử lý lỗi trên UI.
+// ── GIAO TIẾP VỚI MÁY CHỦ VÀ CƠ SỞ DỮ LIỆU
+// Các hàm bên dưới gọi API thật; khi có lỗi, chúng trả lỗi về cho giao diện xử lý.
+// Không tự động thay thế dữ liệu lỗi bằng dữ liệu mẫu.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function fetchCourses(): Promise<Course[]> {
@@ -690,79 +752,12 @@ export type AvailableQuiz = {
   };
 };
 
-export type AssessmentDifficulty = "EASY" | "MEDIUM" | "HARD";
-export type GeneratedAssessmentInput = {
-  grade: number;
-  subject: string;
-  difficulty: AssessmentDifficulty;
-  topic: string;
-  question_count: number;
-  locale?: "vi" | "en";
-};
-
-export type GeneratedAssessment = {
-  quiz: {
-    title: string;
-    grade: number;
-    subject: string;
-    topic: string;
-    target_difficulty: AssessmentDifficulty;
-    question_count: number;
-  };
-  questions: {
-    question_number: number;
-    type: "MCQ" | "TRUE_FALSE" | "MATCHING" | "FILL_BLANK" | "SHORT_ANSWER";
-    prompt: string;
-    choices?: string[];
-    left_items?: string[];
-    right_items?: string[];
-    max_points?: number;
-    bloom_taxonomy:
-      | "REMEMBER"
-      | "UNDERSTAND"
-      | "APPLY"
-      | "ANALYZE"
-      | "EVALUATE"
-      | "CREATE";
-    difficulty_score: number;
-  }[];
-  answers: {
-    question_number: number;
-    type: GeneratedAssessment["questions"][number]["type"];
-    correct_answer?: string | boolean;
-    acceptable_answers?: string[];
-    correct_pairs?: { left: string; right: string }[];
-    answer_guide?: string;
-    rubric?: { criterion: string; points: number }[];
-  }[];
-  explanations: { question_number: number; explanation: string }[];
-  difficulty_score: number;
-};
-
-export async function generateAssessment(
-  token: string,
-  input: GeneratedAssessmentInput,
-): Promise<GeneratedAssessment> {
-  const res = await fetch(`${API_URL}/ai/assessments/generate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token,
-    },
-    body: JSON.stringify(input),
-  });
-  const json = await res.json();
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || "Failed to generate assessment");
-  }
-  return json.data;
-}
-
 export type CreateLessonVideoInput = {
   title?: string;
   titleEn?: string;
   sourceLanguage?: "vi" | "en";
   url: string;
+  contentType?: "VIDEO" | "H5P";
   durationSeconds?: number;
   activities?: {
     timestamp?: number;
@@ -958,7 +953,7 @@ export async function fetchInteractiveVideoAnalytics(
 }
 
 // ─────────────────────────────────────────────
-// TEACHER STUDIO CREATION APIs
+// CÁC API TẠO NỘI DUNG TRONG STUDIO GIÁO VIÊN
 // ─────────────────────────────────────────────
 
 export async function createCourse(
@@ -1168,10 +1163,10 @@ export async function fetchMyCourses(token: string): Promise<Course[]> {
   return json.data;
 }
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── AUTHENTICATION APIs (ĐĂNG NHẬP, ĐĂNG KÝ)
-// Các API này đã kết nối hoàn thiện 100% với DB PostgreSQL.
-// Dữ liệu người dùng sẽ được lưu thật sự nhờ file `backend/src/modules/auth/service.ts` (Prisma tạo User).
-// Không hề dùng mock data ở đây.
+// ── API XÁC THỰC (ĐĂNG NHẬP, ĐĂNG KÝ)
+// Các API này đã kết nối đầy đủ với cơ sở dữ liệu PostgreSQL.
+// Dữ liệu người dùng được lưu thật trong `backend/src/modules/auth/service.ts` thông qua Prisma.
+// Tại đây không sử dụng dữ liệu mẫu.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type AuthUser = {
@@ -1250,15 +1245,15 @@ export async function loginWithGoogle(
   return json.data;
 }
 
-// Removed duplicate getMe function that used /auth/me
+// Đã xóa hàm getMe trùng lặp từng sử dụng /auth/me.
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── USERS API  (/api/users/*)
+// ── API người dùng (/api/users/*)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * GET /api/users/me
- * Fetches fresh user data from server (always up to date).
+ * Lấy dữ liệu người dùng mới nhất từ máy chủ.
  */
 export async function getMe(token: string): Promise<AuthUser> {
   const res = await fetch(`${API_URL}/users/me`, {
@@ -1275,7 +1270,7 @@ export async function getMe(token: string): Promise<AuthUser> {
 
 /**
  * PATCH /api/users/me/profile
- * Update name and/or bio of current user.
+ * Cập nhật tên và/hoặc phần giới thiệu của người dùng hiện tại.
  */
 export async function updateMyProfile(
   token: string,
@@ -1297,7 +1292,7 @@ export async function updateMyProfile(
 
 /**
  * POST /api/users/:id/avatar
- * Upload an avatar image file (multipart/form-data).
+ * Tải tệp ảnh đại diện lên theo định dạng multipart/form-data.
  */
 export async function uploadAvatar(
   token: string,
@@ -1320,7 +1315,7 @@ export async function uploadAvatar(
 
 /**
  * GET /api/users/:id/avatar/random
- * Generates a random DiceBear avatar and saves it to DB.
+ * Tạo ảnh đại diện DiceBear ngẫu nhiên và lưu vào cơ sở dữ liệu.
  */
 export async function getRandomAvatar(
   token: string,
@@ -1338,7 +1333,7 @@ export async function getRandomAvatar(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── AI API  (/api/ai/*)
+// ── API trí tuệ nhân tạo (/api/ai/*)
 // ═══════════════════════════════════════════════════════════════════════════════
 export async function sendChatMessage(
   token: string,
@@ -1435,7 +1430,7 @@ export async function sendLessonTutorMessage(
 }
 
 // ─────────────────────────────────────────────
-// TEACHER CONTENT MANAGEMENT (edit / delete)
+// QUẢN LÝ NỘI DUNG GIÁO VIÊN (chỉnh sửa / xóa)
 // ─────────────────────────────────────────────
 
 async function sendManagedRequest<T>(
@@ -1589,7 +1584,7 @@ export function deleteVideoActivity(token: string, activityId: string) {
 }
 
 // ─────────────────────────────────────────────
-// AI STUDIO (teacher): outline, lesson draft, resource search
+// ── AI Studio dành cho giáo viên: dàn ý, bản nháp bài học, tìm kiếm tài liệu
 // ─────────────────────────────────────────────
 
 async function postAiStudio<T>(
@@ -1694,12 +1689,12 @@ export function reorderLessonVideos(
 }
 
 // ─────────────────────────────────────────────
-// 3D/XR EXPLORE LEARNING MATERIALS (PostgreSQL DB)
+// HỌC LIỆU KHÁM PHÁ 3D/XR (cơ sở dữ liệu PostgreSQL)
 // ─────────────────────────────────────────────
 
 export async function fetchExploreMaterials(
   params?: Record<string, string>,
-): Promise<{ success: boolean; total: number; data: any[]; source: string }> {
+): Promise<{ success: boolean; total: number; data: ExploreMaterial[]; source: string }> {
   const query = new URLSearchParams(params || {}).toString();
   const res = await fetch(`${API_URL}/explore${query ? `?${query}` : ""}`, {
     method: "GET",
@@ -1712,11 +1707,41 @@ export async function fetchExploreMaterials(
   return json;
 }
 
+export async function fetchManageableExploreMaterials(
+  token: string,
+): Promise<{ success: boolean; total: number; data: ExploreMaterial[]; source: string }> {
+  if (!token) {
+    throw new Error("Authentication required to manage 3D models");
+  }
+  const res = await fetch(`${API_URL}/explore/management`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to fetch manageable explore materials");
+  }
+  return json;
+}
+
+export async function fetchManageableExploreMaterial(
+  id: string,
+  token: string,
+): Promise<{ success: boolean; data: ExploreMaterial }> {
+  const res = await fetch(`${API_URL}/explore/management/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || "Failed to fetch manageable explore material");
+  }
+  return json;
+}
+
 export async function createExploreMaterial(
-  data: any,
+  data: Record<string, unknown>,
   token?: string,
   modelFile?: File,
-): Promise<{ success: boolean; data: any; message: string }> {
+): Promise<{ success: boolean; data: ExploreMaterial; message: string }> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -1745,10 +1770,10 @@ export async function createExploreMaterial(
 
 export async function updateExploreMaterial(
   id: string,
-  data: any,
+  data: Record<string, unknown>,
   token?: string,
   modelFile?: File,
-): Promise<{ success: boolean; data: any; message: string }> {
+): Promise<{ success: boolean; data: ExploreMaterial; message: string }> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -1789,23 +1814,6 @@ export async function deleteExploreMaterial(
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.success) {
     throw new Error(json.message || "Failed to delete explore material");
-  }
-  return json;
-}
-
-export async function syncSeedExploreMaterials(
-  token?: string,
-): Promise<{ success: boolean; message: string; data: any }> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(`${API_URL}/explore/seed`, {
-    method: "POST",
-    headers,
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || "Failed to seed explore materials");
   }
   return json;
 }

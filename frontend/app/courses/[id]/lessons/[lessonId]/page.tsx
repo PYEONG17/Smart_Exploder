@@ -17,10 +17,13 @@ import {
   MessageCircle,
   Loader2,
   Sparkles,
+  Bookmark,
+  Clock3,
+  StickyNote,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { mockCourses, mockLessons } from "@/lib/mock-data";
 import { Quiz } from "@/components/lessons/Quiz";
 import { BilingualLessonContent } from "@/components/lessons/BilingualLessonContent";
 import { InteractiveEventOverlay } from "@/components/lessons/InteractiveEventOverlay";
@@ -31,10 +34,13 @@ import {
   fetchLessonById,
   fetchLessonQuestions,
   postLessonQuestion,
+  fetchVideoStudyMarkers,
+  saveVideoStudyMarker,
   recordVideoWatchHeartbeat,
   saveProgress,
   ApiError,
   type LessonQuestion,
+  type VideoStudyMarker,
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLang } from "@/contexts/LanguageContext";
@@ -68,49 +74,17 @@ function getThreeDModelType(value: unknown): ModelType {
   }
 }
 
-function getDemoCourseLessons(courseId: string): {
-  course: Course;
-  lessons: Lesson[];
-} | null {
-  const demoCourse = mockCourses.find((item) => item.id === courseId);
-  if (!demoCourse) return null;
-
-  const lessons =
-    courseId === "c1"
-      ? mockLessons
-      : Array.from({ length: demoCourse.lessonCount }, (_, index) => ({
-          id: `${courseId}-l${index + 1}`,
-          title: `Bài ${index + 1}: Nội dung bài học ${index + 1}`,
-          titleEn: `Lesson ${index + 1}: Lesson content ${index + 1}`,
-          description: `Mô tả ngắn cho bài học ${index + 1}`,
-          descriptionEn: "Short description",
-          order: index + 1,
-          duration: "20 phút",
-          courseId,
-          isLocked: index > 2,
-          isCompleted: index < 2,
-        }));
-
-  const course: Course = {
-    id: demoCourse.id,
-    title: demoCourse.title,
-    titleEn: demoCourse.titleEn,
-    description: demoCourse.description,
-    descEn: demoCourse.descriptionEn,
-    subject: demoCourse.subject,
-    subjectLabel: demoCourse.subjectLabel,
-    level: demoCourse.level,
-    lessonCount: lessons.length,
-    lessons: lessons.map(({ descriptionEn, ...lesson }) => ({
-      ...lesson,
-      descEn: descriptionEn,
-    })),
-  };
-
-  return { course, lessons: course.lessons ?? [] };
-}
-
 const DEFAULT_REWIND_SECONDS = 20;
+
+function formatVideoTimestamp(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remainingSeconds = total % 60;
+  return [hours, minutes, remainingSeconds]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+}
 
 export default function LessonDetailPage({
   params,
@@ -144,6 +118,7 @@ export default function LessonDetailPage({
   const [lessonQuiz, setLessonQuiz] = useState<LessonQuiz | null>(null);
   const [lessonQuestions, setLessonQuestions] = useState<LessonQuestion[]>([]);
   const [questionText, setQuestionText] = useState("");
+  const [questionTimestampSeconds, setQuestionTimestampSeconds] = useState<number | null>(null);
   const [questionLanguageOverride, setQuestionLanguageOverride] = useState<
     "vi" | "en" | null
   >(null);
@@ -154,6 +129,10 @@ export default function LessonDetailPage({
     null,
   );
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [playbackPositionSeconds, setPlaybackPositionSeconds] = useState(0);
+  const [studyMarkers, setStudyMarkers] = useState<VideoStudyMarker[]>([]);
+  const [studyNoteDraft, setStudyNoteDraft] = useState("");
+  const [isSavingStudyMarker, setIsSavingStudyMarker] = useState(false);
   const [learningPanelTab, setLearningPanelTab] = useState<
     "content" | "vocabulary" | "materials"
   >("content");
@@ -183,6 +162,7 @@ export default function LessonDetailPage({
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeHostRef = useRef<HTMLDivElement>(null);
   const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
+  const pendingVideoSeekRef = useRef<{ videoId: string; seconds: number } | null>(null);
   const watchSessionRef = useRef<{
     videoId: string;
     sessionId: string;
@@ -190,6 +170,23 @@ export default function LessonDetailPage({
     lastHeartbeatAt: number | null;
   } | null>(null);
   const watchHeartbeatQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const videoForStudyTools =
+    lesson?.videos?.find((item) => item.id === selectedVideoId) ??
+    lesson?.videos?.[0];
+
+  useEffect(() => {
+    const pending = pendingVideoSeekRef.current;
+    if (
+      !pending ||
+      pending.videoId !== videoForStudyTools?.id ||
+      videoForStudyTools.contentType === "H5P" ||
+      !videoRef.current
+    ) {
+      return;
+    }
+    videoRef.current.currentTime = pending.seconds;
+    pendingVideoSeekRef.current = null;
+  }, [videoForStudyTools?.id, videoForStudyTools?.contentType]);
 
 
   useEffect(() => {
@@ -214,6 +211,28 @@ export default function LessonDetailPage({
   }, [lessonId, token]);
 
   useEffect(() => {
+    if (!token || user?.role !== "STUDENT" || !videoForStudyTools) return;
+    let active = true;
+    fetchVideoStudyMarkers(token, videoForStudyTools.id)
+      .then((markers) => {
+        if (active) setStudyMarkers(markers);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          console.error("Unable to load private video notes and bookmarks:", error);
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Không thể tải ghi chú video.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, user?.role, videoForStudyTools]);
+
+  useEffect(() => {
     const videos = lesson?.videos ?? [];
     const video =
       videos.find((item) => item.id === selectedVideoId) ?? videos[0];
@@ -235,21 +254,6 @@ export default function LessonDetailPage({
       router.replace("/login");
       return () => { isActive = false; };
     }
-    const demoData = getDemoCourseLessons(id);
-    const applyDemoData = () => {
-      const demoLesson = demoData?.lessons.find((item) => item.id === lessonId);
-      if (!demoData || !demoLesson) return false;
-      setCourse(demoData.course);
-      setLessons(demoData.lessons);
-      setLesson(demoLesson);
-      setIsLessonLocked(false);
-      setLoadError(null);
-      setIsLessonNotFound(false);
-      setIsLessonCompleted(demoLesson.isCompleted ?? false);
-
-      return true;
-    };
-
     fetchLessonById(lessonId, token)
       .then((lessonData) => {
         if (!isActive) return;
@@ -266,7 +270,7 @@ export default function LessonDetailPage({
           setSelectedVideoId(lessonData.videos?.[0]?.id ?? null);
           setIsLessonCompleted(Boolean(lessonData.isCompleted));
 
-        } else if (!applyDemoData()) {
+        } else {
           setLoadError(null);
           setIsLessonLocked(false);
           setIsLessonNotFound(true);
@@ -280,7 +284,7 @@ export default function LessonDetailPage({
           setIsLessonLocked(true);
           setLoadError(null);
           setIsLessonNotFound(false);
-        } else if (isActive && !applyDemoData()) {
+        } else if (isActive) {
           setIsLessonLocked(false);
           setIsLessonNotFound(false);
           setLoadError(
@@ -322,6 +326,11 @@ export default function LessonDetailPage({
               playerReady = true;
               player = target;
               youtubePlayerRef.current = target;
+              if (pendingVideoSeekRef.current?.videoId === video.id) {
+                target.seekTo(pendingVideoSeekRef.current.seconds, true);
+                setPlaybackPositionSeconds(pendingVideoSeekRef.current.seconds);
+                pendingVideoSeekRef.current = null;
+              }
             }
           },
         },
@@ -359,6 +368,8 @@ export default function LessonDetailPage({
 
     const timer = window.setInterval(() => {
       if (!playerReady || !apiState || disposed || !isYouTubePlayerReady(player)) return;
+      const currentSeconds = player.getCurrentTime();
+      setPlaybackPositionSeconds(Math.floor(currentSeconds));
       const state = player.getPlayerState();
       if (state === apiState.ENDED) {
         if (!endedReported) {
@@ -370,7 +381,7 @@ export default function LessonDetailPage({
       }
       if (state !== apiState.PLAYING) return;
       endedReported = false;
-      const seconds = player.getCurrentTime();
+      const seconds = currentSeconds;
       sendHeartbeat(seconds);
       const store = useInteractiveVideoStore.getState();
       const activities = video.activities ?? [];
@@ -463,6 +474,9 @@ export default function LessonDetailPage({
   const currentVideo =
     lessonVideos.find((video) => video.id === selectedVideoId) ??
     lessonVideos[0];
+  const activeVideoStudyMarkers = studyMarkers.filter(
+    (marker) => marker.videoId === currentVideo?.id,
+  );
   const lessonMaterials = lesson.materials ?? [];
   const selectedMaterial =
     lessonMaterials.find((material) => material.id === selectedMaterialId) ??
@@ -475,7 +489,9 @@ export default function LessonDetailPage({
     selectedMaterial?.type === "MODEL_3D" &&
     selectedMaterial.url.split(/[?#]/)[0]?.toLowerCase().endsWith(".glb");
   const currentYouTubeEmbed = currentVideo
-    ? getYouTubeEmbedUrl(currentVideo.url)
+    ? currentVideo.contentType === "VIDEO"
+      ? getYouTubeEmbedUrl(currentVideo.url)
+      : null
     : null;
 
   const completedCount = lessons.filter(
@@ -522,10 +538,11 @@ export default function LessonDetailPage({
     event: React.SyntheticEvent<HTMLVideoElement>,
   ) => {
     const media = event.currentTarget;
+    setPlaybackPositionSeconds(Math.floor(media.currentTime));
     if (!media.paused) recordPlaybackHeartbeat(media.currentTime);
     if (!currentVideo || activeCheckpoint) return;
 
-    // Scrubbing back before a finished checkpoint makes it appear again.
+    // Khi tua lùi qua checkpoint đã hoàn thành, checkpoint đó sẽ xuất hiện lại.
     const rearmIds = (currentVideo.activities ?? [])
       .filter(
         (item) =>
@@ -657,6 +674,86 @@ export default function LessonDetailPage({
     }
   };
 
+  const handleSaveStudyNote = async () => {
+    if (!token || user?.role !== "STUDENT" || !videoForStudyTools) {
+      toast.error(isVietnamese ? "Chỉ học sinh mới lưu ghi chú." : "Only students can save notes.");
+      return;
+    }
+    if (!studyNoteDraft.trim()) {
+      toast.error(isVietnamese ? "Nhập nội dung ghi chú trước." : "Enter a note first.");
+      return;
+    }
+    setIsSavingStudyMarker(true);
+    try {
+      await saveVideoStudyMarker(token, videoForStudyTools.id, {
+        timestampSeconds: playbackPositionSeconds,
+        note: studyNoteDraft.trim(),
+      });
+      setStudyMarkers(await fetchVideoStudyMarkers(token, videoForStudyTools.id));
+      setStudyNoteDraft("");
+      toast.success(isVietnamese ? "Đã lưu ghi chú riêng của bạn." : "Your private note was saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể lưu ghi chú.");
+    } finally {
+      setIsSavingStudyMarker(false);
+    }
+  };
+
+  const handleToggleStudyBookmark = async () => {
+    if (!token || user?.role !== "STUDENT" || !videoForStudyTools) {
+      toast.error(isVietnamese ? "Chỉ học sinh mới lưu dấu xem lại." : "Only students can bookmark a video.");
+      return;
+    }
+    const existing = studyMarkers.find(
+      (marker) =>
+        marker.videoId === videoForStudyTools.id &&
+        marker.timestampSeconds === playbackPositionSeconds,
+    );
+    setIsSavingStudyMarker(true);
+    try {
+      await saveVideoStudyMarker(token, videoForStudyTools.id, {
+        timestampSeconds: playbackPositionSeconds,
+        isBookmarked: !existing?.isBookmarked,
+      });
+      setStudyMarkers(await fetchVideoStudyMarkers(token, videoForStudyTools.id));
+      toast.success(
+        existing?.isBookmarked
+          ? isVietnamese ? "Đã bỏ dấu xem lại." : "Bookmark removed."
+          : isVietnamese ? "Đã đánh dấu thời điểm này." : "This moment was bookmarked.",
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Không thể lưu dấu xem lại.");
+    } finally {
+      setIsSavingStudyMarker(false);
+    }
+  };
+
+  const seekToVideoTime = (seconds: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = seconds;
+    } else if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.seekTo(seconds, true);
+    }
+    setPlaybackPositionSeconds(seconds);
+    setSelectedVideoId(videoForStudyTools?.id ?? null);
+    setActiveTab("video");
+  };
+
+  const seekToQuestionTimestamp = (question: LessonQuestion) => {
+    if (!question.videoId || question.timestampSeconds === null) return;
+    setActiveTab("video");
+    if (question.videoId === videoForStudyTools?.id) {
+      seekToVideoTime(question.timestampSeconds);
+      return;
+    }
+    pendingVideoSeekRef.current = {
+      videoId: question.videoId,
+      seconds: question.timestampSeconds,
+    };
+    setPlaybackPositionSeconds(question.timestampSeconds);
+    setSelectedVideoId(question.videoId);
+  };
+
   const handlePostQuestion = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token) {
@@ -690,9 +787,16 @@ export default function LessonDetailPage({
       const created = await postLessonQuestion(token, lessonId, {
         text: questionText.trim(),
         language: questionLanguage,
+        ...(questionTimestampSeconds !== null && videoForStudyTools
+          ? {
+              videoId: videoForStudyTools.id,
+              timestampSeconds: questionTimestampSeconds,
+            }
+          : {}),
       });
       setLessonQuestions((current) => [...current, created]);
       setQuestionText("");
+      setQuestionTimestampSeconds(null);
       toast.success(
         isVietnamese
           ? "Đã gửi câu hỏi. Giáo viên sẽ thấy câu hỏi bằng ngôn ngữ của họ."
@@ -894,6 +998,7 @@ export default function LessonDetailPage({
                         }
                         onClick={() => {
                           setSelectedVideoId(video.id);
+                          setPlaybackPositionSeconds(0);
                           startVideoSession(video.id);
                         }}
                       >
@@ -906,7 +1011,17 @@ export default function LessonDetailPage({
                 )}
 
                 <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/70 bg-slate-950 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.5)] md:rounded-3xl">
-                  {currentVideo && currentYouTubeEmbed ? (
+                  {currentVideo?.contentType === "H5P" ? (
+                    <iframe
+                      key={currentVideo.id}
+                      src={currentVideo.url}
+                      title={isVietnamese ? currentVideo.title : currentVideo.titleEn || currentVideo.title}
+                      className="h-full w-full border-0 bg-white"
+                      allow="fullscreen; clipboard-read; clipboard-write"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  ) : currentVideo && currentYouTubeEmbed ? (
                     <div
                       key={currentVideo.id}
                       ref={youtubeHostRef}
@@ -994,6 +1109,78 @@ export default function LessonDetailPage({
                     />
                   )}
                 </div>
+
+                {user?.role === "STUDENT" &&
+                  videoForStudyTools &&
+                  videoForStudyTools.contentType !== "H5P" && (
+                    <section className="mt-4 space-y-4 rounded-2xl border border-border bg-card p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="flex items-center gap-2 text-sm font-bold">
+                            <StickyNote className="h-4 w-4 text-primary" />
+                            {isVietnamese ? "Ghi chú và dấu xem lại" : "Private notes and bookmarks"}
+                          </h3>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {isVietnamese
+                              ? "Chỉ bạn xem được. Ghi chú được gắn với thời điểm hiện tại của video."
+                              : "Only you can see these. Notes are linked to the current video time."}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant={activeVideoStudyMarkers.some((marker) =>
+                            marker.timestampSeconds === playbackPositionSeconds && marker.isBookmarked,
+                          ) ? "default" : "outline"}
+                          disabled={isSavingStudyMarker}
+                          onClick={() => void handleToggleStudyBookmark()}
+                        >
+                          <Bookmark className="mr-2 h-4 w-4" />
+                          {isVietnamese
+                            ? `Đánh dấu ${formatVideoTimestamp(playbackPositionSeconds)}`
+                            : `Bookmark ${formatVideoTimestamp(playbackPositionSeconds)}`}
+                        </Button>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <textarea
+                          rows={2}
+                          maxLength={3000}
+                          value={studyNoteDraft}
+                          onChange={(event) => setStudyNoteDraft(event.target.value)}
+                          placeholder={isVietnamese ? "Ghi lại điều bạn muốn nhớ..." : "Write a note to remember..."}
+                          className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          disabled={isSavingStudyMarker || !studyNoteDraft.trim()}
+                          onClick={() => void handleSaveStudyNote()}
+                          className="self-end"
+                        >
+                          <Save className="mr-2 h-4 w-4" />
+                          {isVietnamese ? "Lưu ghi chú" : "Save note"}
+                        </Button>
+                      </div>
+                      {activeVideoStudyMarkers.length > 0 ? (
+                        <ul className="space-y-2 border-t border-border pt-3">
+                          {activeVideoStudyMarkers.map((marker) => (
+                            <li key={marker.id} className="flex items-start gap-3 rounded-xl bg-muted/40 p-3">
+                              <button
+                                type="button"
+                                onClick={() => seekToVideoTime(marker.timestampSeconds)}
+                                className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                              >
+                                <Clock3 className="h-3.5 w-3.5" />
+                                {formatVideoTimestamp(marker.timestampSeconds)}
+                              </button>
+                              <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm">
+                                {marker.note || (isVietnamese ? "Đã đánh dấu để xem lại" : "Bookmarked to revisit")}
+                              </p>
+                              {marker.isBookmarked ? <Bookmark className="h-4 w-4 shrink-0 text-primary" /> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </section>
+                  )}
 
                 <div className="mt-8">
                   <div className="flex items-center gap-2 mb-2">
@@ -1325,6 +1512,34 @@ export default function LessonDetailPage({
                     }
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                   />
+                  {videoForStudyTools?.contentType !== "H5P" && videoForStudyTools ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={questionTimestampSeconds === null ? "outline" : "secondary"}
+                        onClick={() =>
+                          setQuestionTimestampSeconds((current) =>
+                            current === null ? playbackPositionSeconds : null,
+                          )
+                        }
+                      >
+                        <Clock3 className="mr-2 h-4 w-4" />
+                        {questionTimestampSeconds === null
+                          ? isVietnamese
+                            ? `Gắn mốc ${formatVideoTimestamp(playbackPositionSeconds)}`
+                            : `Attach ${formatVideoTimestamp(playbackPositionSeconds)}`
+                          : isVietnamese
+                            ? `Tại ${formatVideoTimestamp(questionTimestampSeconds)} · bỏ mốc`
+                            : `At ${formatVideoTimestamp(questionTimestampSeconds)} · remove`}
+                      </Button>
+                      {questionTimestampSeconds !== null ? (
+                        <span className="text-xs text-muted-foreground">
+                          {isVietnamese ? "Câu hỏi sẽ gắn với video đang xem." : "Question linked to the selected video."}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-xs text-muted-foreground">
                       {isVietnamese
@@ -1402,6 +1617,16 @@ export default function LessonDetailPage({
                                 isVietnamese ? "vi-VN" : "en-US",
                               )}
                             </p>
+                            {question.videoId && question.timestampSeconds !== null ? (
+                              <button
+                                type="button"
+                                onClick={() => seekToQuestionTimestamp(question)}
+                                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                              >
+                                <Clock3 className="h-3.5 w-3.5" />
+                                {formatVideoTimestamp(question.timestampSeconds)}
+                              </button>
+                            ) : null}
                             <p className="mt-1 whitespace-pre-wrap text-sm">
                               {questionTextForDisplay}
                             </p>

@@ -19,8 +19,10 @@ import type {
   CustomLabRecord,
 } from "@/types/custom-lab";
 
+// Tạo một cặp nội dung Việt - Anh rỗng để dùng cho các mục nhập lặp lại.
 const blankPair = (): BilingualText => ({ vi: "", en: "" });
 
+// Thành phần nhập nội dung song ngữ, tự dịch sau khi người dùng ngừng nhập.
 function PairFields({
   label,
   value,
@@ -54,6 +56,7 @@ function PairFields({
     onChangeRef.current = onChange;
   }, [onChange, value]);
 
+  // Chờ người dùng ngừng gõ 800 ms rồi mới dịch; bỏ qua kết quả cũ nếu nội dung đã đổi.
   useEffect(() => {
     if (!sourceLanguage) return;
     const text = sourceText.trim();
@@ -99,6 +102,7 @@ function PairFields({
     onChange({ ...value, [language]: text });
   };
 
+  // Đọc nội dung tiếng Anh bằng bộ tổng hợp giọng nói của trình duyệt.
   const speakEnglish = () => {
     const text = value.en.trim();
     if (!text) return;
@@ -168,6 +172,7 @@ function PairFields({
   );
 }
 
+// Hiển thị một mục song ngữ có nút xóa, dùng cho dụng cụ và thuật ngữ.
 function PairItem({
   index,
   label,
@@ -209,6 +214,7 @@ function PairItem({
   );
 }
 
+// Giá trị ban đầu cho biểu mẫu tạo bài Lab mới.
 const initialForm: CustomLabInput = {
   title: "",
   titleEn: "",
@@ -225,6 +231,7 @@ const initialForm: CustomLabInput = {
   attachments: [],
 };
 
+// Kiểm tra định dạng và dung lượng tệp đính kèm theo phần mở rộng.
 function getAttachmentError(file: File): string {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
   const limits: Record<string, number> = {
@@ -244,6 +251,7 @@ function getAttachmentError(file: File): string {
 }
 
 export function CustomLabBuilder({ labId }: { labId?: string }) {
+  // labId có giá trị khi đang sửa bài; không có labId nghĩa là đang tạo mới.
   const router = useRouter();
   const { token } = useAuth();
   const { isLoading } = useAuthGuard({
@@ -260,6 +268,8 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
     section: "equipment" | "steps" | "vocabulary";
     index: number;
   } | null>(null);
+
+  // Khi sửa bài, tải dữ liệu hiện có và đưa từng trường về trạng thái biểu mẫu.
   useEffect(() => {
     if (!labId) return;
     let active = true;
@@ -296,6 +306,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
     };
   }, [labId]);
 
+  // Cập nhật đồng thời tiêu đề hoặc mục tiêu ở cả hai ngôn ngữ.
   const setPair = (key: "title" | "summary", value: BilingualText) => {
     setForm((current) => ({
       ...current,
@@ -304,6 +315,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
     }));
   };
 
+  // Làm sạch dữ liệu nhập, kiểm tra tiêu đề rồi tạo mới hoặc cập nhật bài Lab.
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) {
@@ -384,6 +396,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
         </header>
 
         <form onSubmit={submit} className="space-y-6">
+          {/* Thông tin chung, môn học, khối lớp và lưu ý an toàn của thí nghiệm. */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <h2 className="text-lg font-bold">1. Thông tin thí nghiệm</h2>
             <p className="text-xs text-muted-foreground">
@@ -451,6 +464,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
             />
           </section>
 
+          {/* Tải và quản lý các tệp minh họa, tài liệu hoặc mô phỏng đính kèm. */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <div>
               <h2 className="text-lg font-bold">2. Tệp minh họa và học liệu</h2>
@@ -545,6 +559,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
             ) : null}
           </section>
 
+          {/* Danh sách dụng cụ song ngữ dùng trong thí nghiệm. */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <h2 className="text-lg font-bold">3. Dụng cụ thí nghiệm</h2>
             {form.equipment.map((item, index) => (
@@ -582,6 +597,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
             </div>
           </section>
 
+          {/* Các bước tiến hành; mỗi bước có thể được đánh dấu là cảnh báo an toàn. */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <h2 className="text-lg font-bold">4. Các bước tiến hành</h2>
             {form.steps.map((item, index) => (
@@ -638,6 +654,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
             </div>
           </section>
 
+          {/* Thuật ngữ Việt - Anh, phiên âm IPA và phần giải nghĩa tùy chọn. */}
           <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -712,6 +729,7 @@ export function CustomLabBuilder({ labId }: { labId?: string }) {
             </div>
           </section>
 
+          {/* Hiển thị lỗi lưu và các nút hủy hoặc lưu biểu mẫu. */}
           {error ? (
             <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
               {error}

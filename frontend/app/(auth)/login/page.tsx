@@ -36,7 +36,7 @@ export default function LoginPage() {
         password,
       });
 
-      // Lưu auth state vào context (context sẽ tự lưu localStorage)
+      // Lưu trạng thái xác thực vào ngữ cảnh ứng dụng (ngữ cảnh sẽ tự lưu trong localStorage).
       login(result);
 
       toast.success(

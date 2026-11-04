@@ -42,6 +42,9 @@ function durationMinutes(value: string | null | undefined): number {
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
     const courses = await prisma.course.findMany({
+      where: {
+        lessons: { some: { videos: { some: {} } } },
+      },
       include: {
         _count: {
           select: { lessons: true },
@@ -50,16 +53,33 @@ export const getAllCourses = async (req: Request, res: Response) => {
     });
     const lessons = await prisma.lesson.findMany({
       where: { courseId: { in: courses.map((course) => course.id) } },
-      select: { courseId: true, duration: true },
+      select: { id: true, courseId: true, duration: true },
     });
+    const videos = lessons.length
+      ? await prisma.video.findMany({
+          where: { lessonId: { in: lessons.map((lesson) => lesson.id) } },
+          select: { lessonId: true },
+        })
+      : [];
+    const courseIdByLessonId = new Map(
+      lessons.map((lesson) => [lesson.id, lesson.courseId]),
+    );
     const courseDurations = new Map<string, number>();
     for (const lesson of lessons) {
       courseDurations.set(lesson.courseId, (courseDurations.get(lesson.courseId) ?? 0) + durationMinutes(lesson.duration));
     }
+    const courseVideoCounts = new Map<string, number>();
+    for (const video of videos) {
+      const courseId = courseIdByLessonId.get(video.lessonId);
+      if (courseId) {
+        courseVideoCounts.set(courseId, (courseVideoCounts.get(courseId) ?? 0) + 1);
+      }
+    }
 
-    // Map data to match frontend expectations
+    // Ánh xạ dữ liệu để phù hợp với yêu cầu của frontend
     const formattedCourses = courses.map((course) => ({
       ...formatCourse(course),
+      videoCount: courseVideoCounts.get(course.id) ?? 0,
       duration: courseDurations.get(course.id) ? `${Math.round(courseDurations.get(course.id)!)} phút` : undefined,
     }));
 
@@ -305,6 +325,7 @@ export const getCourseById = async (req: Request, res: Response) => {
                 title: true,
                 titleEn: true,
                 url: true,
+                contentType: true,
                 durationSeconds: true,
                 lessonId: true,
               },

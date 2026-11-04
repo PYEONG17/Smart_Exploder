@@ -50,7 +50,7 @@ function getRoleConfig(role: AuthUser["role"]) {
   }
 }
 
-// ─── Avatar display component ─────────────────────────────────────────────────
+// ─── Thành phần hiển thị ảnh đại diện ─────────────────────────────────────────
 
 function UserAvatar({
   user,
@@ -102,7 +102,7 @@ export default function UserMenu() {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
+  // Đóng khi nhấp bên ngoài
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -160,7 +160,7 @@ export default function UserMenu() {
 
   return (
     <div ref={ref} className="relative">
-      {/* Avatar trigger button */}
+      {/* Nút kích hoạt avatar */}
       <motion.button
         onClick={() => setOpen((v) => !v)}
         whileHover={{ scale: 1.03 }}
@@ -169,7 +169,7 @@ export default function UserMenu() {
         aria-label="User menu"
         aria-expanded={open}
       >
-        {/* Avatar – real image or initials fallback */}
+        {/* Avatar – ảnh thật hoặc dự phòng bằng chữ cái đầu */}
         <UserAvatar user={user} size="sm" />
 
         {/* Name + role – hidden on small screens */}
@@ -189,7 +189,7 @@ export default function UserMenu() {
         />
       </motion.button>
 
-      {/* Dropdown panel */}
+      {/* Bảng thả xuống */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -199,10 +199,10 @@ export default function UserMenu() {
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="absolute right-0 top-full mt-2 w-60 z-50 rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-xl shadow-black/10 dark:shadow-black/30 overflow-hidden"
           >
-            {/* User info header */}
+            {/* Tiêu đề thông tin người dùng */}
             <div className="px-4 py-3 border-b border-border bg-muted/30">
               <div className="flex items-center gap-3">
-                {/* Avatar in dropdown header – larger */}
+                {/* Avatar trong tiêu đề menu thả xuống – lớn hơn */}
                 <UserAvatar user={user} size="md" />
                 <div className="min-w-0">
                   <div className="font-bold text-sm text-foreground truncate">

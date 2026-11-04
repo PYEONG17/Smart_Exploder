@@ -5,13 +5,19 @@ import type { ChangeEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Search, LayoutGrid, List, Sparkles, BookOpen, Clock, Star, Box, ArrowRight } from "lucide-react";
+import { Search, LayoutGrid, List, Sparkles, BookOpen, Clock, Star, PlayCircle, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import type { SubjectType as Subject, Course } from "@/types";
 import { useLang } from "@/contexts/LanguageContext";
 type Level = "6" | "7" | "8" | "9";
 
-export default function CoursesClient({ initialCourses }: { initialCourses: Course[] }) {
+export default function CoursesClient({
+  initialCourses,
+  loadError = false,
+}: {
+  initialCourses: Course[];
+  loadError?: boolean;
+}) {
   const { t, locale } = useLang();
 
   const subjects: { value: Subject | "all"; label: string }[] = [
@@ -83,12 +89,12 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/80 bg-blue-50/90 dark:border-blue-800/60 dark:bg-blue-950/50 px-4 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 mb-4 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
-            <span>{initialCourses.length} {locale === "vi" ? "học liệu tương tác chuẩn GDPT 2018" : "interactive K-9 STEM resources"}</span>
+            <span>{initialCourses.length} {locale === "vi" ? "khóa học bài giảng" : "video lecture courses"}</span>
           </div>
           <h1 className="mb-4 text-3xl font-bold tracking-tight text-neutral-900 dark:text-white sm:text-4xl md:text-5xl lg:text-6xl">
             {locale === "vi" ? (
               <>
-                Kho học liệu tương tác{" "}
+                Khóa học video{" "}
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">
                   Toán & Khoa học
                 </span>
@@ -104,8 +110,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
           </h1>
           <p className="mx-auto max-w-2xl text-sm leading-relaxed text-neutral-600 dark:text-slate-300 sm:text-base md:text-lg font-normal">
             {locale === "vi"
-              ? "Khám phá các bài giảng tích hợp mô hình 3D xoay 360°, video ngắt đố thông minh và trợ lý gia sư Nora AI song ngữ Anh – Việt dành cho học sinh K-9."
-              : "Explore interactive 3D simulations, checkpoint videos, and 24/7 Nora AI bilingual tutoring for K-9 learners."}
+              ? "Học theo lộ trình video bài giảng do giáo viên xây dựng, đặt câu hỏi trong lúc học và lưu ghi chú để xem lại."
+              : "Follow teacher-created video lessons, ask questions while learning, and save notes to revisit later."}
           </p>
         </div>
       </section>
@@ -216,10 +222,22 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                 <Search className="h-7 w-7 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                {t("courses.page.no_result")}
+                {initialCourses.length === 0
+                  ? locale === "vi"
+                    ? loadError ? "Không thể tải khóa học" : "Chưa có khóa học video"
+                    : loadError ? "Courses could not be loaded" : "No video courses yet"
+                  : t("courses.page.no_result")}
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                {t("courses.page.no_result_sub")}
+                {initialCourses.length === 0
+                  ? loadError
+                    ? locale === "vi"
+                      ? "Vui lòng thử tải lại trang sau."
+                      : "Please try reloading the page."
+                    : locale === "vi"
+                      ? "Khóa học sẽ xuất hiện sau khi giáo viên thêm video bài giảng."
+                      : "Courses will appear after teachers add video lessons."
+                  : t("courses.page.no_result_sub")}
               </p>
             </div>
           ) : viewMode === "grid" ? (
@@ -272,13 +290,13 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
                         </>
                       )}
 
-                      {/* 3D badge on top */}
-                      <div className="absolute top-3 left-3 z-10">
+                      {/* Course type badge */}
+                      {course.videoCount ? <div className="absolute top-3 left-3 z-10">
                         <span className="inline-flex items-center gap-1 rounded-full bg-white/90 dark:bg-slate-950/90 px-2.5 py-1 text-[11px] font-bold text-neutral-800 dark:text-white shadow-xs backdrop-blur-md">
-                          <Box className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                          <span>Học liệu 3D</span>
+                          <PlayCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>{course.videoCount} {locale === "vi" ? "video bài giảng" : "lecture videos"}</span>
                         </span>
-                      </div>
+                      </div> : null}
                     </div>
 
                     <div className="flex flex-1 flex-col gap-3 p-5">

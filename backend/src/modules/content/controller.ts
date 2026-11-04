@@ -91,7 +91,7 @@ function timestampMsOf(input: VideoActivityInput) {
   return input.timestampMs ?? (input.timestamp ?? 0) * 1000;
 }
 
-// Multiple-choice checkpoints are typed in one language; the other side is translated.
+// Câu hỏi trắc nghiệm tại các mốc kiểm tra được nhập bằng một ngôn ngữ; nội dung ở ngôn ngữ còn lại sẽ được dịch.
 async function prepareContent(input: VideoActivityInput) {
   if (
     (input.type !== "QUESTION" && input.type !== "QUIZ") ||

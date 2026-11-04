@@ -11,19 +11,19 @@ import {
 } from "@/lib/youtube-iframe-api";
 
 type Props = {
-  /** Direct video URL (not YouTube). */
+  /** Đường dẫn video trực tiếp, không phải liên kết YouTube. */
   src?: string;
-  /** Local file chosen for upload; takes priority over `src`. */
+  /** Tệp cục bộ được chọn để tải lên; có ưu tiên hơn `src`. */
   file?: File | null;
-  /** Selected time in seconds, as the string kept by the form. */
+  /** Thời gian đã chọn tính bằng giây, theo dạng chuỗi lưu trong form. */
   value: string;
   onChange: (value: string) => void;
   onDurationChange?: (seconds: number) => void;
-  /** Times (seconds) of other checkpoints, shown as ticks on the timeline. */
+  /** Thời gian (giây) của các chốt khác, hiển thị dưới dạng đánh dấu trên đường thời gian. */
   markers?: number[];
-  /** Round to whole seconds (drafts for new videos only accept integers). */
+  /** Làm tròn về giây nguyên; bản nháp video mới chỉ nhận giá trị nguyên. */
   integer?: boolean;
-  /** Open the preview immediately when used as the primary video player. */
+  /** Mở sẵn phần xem trước khi dùng làm trình phát video chính. */
   openByDefault?: boolean;
 };
 
@@ -47,42 +47,51 @@ export function VideoTimePicker({
   const youtubeHostRef = useRef<HTMLDivElement>(null);
   const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
   const durationCallbackRef = useRef(onDurationChange);
-  durationCallbackRef.current = onDurationChange;
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [duration, setDuration] = useState(0);
-  const [youtubeDuration, setYoutubeDuration] = useState(0);
-  const [current, setCurrent] = useState(0);
-  const [failed, setFailed] = useState(false);
+  const selectionRef = useRef({ selected: Number(value), selectedValid: false });
+  const [objectUrl, setObjectUrl] = useState<{ file: File; url: string } | null>(null);
+  const [durationState, setDurationState] = useState({ source: "", value: 0 });
+  const [youtubeDurationState, setYoutubeDurationState] = useState({ source: "", value: 0 });
+  const [currentState, setCurrentState] = useState({ source: "", value: 0 });
+  const [failedState, setFailedState] = useState({ source: "", value: false });
   const [open, setOpen] = useState(openByDefault);
+
+  useEffect(() => {
+    durationCallbackRef.current = onDurationChange;
+  }, [onDurationChange]);
+
+  const selected = Number(value);
+  const selectedValid = Number.isFinite(selected) && selected >= 0;
+  useEffect(() => {
+    selectionRef.current = { selected, selectedValid };
+  }, [selected, selectedValid]);
 
   useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
-    // Object URLs are an external resource that can only be created in an effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setObjectUrl(url);
+    // URL tạm cho tệp là tài nguyên bên ngoài, cần tạo trong effect và thu hồi khi không còn dùng.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Lưu URL vừa tạo để phần xem trước phát được tệp.
+    setObjectUrl({ file, url });
     return () => {
       URL.revokeObjectURL(url);
-      setObjectUrl(null);
     };
   }, [file]);
 
-  useEffect(() => {
-    setDuration(0);
-    setYoutubeDuration(0);
-    setCurrent(0);
-    setFailed(false);
-  }, [src, file]);
-
-  const source = file ? (objectUrl ?? undefined) : src;
+  const source = file
+    ? objectUrl?.file === file
+      ? objectUrl.url
+      : undefined
+    : src;
   const youtubeId = source ? getYouTubeVideoId(source) : null;
+  const sourceKey = source ?? "";
+  const duration = durationState.source === sourceKey ? durationState.value : 0;
+  const youtubeDuration =
+    youtubeDurationState.source === sourceKey ? youtubeDurationState.value : 0;
+  const current = currentState.source === sourceKey ? currentState.value : 0;
+  const failed =
+    failedState.source === sourceKey ? failedState.value : false;
   const timelineDuration = youtubeId ? youtubeDuration : duration;
-  const selected = Number(value);
-  const selectedValid = Number.isFinite(selected) && selected >= 0;
-  const selectionRef = useRef({ selected, selectedValid });
-  selectionRef.current = { selected, selectedValid };
 
-  // Keep the preview on the selected frame when the number is typed by hand.
+  // Đồng bộ khung xem trước đến thời điểm đã chọn khi người dùng tự nhập số giây.
   useEffect(() => {
     const media = videoRef.current;
     if (!media || !selectedValid || media.readyState < 1) return;
@@ -95,35 +104,49 @@ export function VideoTimePicker({
     if (!open || !youtubeId || !youtubeHostRef.current) return;
     let disposed = false;
     const host = youtubeHostRef.current;
-    void loadYouTubeIframeApi().then((api) => {
-      if (disposed) return;
-      const player = new api.Player(host, {
-        videoId: youtubeId,
-        playerVars: { controls: 1, enablejsapi: 1, origin: window.location.origin, rel: 0 },
-        events: {
-          onReady: ({ target }) => {
-            if (disposed) return;
-            if (!isYouTubePlayerReady(target)) {
-              setFailed(true);
-              return;
-            }
-            youtubePlayerRef.current = target;
-            const playerDuration = target.getDuration();
-            setYoutubeDuration(Number.isFinite(playerDuration) ? playerDuration : 0);
-            setFailed(false);
-            if (Number.isFinite(playerDuration) && playerDuration > 0) durationCallbackRef.current?.(Math.round(playerDuration));
-            if (selectionRef.current.selectedValid) target.seekTo(selectionRef.current.selected, true);
+    void loadYouTubeIframeApi()
+      .then((api) => {
+        if (disposed) return;
+        new api.Player(host, {
+          videoId: youtubeId,
+          playerVars: {
+            controls: 1,
+            enablejsapi: 1,
+            origin: window.location.origin,
+            rel: 0,
           },
-        },
-      });
-    }).catch(() => setFailed(true));
+          events: {
+            onReady: ({ target }) => {
+              if (disposed) return;
+              if (!isYouTubePlayerReady(target)) {
+                setFailedState({ source: sourceKey, value: true });
+                return;
+              }
+              youtubePlayerRef.current = target;
+              const playerDuration = target.getDuration();
+              setYoutubeDurationState({
+                source: sourceKey,
+                value: Number.isFinite(playerDuration) ? playerDuration : 0,
+              });
+              setFailedState({ source: sourceKey, value: false });
+              if (Number.isFinite(playerDuration) && playerDuration > 0)
+                durationCallbackRef.current?.(Math.round(playerDuration));
+              if (selectionRef.current.selectedValid)
+                target.seekTo(selectionRef.current.selected, true);
+            },
+          },
+        });
+      })
+      .catch(() => setFailedState({ source: sourceKey, value: true }));
     const poll = window.setInterval(() => {
       const player = youtubePlayerRef.current;
       if (disposed || !isYouTubePlayerReady(player)) return;
       const nextDuration = player.getDuration();
       const nextCurrent = player.getCurrentTime();
-      if (Number.isFinite(nextDuration) && nextDuration > 0) setYoutubeDuration(nextDuration);
-      if (Number.isFinite(nextCurrent)) setCurrent(nextCurrent);
+      if (Number.isFinite(nextDuration) && nextDuration > 0)
+        setYoutubeDurationState({ source: sourceKey, value: nextDuration });
+      if (Number.isFinite(nextCurrent))
+        setCurrentState({ source: sourceKey, value: nextCurrent });
     }, 300);
     return () => {
       disposed = true;
@@ -131,7 +154,7 @@ export function VideoTimePicker({
       youtubePlayerRef.current?.destroy();
       youtubePlayerRef.current = null;
     };
-  }, [open, youtubeId]);
+  }, [open, youtubeId, sourceKey]);
 
   useEffect(() => {
     if (
@@ -162,11 +185,15 @@ export function VideoTimePicker({
         size="sm"
         variant="outline"
         disabled={!source}
-        title={source ? undefined : "Ch?n t?p video ho?c d�n link video tr?c ti?p tru?c"}
+        title={
+          source
+            ? undefined
+            : "Chọn tệp video hoặc dán link video trực tiếp để chọn thời điểm trên timeline"
+        }
         onClick={() => setOpen(true)}
       >
         <Crosshair className="mr-1 h-3.5 w-3.5" />
-        Ch?n tr�n timeline
+        Chọn trên timeline
       </Button>
     );
   }
@@ -192,7 +219,10 @@ export function VideoTimePicker({
         </button>
       </div>
       {youtubeId ? (
-        <div ref={youtubeHostRef} className="aspect-video w-full overflow-hidden rounded bg-black" />
+        <div
+          ref={youtubeHostRef}
+          className="aspect-video w-full overflow-hidden rounded bg-black"
+        />
       ) : (
         <video
           ref={videoRef}
@@ -203,18 +233,27 @@ export function VideoTimePicker({
           playsInline
           className="max-h-56 w-full rounded bg-black"
           onLoadedMetadata={(event) => {
-            setFailed(false);
+            setFailedState({ source: sourceKey, value: false });
             const mediaDuration = event.currentTarget.duration;
-            setDuration(Number.isFinite(mediaDuration) ? mediaDuration : 0);
-            if (Number.isFinite(mediaDuration) && mediaDuration > 0) durationCallbackRef.current?.(Math.round(mediaDuration));
+            setDurationState({
+              source: sourceKey,
+              value: Number.isFinite(mediaDuration) ? mediaDuration : 0,
+            });
+            if (Number.isFinite(mediaDuration) && mediaDuration > 0)
+              durationCallbackRef.current?.(Math.round(mediaDuration));
           }}
-          onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)}
+          onTimeUpdate={(event) =>
+            setCurrentState({
+              source: sourceKey,
+              value: event.currentTarget.currentTime,
+            })
+          }
           onSeeked={(event) => {
             const seconds = event.currentTarget.currentTime;
-            setCurrent(seconds);
+            setCurrentState({ source: sourceKey, value: seconds });
             onChange(format(seconds));
           }}
-          onError={() => setFailed(true)}
+          onError={() => setFailedState({ source: sourceKey, value: true })}
         />
       )}
       {failed ? (
@@ -240,7 +279,9 @@ export function VideoTimePicker({
               min={0}
               max={timelineDuration || 0}
               step={integer ? 1 : 0.1}
-              value={selectedValid ? Math.min(selected, timelineDuration || 0) : 0}
+              value={
+                selectedValid ? Math.min(selected, timelineDuration || 0) : 0
+              }
               disabled={timelineDuration === 0}
               onChange={(event) => handleSlide(Number(event.target.value))}
               aria-label="Chọn thời điểm trên timeline"

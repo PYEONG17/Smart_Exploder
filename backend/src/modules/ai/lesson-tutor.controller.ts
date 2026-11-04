@@ -3,7 +3,7 @@ import { z } from "zod";
 import { chatWithGroq, type GroqChatMessage } from "./groq.js";
 import { buildLessonKnowledge } from "./studio.controller.js";
 
-// ── Request validation ───────────────────────────────────────────────────────
+// ── Xác thực yêu cầu ─────────────────────────────────────────────────────────
 const lessonTutorRequestSchema = z
   .object({
     prompt: z.string().trim().min(1).max(2000),
@@ -52,7 +52,7 @@ const lessonTutorRequestSchema = z
     });
   });
 
-// ── Build system prompt ──────────────────────────────────────────────────────
+// ── Tạo lời nhắc hệ thống ────────────────────────────────────────────────────
 export function buildSystemPrompt(
   lessonContext?: z.infer<typeof lessonTutorRequestSchema>["context"],
   lessonKnowledge?: string,
@@ -107,7 +107,7 @@ export function buildSystemPrompt(
     .join("\n");
 }
 
-// ── Controller handler ───────────────────────────────────────────────────────
+// ── Trình xử lý controller ───────────────────────────────────────────────────
 export const lessonTutorChat = async (
   req: Request,
   res: Response,
@@ -124,14 +124,14 @@ export const lessonTutorChat = async (
 
     const { prompt, history, context: lessonContext } = parsed.data;
 
-    // Load teacher-authored lesson knowledge if lessonId is provided
+    // Tải kiến thức bài học do giáo viên biên soạn nếu có lessonId
     const lessonKnowledge = lessonContext?.lessonId
       ? await buildLessonKnowledge(lessonContext.lessonId)
       : "";
 
     const systemPrompt = buildSystemPrompt(lessonContext, lessonKnowledge);
 
-    // Keep the provider credential on the server and adapt the tutor messages to Groq.
+    // Giữ thông tin xác thực của nhà cung cấp trên máy chủ và điều chỉnh tin nhắn của trợ giảng cho Groq.
     const messages: GroqChatMessage[] = [
       { role: "system", content: systemPrompt },
     ];

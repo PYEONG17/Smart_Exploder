@@ -10,7 +10,7 @@ export function moveItem<T>(items: T[], from: number, to: number): T[] {
   return next;
 }
 
-// Native HTML5 drag-and-drop for a flat list; ids identify rows.
+// Dùng kéo-thả HTML5 gốc cho danh sách phẳng; id dùng để nhận diện từng dòng.
 export function useDragReorder(
   ids: string[],
   onReorder: (orderedIds: string[]) => void,

@@ -62,7 +62,7 @@ export default function Navbar() {
     setIsScrolled(latest > 20);
   });
 
-  // Close dropdown on outside click
+  // Đóng menu thả xuống khi nhấp bên ngoài
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -80,10 +80,10 @@ export default function Navbar() {
   const productsList = [
     {
       icon: Compass,
-      titleVi: "Khám phá học liệu",
-      titleEn: "Explore resources",
-      descVi: "Tìm học liệu theo lớp, môn học, loại nội dung và bộ sách.",
-      descEn: "Browse learning resources by grade, subject, content type, and textbook.",
+      titleVi: "Mô hình 3D",
+      titleEn: "3D Models",
+      descVi: "Xem và tương tác với các mô hình 3D đã tải lên.",
+      descEn: "View and interact with uploaded 3D models.",
       href: "/explore",
       badgeVi: "Thư viện học liệu",
       badgeEn: "Resource library",
@@ -136,7 +136,7 @@ export default function Navbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
-        {/* Brand Logo (NoraClass Style) */}
+        {/* Logo thương hiệu (Phong cách NoraClass) */}
         <div className="flex items-center gap-6">
           <Link
             href="/"
@@ -161,7 +161,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Nav Items (NoraClass Authentic Header Style) */}
+          {/* Mục điều hướng trên máy tính (Phong cách header nguyên bản của NoraClass) */}
           <nav className="hidden xl:flex items-center gap-1">
             {/* "Sản phẩm" Megamenu Dropdown */}
             <div className="relative" ref={dropdownRef}>
@@ -183,7 +183,7 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* Products Popover / Megamenu */}
+              {/* Bảng nổi / Megamenu sản phẩm */}
               <AnimatePresence>
                 {productsOpen && (
                   <motion.div
@@ -245,7 +245,7 @@ export default function Navbar() {
                         onClick={() => setProductsOpen(false)}
                         className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        <span>{locale === "vi" ? "Mở thư viện học liệu" : "Open resource library"}</span>
+                        <span>{locale === "vi" ? "Mở mô hình 3D" : "Open 3D models"}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -263,7 +263,7 @@ export default function Navbar() {
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
-              <span>{locale === "vi" ? "Khám phá học liệu" : "Explore resources"}</span>
+              <span>{locale === "vi" ? "Mô hình 3D" : "3D Models"}</span>
             </Link>
 
             {/* Main Links */}
@@ -455,7 +455,7 @@ export default function Navbar() {
                 >
                   <div className="flex items-center gap-2">
                     <Box className="w-4 h-4 text-blue-500" />
-                    <span>{locale === "vi" ? "Kho học liệu số 3D/XR" : "3D/XR Library"}</span>
+                    <span>{locale === "vi" ? "Mô hình 3D" : "3D Models"}</span>
                   </div>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-300">
                     XR

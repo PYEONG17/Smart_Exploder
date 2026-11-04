@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
 import { moveItem, useDragReorder } from "./useDragReorder";
 
 type RowControls = {
-  /** Drag + keyboard-accessible move controls to render inside the row. */
+  /** Điều khiển kéo + di chuyển bằng bàn phím để hiển thị bên trong hàng. */
   handle: ReactNode;
   isDragging: boolean;
   isOver: boolean;

@@ -203,7 +203,7 @@ export function LessonAIPanel({
       className="relative flex w-[min(23rem,92vw)] flex-col border-l border-border/80 bg-card shadow-xl backdrop-blur-xl animate-in slide-in-from-right duration-300"
       aria-label="AI tutor panel"
     >
-      {/* ── Header ──────────────────────────────────────── */}
+      {/* ── Tiêu đề ──────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 border-b border-border/80 bg-background/60 px-4 py-3.5 backdrop-blur-sm">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
           <Sparkles className="h-4 w-4" />
@@ -235,7 +235,7 @@ export function LessonAIPanel({
         </Button>
       </div>
 
-      {/* ── Messages Container ──────────────────────────── */}
+      {/* ── Khung tin nhắn ───────────────────────────────────────── */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -246,7 +246,7 @@ export function LessonAIPanel({
             key={msg.id}
             className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
           >
-            {/* Avatar */}
+            {/* Ảnh đại diện */}
             <div
               className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-semibold ${
                 msg.role === "user"

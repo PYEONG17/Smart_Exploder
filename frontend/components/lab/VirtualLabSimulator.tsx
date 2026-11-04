@@ -40,7 +40,7 @@ import { fetchLabModels, translateLabTexts, type LabModelRecord } from "@/lib/ap
 import { Uploaded3DModelViewer } from "@/components/ui/Uploaded3DModelViewer";
 
 // ============================================================================
-// SOUND SYNTHESIZER (Web Audio API - Không cần tải file ngoài)
+// TỔNG HỢP ÂM THANH (Web Audio API - không cần tải tệp ngoài)
 // ============================================================================
 function playLabSound(type: "click" | "bubble" | "laser" | "splash" | "beep") {
   if (typeof window === "undefined") return;
@@ -93,12 +93,12 @@ function playLabSound(type: "click" | "bubble" | "laser" | "splash" | "beep") {
       osc.stop(now + 0.12);
     }
   } catch {
-    // Ignore audio errors if blocked by browser policy
+    // Bỏ qua lỗi âm thanh nếu chính sách trình duyệt chặn phát.
   }
 }
 
 // ============================================================================
-// LAB LESSON DEFINITIONS (Chương trình Kết Nối Tri Thức Với Cuộc Sống)
+// DANH SÁCH BÀI THÍ NGHIỆM (Chương trình Kết Nối Tri Thức Với Cuộc Sống)
 // ============================================================================
 export interface LabExperiment {
   id: string;
@@ -1269,7 +1269,7 @@ export function VirtualLabSimulator({
     window.speechSynthesis.speak(utterance);
   };
 
-  // View mode: "catalog" (Danh sách 23 bài hiển thị mặc định) hoặc "detail" (Trang chi tiết bài đang chọn)
+  // Chế độ xem: "catalog" (danh sách 23 bài hiển thị mặc định) hoặc "detail" (trang chi tiết bài đang chọn).
   const [viewMode, setViewMode] = useState<"catalog" | "detail">(() => {
     if (initialViewMode) return initialViewMode;
     if (typeof window !== "undefined") {
@@ -1282,7 +1282,7 @@ export function VirtualLabSimulator({
     return "catalog";
   });
 
-  // Selected experiment ID
+  // ID bài thí nghiệm đang chọn.
   const [selectedExpId, setSelectedExpId] = useState<string>(() => {
     if (initialExpId && KNTT_EXPERIMENTS.some((e) => e.id === initialExpId)) {
       return initialExpId;
@@ -1393,14 +1393,14 @@ export function VirtualLabSimulator({
     };
   }, []);
 
-  // Sound effects mute toggle
+  // Bật hoặc tắt hiệu ứng âm thanh.
   const [soundEnabled, setSoundEnabled] = useState(true);
   const playSound = useCallback((type: "click" | "bubble" | "laser" | "splash" | "beep") => {
     if (soundEnabled) playLabSound(type);
   }, [soundEnabled]);
 
   // --------------------------------------------------------------------------
-  // STATE CHO TỪNG BÀI THÍ NGHIỆM
+  // TRẠNG THÁI CỦA TỪNG BÀI THÍ NGHIỆM
   // --------------------------------------------------------------------------
   // 1. Mạch điện Ôm
   const [voltage, setVoltage] = useState(12); // V
@@ -1617,7 +1617,7 @@ export function VirtualLabSimulator({
   }, [currentExp]);
 
   // --------------------------------------------------------------------------
-  // DATA LOGGER TABLE (Bảng ghi số liệu thực nghiệm)
+  // BẢNG GHI SỐ LIỆU THỰC NGHIỆM
   // --------------------------------------------------------------------------
   interface LogRow {
     id: string;
@@ -1630,7 +1630,7 @@ export function VirtualLabSimulator({
   }
   const [recordedData, setRecordedData] = useState<LogRow[]>([]);
 
-  // Quiz state
+  // Trạng thái câu hỏi trắc nghiệm.
   const [quizState, setQuizState] = useState<{
     experimentId: string;
     answer: number | null;
@@ -1746,7 +1746,7 @@ export function VirtualLabSimulator({
     return { speedMultiplier, gasVolumeMl };
   }, [acidConcentration, reactionTemp, zincForm, hasReactionCatalyst, reactionProgress]);
 
-  // Tự động tăng reactionProgress khi isReacting = true
+  // Tự động tăng tiến độ phản ứng khi isReacting bằng true.
   useEffect(() => {
     if (!isReacting) return;
     const interval = setInterval(() => {
@@ -1761,7 +1761,7 @@ export function VirtualLabSimulator({
     return () => clearInterval(interval);
   }, [isReacting]);
 
-  // 10. Tách chất hỗn hợp calculations & timer
+  // 10. Tính toán và đếm thời gian thí nghiệm tách chất hỗn hợp.
   const separationCalculations = useMemo(() => {
     const isDone = separationProgress >= 100;
     const saltGrams = parseFloat(((separationProgress / 100) * 15).toFixed(1));
@@ -1787,7 +1787,7 @@ export function VirtualLabSimulator({
     return () => clearInterval(interval);
   }, [isSeparating, flameLevel, playSound]);
 
-  // 11. Lực ma sát calculations
+  // 11. Tính toán lực ma sát.
   const frictionCalculations = useMemo(() => {
     const mu = surfaceType === "glass" ? 0.12 : surfaceType === "wood" ? 0.32 : 0.65;
     const normalForceN = parseFloat(((blockMassG / 1000) * 9.8).toFixed(2));
@@ -1797,7 +1797,7 @@ export function VirtualLabSimulator({
     return { mu, normalForceN, frictionForceN, pullReadingN, surfaceLabel };
   }, [surfaceType, blockMassG, isPullingBlock]);
 
-  // 12. Gương phẳng calculations
+  // 12. Tính toán gương phẳng.
   const planeMirrorCalculations = useMemo(() => {
     const i = mirrorIncidenceAngle;
     const iPrime = i;
@@ -1809,7 +1809,7 @@ export function VirtualLabSimulator({
     return { i, iPrime, angleBetweenRays, d, dPrime, h, hPrime };
   }, [mirrorIncidenceAngle, mirrorObjectDist, mirrorObjectHeight]);
 
-  // 13. Phản xạ âm & Tiếng vang calculations
+  // 13. Tính toán phản xạ âm và tiếng vang.
   const soundEchoCalculations = useMemo(() => {
     const v = 340; // m/s
     const deltaT = parseFloat(((2 * barrierDistance) / v).toFixed(3));
@@ -1845,7 +1845,7 @@ export function VirtualLabSimulator({
     }, 35);
   }, [barrierMaterial, barrierDistance, playSound]);
 
-  // 14. Đòn bẩy calculations
+  // 14. Tính toán đòn bẩy.
   const leverCalculations = useMemo(() => {
     const f1 = parseFloat(((leftMassM1 / 1000) * 9.8).toFixed(2));
     const f2 = parseFloat(((rightMassM2 / 1000) * 9.8).toFixed(2));
@@ -1859,7 +1859,7 @@ export function VirtualLabSimulator({
     return { f1, f2, m1, m2, deltaM, isBalanced, tiltAngle, idealD2, advantage };
   }, [leftMassM1, leftArmD1, rightMassM2, rightArmD2]);
 
-  // 15. pH & Chỉ thị màu calculations
+  // 15. Tính toán độ pH và chỉ thị màu.
   const phCalculations = useMemo(() => {
     const sampleData = {
       lemon: { name: "Nước chanh tươi", formula: "C6H8O7 (Acid Citric)", ph: 2.4, env: "Acid mạnh" },
@@ -1896,7 +1896,7 @@ export function VirtualLabSimulator({
         }
         paperColor = indicatorColor;
       } else {
-        // universal pH paper
+        // Giấy quỳ phổ dụng.
         if (sampleData.ph <= 3) {
           indicatorColor = "#dc2626";
           paperColor = "#dc2626";
@@ -1924,7 +1924,7 @@ export function VirtualLabSimulator({
     return { ...sampleData, indicatorColor, indicatorLabel, paperColor };
   }, [selectedPhSample, selectedIndicator, isIndicatorApplied]);
 
-  // 16. Thẩm thấu & Co nguyên sinh calculations
+  // 16. Tính toán thẩm thấu và co nguyên sinh.
   const osmosisCalculations = useMemo(() => {
     let vacuoleScale = 0.75;
     let title = "Đẳng trương (NaCl 0.9%)";
@@ -1949,7 +1949,7 @@ export function VirtualLabSimulator({
     return { vacuoleScale, title, desc, waterDirection, isPlasmolyzed };
   }, [osmosisMedium, osmosisProgress]);
 
-  // 17. Cảm ứng điện từ calculations
+  // 17. Tính toán cảm ứng điện từ.
   useEffect(() => {
     if (!isAutoOscillating) return;
     let step = 0;
@@ -1977,7 +1977,7 @@ export function VirtualLabSimulator({
     return { N, inducedVoltageMv, inducedCurrentMa, needleAngle, isGreenLedLit, isRedLedLit };
   }, [inductionCoilTurns, magnetOrientation, magnetX, magnetVelocity]);
 
-  // 18. Dao động ký âm thanh calculations
+  // 18. Tính toán dao động ký âm thanh.
   const oscilloscopeCalculations = useMemo(() => {
     const f = oscFreqHz;
     const periodMs = parseFloat((1000 / f).toFixed(2));
@@ -1989,7 +1989,7 @@ export function VirtualLabSimulator({
     return { f, periodMs, wavelengthCm, pitchCategory, loudnessCategory, decibelEst };
   }, [oscFreqHz, oscAmplitude]);
 
-  // Web Audio Tone toggle
+  // Bật hoặc tắt âm thanh bằng Web Audio.
   const toggleOscAudioTone = () => {
     if (isPlayingAudioTone) {
       if (oscAudioContextRef.current) {
@@ -2017,7 +2017,7 @@ export function VirtualLabSimulator({
         setIsPlayingAudioTone(true);
         playSound("click");
       } catch {
-        // Audio policy
+        // Chính sách phát âm thanh.
       }
     }
   };
@@ -2046,7 +2046,7 @@ export function VirtualLabSimulator({
     };
   }, [selectedExpId]);
 
-  // 19. Sự nở vì nhiệt của chất rắn calculations
+  // 19. Tính toán sự nở vì nhiệt của chất rắn.
   const thermalExpansionCalculations = useMemo(() => {
     const alphaMap = { aluminum: 0.000023, copper: 0.000017, iron: 0.000012 };
     const metalLabels = {
@@ -2089,7 +2089,7 @@ export function VirtualLabSimulator({
     return () => clearInterval(interval);
   }, [isHeatingBall, playSound]);
 
-  // 20. Spring Hooke calculations (KHTN 6 Bài 36)
+  // 20. Tính toán lò xo theo định luật Hooke (KHTN 6 Bài 36).
   const springCalculations = useMemo(() => {
     const naturalLengthCm = 12; // l₀ = 12 cm
     const massKg = hangingMassG / 1000;
@@ -2125,7 +2125,7 @@ export function VirtualLabSimulator({
     return () => clearInterval(interval);
   }, [isSpringBouncing]);
 
-  // 21. Phototropism calculations (KHTN 7 Bài 35)
+  // 21. Tính toán hiện tượng hướng sáng (KHTN 7 Bài 35).
   const phototropismCalculations = useMemo(() => {
     const progress = Math.min(1, phototropismHours / 72);
     let bendAngle = 0;
@@ -2166,7 +2166,7 @@ export function VirtualLabSimulator({
     };
   }, [lightDirection, phototropismHours]);
 
-  // 22. Thermal reactions calculations (KHTN 8 Bài 8)
+  // 22. Tính toán phản ứng tỏa nhiệt và thu nhiệt (KHTN 8 Bài 8).
   const thermalCalculations = useMemo(() => {
     const configs = {
       exothermic_cao: {
@@ -2219,7 +2219,7 @@ export function VirtualLabSimulator({
     return () => clearInterval(interval);
   }, [isThermalReacting, thermalCalculations.targetTemp]);
 
-  // 23. Electrolysis calculations (KHTN 9 Bài 19)
+  // 23. Tính toán quá trình điện phân (KHTN 9 Bài 19).
   const electrolysisCalculations = useMemo(() => {
     if (!isElectrolysisSwitchClosed || electrolysisVoltage === 0) {
       return {
@@ -2750,7 +2750,7 @@ export function VirtualLabSimulator({
             })}
           </div>
 
-          {/* Empty search results state */}
+          {/* Trạng thái khi không có kết quả tìm kiếm */}
           {filteredExperiments.length === 0 && (
             <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 p-8 space-y-3">
               <FlaskConical className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto" />
@@ -3402,12 +3402,12 @@ export function VirtualLabSimulator({
                         </g>
                       </>
                     ) : (
-                      /* Mixed state with white precipitate BaSO4 */
+                      /* Trạng thái hỗn hợp có kết tủa trắng BaSO4. */
                       <g transform="translate(270, 95)">
                         <path d="M 10 0 L 10 125 Q 10 133 20 133 L 90 133 Q 100 133 100 125 L 100 0" fill="none" stroke="#93c5fd" strokeWidth="3" />
-                        {/* Liquid becomes cloudy white */}
+                        {/* Chất lỏng chuyển sang màu trắng đục. */}
                         <rect x="12" y="50" width="86" height="80" fill="rgba(241, 245, 249, 0.75)" />
-                        {/* Precipitate settling at bottom */}
+                        {/* Kết tủa lắng xuống đáy. */}
                         <rect x="12" y="112" width="86" height="18" fill="#ffffff" />
                         <text x="55" y="80" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="bold">KẾT TỦA TRẮNG</text>
                         <text x="55" y="98" textAnchor="middle" fill="#0369a1" fontSize="11" fontWeight="bold">BaSO₄ ↓ + 2NaCl</text>
@@ -3478,7 +3478,7 @@ export function VirtualLabSimulator({
                         const endY = Math.cos(radR) * 120;
 
                         if (lightSourceType === "white_prism") {
-                          // Dispersion rainbow rays
+                          // Các tia cầu vồng sau khi tán sắc.
                           const colors = ["#ef4444", "#f97316", "#eab308", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6"];
                           return (
                             <g>
@@ -4244,7 +4244,7 @@ export function VirtualLabSimulator({
                         </g>
                       </g>
                     ) : (
-                      /* Mode 2: Cô cạn kết tinh muối */
+                      /* Chế độ 2: Cô cạn để kết tinh muối. */
                       <g>
                         {/* Tripod Stand with wire mesh */}
                         <line x1="200" y1="320" x2="235" y2="200" stroke="#64748b" strokeWidth="4" />
@@ -4500,7 +4500,7 @@ export function VirtualLabSimulator({
                     <text x="388" y="55" fill="#38bdf8" fontSize="11" fontWeight="bold">GƯƠNG PHẲNG (M)</text>
 
                     {mirrorMode === "rays" ? (
-                      /* Ray Reflection Investigation */
+                      /* Khảo sát phản xạ tia sáng. */
                       <g>
                         {/* Normal Line (IN) */}
                         <line x1="120" y1="190" x2="420" y2="190" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4" />
@@ -4560,7 +4560,7 @@ export function VirtualLabSimulator({
                         </g>
                       </g>
                     ) : (
-                      /* Object & Virtual Image Mode */
+                      /* Chế độ tạo ảnh thật và ảnh ảo. */
                       <g>
                         {/* Object Candle at distance d left of mirror */}
                         {(() => {
@@ -5805,7 +5805,7 @@ export function VirtualLabSimulator({
                       const bendRad = (bendAngle * Math.PI) / 180;
                       const stemLen = lightDirection === "dark" ? 140 : 110;
 
-                      // Control points for bezier curve
+                      // Các điểm điều khiển của đường cong Bézier.
                       const midX = baseX + Math.sin(bendRad * 0.5) * (stemLen * 0.5);
                       const midY = baseY - Math.cos(bendRad * 0.5) * (stemLen * 0.5);
                       const tipX = baseX + Math.sin(bendRad) * stemLen;
@@ -5813,7 +5813,7 @@ export function VirtualLabSimulator({
 
                       return (
                         <g>
-                          {/* Stem curve */}
+                          {/* Đường cong thân cây. */}
                           <path
                             d={`M ${baseX} ${baseY} Q ${midX} ${midY} ${tipX} ${tipY}`}
                             fill="none"
@@ -5823,9 +5823,9 @@ export function VirtualLabSimulator({
                             className="transition-all duration-700"
                           />
 
-                          {/* Cotyledon Leaves at tip */}
+                          {/* Hai lá mầm ở ngọn cây. */}
                           <g transform={`translate(${tipX}, ${tipY}) rotate(${bendAngle})`}>
-                            {/* Left Leaf */}
+                            {/* Lá bên trái. */}
                             <ellipse
                               cx="-12"
                               cy="-8"
@@ -5836,7 +5836,7 @@ export function VirtualLabSimulator({
                               stroke="#15803d"
                               strokeWidth="1.5"
                             />
-                            {/* Right Leaf */}
+                            {/* Lá bên phải. */}
                             <ellipse
                               cx="12"
                               cy="-8"
@@ -5847,18 +5847,18 @@ export function VirtualLabSimulator({
                               stroke="#15803d"
                               strokeWidth="1.5"
                             />
-                            {/* Apical Bud */}
+                            {/* Chồi ngọn. */}
                             <circle cx="0" cy="-4" r="4" fill="#86efac" />
                           </g>
 
-                          {/* Auxin Hormone Particles Visualization */}
+                          {/* Mô phỏng các hạt hoóc-môn auxin. */}
                           {showAuxinHeatmap && lightDirection !== "dark" && lightDirection !== "top" && (
                             <g>
                               {Array.from({ length: 14 }).map((_, i) => {
                                 const t = 0.2 + (i / 14) * 0.75;
                                 const px = baseX + Math.sin(bendRad * t) * (stemLen * t);
                                 const py = baseY - Math.cos(bendRad * t) * (stemLen * t);
-                                // Shift particles to shaded side
+                                // Dịch chuyển các hạt về phía bị che bóng.
                                 const shiftSide = lightDirection === "left" ? 8 : -8;
                                 return (
                                   <circle

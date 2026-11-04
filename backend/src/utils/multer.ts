@@ -3,25 +3,25 @@ import path from "path";
 import fs from "fs";
 import { AppError } from "./app-error.js";
 
-// ─── Upload directory setup ────────────────────────────────────────────────────
+// ─── Thiết lập thư mục tải lên ─────────────────────────────────────────────────
 
 const UPLOAD_DIR = path.resolve("uploads/avatars");
 
-// Create directory if it doesn't exist
+// Tạo thư mục nếu chưa tồn tại
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// ─── Multer config ─────────────────────────────────────────────────────────────
+// ─── Cấu hình Multer ──────────────────────────────────────────────────────────
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, UPLOAD_DIR);
   },
   filename: (req, _file, cb) => {
-    // Use userId as filename for easy lookup + auto-overwrite old avatar
+    // Dùng userId làm tên tệp để dễ tìm và tự động ghi đè ảnh đại diện cũ
     const userId = req.params.id ?? req.user?.id ?? "unknown";
-    const ext = ".jpg"; // we'll normalize to .jpg
+    const ext = ".jpg"; // Chuẩn hóa phần mở rộng thành .jpg
     cb(null, `${userId}${ext}`);
   },
 });
@@ -44,7 +44,7 @@ export const avatarUpload = multer({
   },
 });
 
-// ─── Helper to get public URL for a saved avatar ──────────────────────────────
+// ─── Hàm hỗ trợ lấy URL công khai của ảnh đại diện đã lưu ─────────────────────
 
 export function getAvatarUrl(req: { protocol: string; get: (h: string) => string | undefined }, filename: string): string {
   const baseUrl = process.env.API_BASE_URL ?? `${req.protocol}://${req.get("host")}`;

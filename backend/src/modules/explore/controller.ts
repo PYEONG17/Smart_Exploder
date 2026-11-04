@@ -7,7 +7,6 @@ import {
   isValidGlbFile,
   removeCourseMediaByUrls,
 } from "../../utils/course-media.js";
-import { seedExploreMaterials } from "./seed.js";
 
 function getExploreRequestBody(req: Request): Record<string, any> {
   const rawData = req.body?.data;
@@ -45,35 +44,18 @@ async function validateUploadedModel(req: Request): Promise<string | null> {
 }
 
 /**
- * Helper: ensure DB has initial data on first request
- */
-async function ensureDbSeeded() {
-  try {
-    const count = await prisma.exploreMaterial.count();
-    if (count === 0) {
-      console.log("No explore materials found in DB. Auto-seeding initial materials...");
-      await seedExploreMaterials();
-    }
-  } catch (err) {
-    console.error("Error checking or auto-seeding DB:", err);
-  }
-}
-
-/**
  * GET /api/explore
- * Query params:
+ * Tham số truy vấn:
  * - category: string
  * - grade: string
  * - subject: string
  * - type: string
- * - search: keyword
+ * - search: từ khóa
  * - textbook: string
  * - sortBy: "popular" | "rating" | "newest"
  */
 export async function listExploreMaterials(req: Request, res: Response) {
   try {
-    await ensureDbSeeded();
-
     const {
       category = "all",
       grade = "all",
@@ -86,6 +68,7 @@ export async function listExploreMaterials(req: Request, res: Response) {
 
     const where: any = {
       isPublished: true,
+      uploadedModelUrl: { not: null },
     };
 
     if (category && category !== "all") {
@@ -158,16 +141,61 @@ export async function listExploreMaterials(req: Request, res: Response) {
   }
 }
 
+export async function listManageableExploreMaterials(_req: Request, res: Response) {
+  try {
+    const materials = await prisma.exploreMaterial.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json({
+      success: true,
+      total: materials.length,
+      data: materials,
+      source: "database",
+    });
+  } catch (error) {
+    console.error("Error in listManageableExploreMaterials:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Không thể tải danh sách học liệu quản lý",
+    });
+  }
+}
+
+export async function getManageableExploreMaterialById(req: Request, res: Response) {
+  try {
+    const material = await prisma.exploreMaterial.findUnique({
+      where: { id: String(req.params.id) },
+    });
+
+    if (!material) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy mô hình 3D cần chỉnh sửa",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: material,
+    });
+  } catch (error) {
+    console.error("Error in getManageableExploreMaterialById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Không thể tải mô hình 3D cần chỉnh sửa",
+    });
+  }
+}
+
 /**
  * GET /api/explore/filters
- * Returns counts and available filter options for dynamic UI facets
+ * Trả về số lượng và các tùy chọn bộ lọc hiện có cho các bộ lọc giao diện động
  */
 export async function getExploreFilters(_req: Request, res: Response) {
   try {
-    await ensureDbSeeded();
-
     const totalMaterials = await prisma.exploreMaterial.count({
-      where: { isPublished: true },
+      where: { isPublished: true, uploadedModelUrl: { not: null } },
     });
 
     const categories = [
@@ -182,6 +210,11 @@ export async function getExploreFilters(_req: Request, res: Response) {
 
     const grades = [
       { id: "all", labelVi: "Tất cả các khối lớp", labelEn: "All Grades" },
+      { id: "1", labelVi: "Lớp 1", labelEn: "Grade 1" },
+      { id: "2", labelVi: "Lớp 2", labelEn: "Grade 2" },
+      { id: "3", labelVi: "Lớp 3", labelEn: "Grade 3" },
+      { id: "4", labelVi: "Lớp 4", labelEn: "Grade 4" },
+      { id: "5", labelVi: "Lớp 5", labelEn: "Grade 5" },
       { id: "6", labelVi: "Lớp 6", labelEn: "Grade 6" },
       { id: "7", labelVi: "Lớp 7", labelEn: "Grade 7" },
       { id: "8", labelVi: "Lớp 8", labelEn: "Grade 8" },
@@ -241,11 +274,27 @@ export async function getExploreFilters(_req: Request, res: Response) {
 export async function getExploreMaterialById(req: Request, res: Response) {
   try {
     const id = String(req.params.id);
+    if (id === "management") {
+      if (req.user?.role !== "TEACHER") {
+        return res.status(req.user ? 403 : 401).json({
+          success: false,
+          message: req.user ? "You do not have permission to manage 3D models" : "Authentication required",
+        });
+      }
+      return listManageableExploreMaterials(req, res);
+    }
+
+    const isTeacher = req.user?.role === "TEACHER";
 
     const material = await prisma.exploreMaterial.findFirst({
       where: {
         OR: [{ id }, { slug: id }],
-        isPublished: true,
+        ...(isTeacher
+          ? {}
+          : {
+              isPublished: true,
+              uploadedModelUrl: { not: null },
+            }),
       },
     });
 
@@ -256,11 +305,12 @@ export async function getExploreMaterialById(req: Request, res: Response) {
       });
     }
 
-    // Increment view count asynchronously
-    prisma.exploreMaterial.update({
-      where: { id: material.id },
-      data: { viewsCount: { increment: 1 } },
-    }).catch((e) => console.error("Could not increment views:", e));
+    if (!isTeacher) {
+      prisma.exploreMaterial.update({
+        where: { id: material.id },
+        data: { viewsCount: { increment: 1 } },
+      }).catch((e) => console.error("Could not increment views:", e));
+    }
 
     return res.status(200).json({
       success: true,
@@ -277,29 +327,33 @@ export async function getExploreMaterialById(req: Request, res: Response) {
 
 /**
  * POST /api/explore
- * Create / Add a new 3D model or material into PostgreSQL DB
+ * Tạo / thêm mô hình 3D hoặc tài liệu mới vào cơ sở dữ liệu PostgreSQL
  */
 export async function createExploreMaterial(req: Request, res: Response) {
   let uploadedModelUrl: string | null = null;
   try {
     const body = getExploreRequestBody(req);
-    if (!body.title || !body.category) {
+    const title = typeof body.title === "string" ? body.title.trim() : "";
+    if (!title) {
       await removeUnlinkedModel(req);
       return res.status(400).json({
         success: false,
-        message: "Tiêu đề (title) và Danh mục (category) là bắt buộc",
+        message: "Tên mô hình là bắt buộc",
       });
     }
     uploadedModelUrl = await validateUploadedModel(req);
+    if (!uploadedModelUrl) {
+      throw new AppError("A GLB 2.0 model file is required", 400);
+    }
 
-    const baseSlug = (body.slug || body.title)
+    const baseSlug = (body.slug || title)
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
     
-    // Ensure slug uniqueness
+    // Đảm bảo slug là duy nhất
     let slug = baseSlug;
     let suffix = 1;
     while (await prisma.exploreMaterial.findUnique({ where: { slug } })) {
@@ -309,11 +363,11 @@ export async function createExploreMaterial(req: Request, res: Response) {
     const newMaterial = await prisma.exploreMaterial.create({
       data: {
         slug,
-        title: body.title,
-        titleEn: body.titleEn || body.title,
+        title,
+        titleEn: body.titleEn || title,
         description: body.description || "",
         descriptionEn: body.descriptionEn || "",
-        category: body.category,
+        category: body.category || "natural_science",
         categoryLabelVi: body.categoryLabelVi || "Khoa học tự nhiên K12",
         categoryLabelEn: body.categoryLabelEn || "Natural Science K12",
         grade: body.grade || "all",
@@ -323,7 +377,7 @@ export async function createExploreMaterial(req: Request, res: Response) {
         type: body.type || "3d_model",
         typeLabelVi: body.typeLabelVi || "Mô hình 3D",
         typeLabelEn: body.typeLabelEn || "3D Model",
-        modelType: body.modelType || "sphere",
+        modelType: "uploaded_glb",
         uploadedModelUrl,
         thumbnailUrl: body.thumbnailUrl || "/images/explore/default.png",
         curriculum: body.curriculum || "GDPT 2018",
@@ -362,7 +416,7 @@ export async function createExploreMaterial(req: Request, res: Response) {
 
 /**
  * PUT /api/explore/:id
- * Update an existing explore material in DB
+ * Cập nhật tài liệu khám phá hiện có trong cơ sở dữ liệu
  */
 export async function updateExploreMaterial(req: Request, res: Response) {
   let uploadedModelUrl: string | null = null;
@@ -382,6 +436,12 @@ export async function updateExploreMaterial(req: Request, res: Response) {
         message: "Không tìm thấy học liệu cần cập nhật",
       });
     }
+    if (!uploadedModelUrl && !existing.uploadedModelUrl) {
+      throw new AppError("Upload a GLB 2.0 model before publishing this material", 400);
+    }
+    if (body.title !== undefined && (typeof body.title !== "string" || !body.title.trim())) {
+      throw new AppError("Tên mô hình không được để trống", 400);
+    }
 
     const updated = await prisma.exploreMaterial.update({
       where: { id },
@@ -400,10 +460,8 @@ export async function updateExploreMaterial(req: Request, res: Response) {
         type: body.type ?? existing.type,
         typeLabelVi: body.typeLabelVi ?? existing.typeLabelVi,
         typeLabelEn: body.typeLabelEn ?? existing.typeLabelEn,
-        modelType: body.modelType ?? existing.modelType,
-        uploadedModelUrl:
-          uploadedModelUrl ??
-          (body.uploadedModelUrl === null ? null : existing.uploadedModelUrl),
+        modelType: "uploaded_glb",
+        uploadedModelUrl: uploadedModelUrl ?? existing.uploadedModelUrl,
         thumbnailUrl: body.thumbnailUrl ?? existing.thumbnailUrl,
         curriculum: body.curriculum ?? existing.curriculum,
         textbook: body.textbook ?? existing.textbook,
@@ -440,7 +498,7 @@ export async function updateExploreMaterial(req: Request, res: Response) {
 
 /**
  * DELETE /api/explore/:id
- * Delete a material from PostgreSQL DB
+ * Xóa tài liệu khỏi cơ sở dữ liệu PostgreSQL
  */
 export async function deleteExploreMaterial(req: Request, res: Response) {
   try {
@@ -472,27 +530,6 @@ export async function deleteExploreMaterial(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi xóa học liệu",
-    });
-  }
-}
-
-/**
- * POST /api/explore/seed
- * Admin action to re-sync or restore standard curriculum materials
- */
-export async function triggerSeedMaterials(_req: Request, res: Response) {
-  try {
-    const result = await seedExploreMaterials();
-    return res.status(200).json({
-      success: true,
-      message: "Đã đồng bộ thành công bộ học liệu chuẩn GDPT 2018 vào Database",
-      data: result,
-    });
-  } catch (error) {
-    console.error("Error in triggerSeedMaterials:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi đồng bộ học liệu vào Database",
     });
   }
 }

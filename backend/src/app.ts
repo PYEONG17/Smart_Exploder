@@ -23,7 +23,7 @@ import {
   notFoundHandler,
 } from "./middlewares/error.middleware.js";
 
-// Load environment variables
+// Tải các biến môi trường
 dotenv.config();
 
 const app = express();
@@ -57,12 +57,12 @@ const uploadedTsxContentSecurityPolicy = [
   "worker-src 'none'",
 ].join("; ");
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// ── Phần mềm trung gian ────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ──  uploaded avatars ──────────────────────────────────────
+// ──  ảnh đại diện đã tải lên ──────────────────────────────────────
 
 app.use(
   "/uploads",
@@ -79,7 +79,7 @@ app.use(
   }),
 );
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// ── Kiểm tra tình trạng ───────────────────────────────────────────────────────
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -104,7 +104,7 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-// ── API Routes ────────────────────────────────────────────────────────────────
+// ── Các tuyến API ─────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/courses", courseRoutes);
@@ -123,7 +123,7 @@ app.use("/api", learningRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// ── Start server ──────────────────────────────────────────────────────────────
+// ── Khởi chạy máy chủ ─────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(` Server is running on http://localhost:${PORT}`);

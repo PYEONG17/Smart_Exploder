@@ -111,6 +111,7 @@ export interface Video {
   title: string;
   titleEn?: string;
   url: string;
+  contentType?: "VIDEO" | "H5P";
   durationSeconds?: number | null;
   duration?: string;
   lessonId: string;
@@ -159,6 +160,7 @@ export interface Course {
   subjectLabelEn?: string;
   level: string; // e.g., "10", "11", "12"
   lessonCount?: number;
+  videoCount?: number;
   duration?: string;
   enrolled?: number;
   activeLearners?: number;

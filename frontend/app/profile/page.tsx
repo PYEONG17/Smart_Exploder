@@ -64,15 +64,15 @@ export default function ProfilePage() {
   const { isLoading: authLoading } = useAuthGuard();
   const { locale } = useLang();
 
-  // Name edit state
+  // Trạng thái chỉnh sửa tên.
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name ?? "");
 
-  // Bio edit state
+  // Trạng thái chỉnh sửa phần giới thiệu.
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState(user?.bio ?? "");
 
-  // Loading states
+  // Các trạng thái tải dữ liệu.
   const [isSavingName, setIsSavingName] = useState(false);
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -80,7 +80,7 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Spinner while auth hydrates / redirecting
+  // Hiển thị vòng tải trong lúc khôi phục xác thực hoặc chuyển hướng.
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -147,7 +147,7 @@ export default function ProfilePage() {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setIsUploadingAvatar(false);
-      // Reset file input
+      // Đặt lại trường chọn tệp.
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };

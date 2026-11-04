@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 
 /**
- * AI Section: Redesigned with authentic NoraClass aesthetic.
- * Showcases Nora AI 24/7 bilingual STEM personal tutor.
+ * Mục AI: Thiết kế lại theo phong cách NoraClass nguyên bản.
+ * Trưng bày trợ lý cá nhân STEM song ngữ Nora AI 24/7.
  */
 export default function AISection() {
   const { locale } = useLang();
@@ -91,7 +91,7 @@ export default function AISection() {
             <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-indigo-500/20 blur-2xl -z-10" />
 
             <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_20px_50px_rgba(15,23,42,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] overflow-hidden">
-              {/* Header */}
+              {/* Tiêu đề */}
               <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 px-5 py-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-sm">

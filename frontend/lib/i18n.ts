@@ -1,11 +1,11 @@
 /**
- * SmartExplorer – i18n translations
- * Usage: const { t } = useLang();  then t("navbar.home")
+ * Chuyển dịch i18n của SmartExplorer
+ * Cách dùng: const { t } = useLang(); rồi t("navbar.home")
  */
 
 export const translations = {
   vi: {
-    // ── Navbar ──────────────────────────────────────────────
+    // ── Thanh điều hướng ────────────────────────────────────
     "nav.home": "Trang chủ",
     "nav.courses": "Khóa học",
     "nav.classes": "Lớp học",
@@ -18,7 +18,7 @@ export const translations = {
     "nav.login": "Đăng nhập",
     "nav.register": "Đăng ký",
 
-    // ── Hero Section ─────────────────────────────────────────
+    // ── Phần giới thiệu đầu trang ───────────────────────────
     "hero.badge": "Nền tảng học STEM hàng đầu K-9",
     "hero.headline": "Explore. Learn. Understand.",
     "hero.desc":
@@ -29,7 +29,7 @@ export const translations = {
     "hero.stat.models": "Mô hình",
     "hero.stat.ai": "Trợ lý",
 
-    // ── Features Section ─────────────────────────────────────
+    // ── Phần tính năng ──────────────────────────────────────
     "features.badge": "Tính năng nổi bật",
     "features.title1": "Học STEM theo cách",
     "features.title2": "hiện đại nhất",
@@ -54,14 +54,14 @@ export const translations = {
     "features.progress.desc":
       "Dashboard cá nhân hiển thị tiến độ học, điểm số, chuỗi ngày học và thống kê chi tiết theo môn.",
 
-    // ── Courses Section (homepage) ────────────────────────────
+    // ── Phần khóa học (trang chủ) ────────────────────────────
     "courses_section.badge": "Khóa học nổi bật",
     "courses_section.title1": "Bắt đầu với những khóa học",
     "courses_section.title2": "được yêu thích",
     "courses_section.view_all": "Xem tất cả khóa học",
     "courses_section.lessons": "bài học",
 
-    // ── AI Section (homepage) ─────────────────────────────────
+    // ── Phần trí tuệ nhân tạo (trang chủ) ───────────────────
     "ai_section.badge": "Powered by Generative AI",
     "ai_section.title1": "Trợ lý AI học tập",
     "ai_section.title2": "cá nhân hóa",
@@ -81,7 +81,7 @@ export const translations = {
       "Khi cộng phân số, bạn không được cộng tử và mẫu riêng lẻ. Bạn cần tìm mẫu số chung trước.",
     "ai_section.chat.q2": "Cho tôi thêm ví dụ đi!",
 
-    // ── CTA Section (homepage) ────────────────────────────────
+    // ── Phần kêu gọi hành động (trang chủ) ──────────────────
     "cta.badge": "Miễn phí đăng ký",
     "cta.title1": "Sẵn sàng bắt đầu hành trình",
     "cta.title2": "khám phá tri thức?",
@@ -90,7 +90,7 @@ export const translations = {
     "cta.register": "Đăng ký miễn phí",
     "cta.courses": "Xem khóa học",
 
-    // ── Footer ────────────────────────────────────────────────
+    // ── Chân trang ──────────────────────────────────────────
     "footer.desc":
       "Nền tảng học Toán và Khoa học bằng tiếng Anh dành cho học sinh K-9.",
     "footer.bilingual": "Hỗ trợ song ngữ Việt – Anh",
@@ -110,7 +110,7 @@ export const translations = {
     "footer.copy": "Đồ án tốt nghiệp – Nguyễn Tiến Bình.",
     "footer.tech": "Được xây dựng với Next.js · TypeScript · Tailwind CSS",
 
-    // ── Courses Page (/courses) ───────────────────────────────
+    // ── Trang khóa học (/courses) ───────────────────────────
     "courses.page.badge_count": "khóa học STEM tiêu chuẩn",
     "courses.page.title": "Khóa học STEM",
     "courses.page.subtitle":
@@ -131,7 +131,7 @@ export const translations = {
     "courses.page.lessons": "bài học",
     "courses.page.level": "Lớp",
 
-    // ── Dashboard (/dashboard) ────────────────────────────────
+    // ── Bảng điều khiển (/dashboard) ────────────────────────
     "dashboard.welcome": "Chào mừng trở lại,",
     "dashboard.subtitle":
       "Tổng quan tiến độ học tập và thành tích STEM của bạn.",
@@ -159,7 +159,7 @@ export const translations = {
     "dashboard.ach.streak7": "Chuỗi 7 ngày",
     "dashboard.ach.streak7_desc": "Học tập liên tục 7 ngày trong tuần",
 
-    // ── AI Page (/ai) ─────────────────────────────────────────
+    // ── Trang trí tuệ nhân tạo (/ai) ────────────────────────
     "ai.title": "Trợ lý AI STEM",
     "ai.subtitle": "Hỏi bất cứ điều gì về Toán và Khoa học",
     "ai.input_ph": "Nhập câu hỏi của bạn...",
@@ -167,13 +167,13 @@ export const translations = {
     "ai.suggestion": "Gợi ý câu hỏi:",
     "ai.thinking": "Đang trả lời...",
 
-    // ── 3D Page (/three-d) ────────────────────────────────────
+    // ── Trang mô hình 3D (/three-d) ─────────────────────────
     "threed.title": "Thư viện Mô hình 3D",
     "threed.subtitle": "Khám phá khoa học qua mô hình 3D tương tác",
     "threed.view": "Xem mô hình",
     "threed.rotate": "Xoay & Khám phá",
 
-    // ── Teacher Studio (/teacher) ─────────────────────────────
+    // ── Studio Giáo viên (/teacher) ────────────────────────────
     "teacher.title": "Studio Giáo Viên",
     "teacher.subtitle": "Quản lý khóa học và nội dung giảng dạy của bạn",
     "teacher.create": "Tạo khóa học mới",
@@ -187,7 +187,7 @@ export const translations = {
     "teacher.stat.students": "Học sinh",
     "teacher.stat.lessons": "Bài học",
 
-    // ── Create Course (/teacher/courses/create) ───────────────
+    // ── Tạo khóa học (/teacher/courses/create) ────────────────
     "create.title": "Tạo Khóa Học Mới",
     "create.subtitle":
       "Nhập thông tin tổng quan khóa học STEM trước khi soạn nội dung chi tiết.",
@@ -203,7 +203,7 @@ export const translations = {
     "create.creating": "Đang tạo...",
     "create.back": "Trở về Studio Giáo viên",
 
-    // ── Auth (/login, /register) ──────────────────────────────
+    // ── Xác thực (/login, /register) ────────────────────────
     "auth.login.title": "Đăng nhập",
     "auth.login.subtitle": "Chào mừng trở lại SmartExplorer",
     "auth.login.email": "Email",
@@ -225,7 +225,7 @@ export const translations = {
     "auth.register.has_acc": "Đã có tài khoản?",
     "auth.register.login": "Đăng nhập",
 
-    // ── Upload Video ──────────────────────────────────────────
+    // ── Tải video lên ────────────────────────────────────────
     "upload.video.title": "Đính kèm Video Bài Giảng",
     "upload.video.tab.file": "Tải từ máy",
     "upload.video.tab.url": "Dán link URL",
@@ -238,7 +238,7 @@ export const translations = {
     "upload.cancel": "Hủy",
     "upload.save": "Lưu Video",
 
-    // ── Common ────────────────────────────────────────────────
+    // ── Nội dung dùng chung ──────────────────────────────────
     "common.class": "Lớp",
     "common.back": "Trở về",
     "common.loading": "Đang tải...",
@@ -258,7 +258,7 @@ export const translations = {
   },
 
   en: {
-    // ── Navbar ──────────────────────────────────────────────
+    // ── Thanh điều hướng ────────────────────────────────────
     "nav.home": "Home",
     "nav.courses": "Courses",
     "nav.classes": "Classes",
@@ -271,7 +271,7 @@ export const translations = {
     "nav.login": "Log In",
     "nav.register": "Sign Up",
 
-    // ── Hero Section ─────────────────────────────────────────
+    // ── Phần giới thiệu đầu trang ───────────────────────────
     "hero.badge": "Leading K-9 STEM Learning Platform",
     "hero.headline": "Explore. Learn. Understand.",
     "hero.desc":
@@ -282,7 +282,7 @@ export const translations = {
     "hero.stat.models": "3D Models",
     "hero.stat.ai": "AI Tutor",
 
-    // ── Features Section ─────────────────────────────────────
+    // ── Phần tính năng ──────────────────────────────────────
     "features.badge": "Key Features",
     "features.title1": "Learn STEM the",
     "features.title2": "modern way",
@@ -307,14 +307,14 @@ export const translations = {
     "features.progress.desc":
       "Personal dashboard showing learning progress, scores, study streaks, and detailed subject-wise statistics.",
 
-    // ── Courses Section (homepage) ────────────────────────────
+    // ── Phần khóa học (trang chủ) ────────────────────────────
     "courses_section.badge": "Featured Courses",
     "courses_section.title1": "Start with the most",
     "courses_section.title2": "popular courses",
     "courses_section.view_all": "View all courses",
     "courses_section.lessons": "lessons",
 
-    // ── AI Section (homepage) ─────────────────────────────────
+    // ── Phần trí tuệ nhân tạo (trang chủ) ───────────────────
     "ai_section.badge": "Powered by Generative AI",
     "ai_section.title1": "AI Learning Assistant",
     "ai_section.title2": "personalized for you",
@@ -334,7 +334,7 @@ export const translations = {
       "When adding fractions, you cannot add numerators and denominators separately. You need to find a common denominator first.",
     "ai_section.chat.q2": "Give me another example!",
 
-    // ── CTA Section (homepage) ────────────────────────────────
+    // ── Phần kêu gọi hành động (trang chủ) ──────────────────
     "cta.badge": "Free to join",
     "cta.title1": "Ready to start your",
     "cta.title2": "learning journey?",
@@ -343,7 +343,7 @@ export const translations = {
     "cta.register": "Sign Up Free",
     "cta.courses": "View Courses",
 
-    // ── Footer ────────────────────────────────────────────────
+    // ── Chân trang ──────────────────────────────────────────
     "footer.desc":
       "A platform to learn Math and Science in English for K-9 students.",
     "footer.bilingual": "Bilingual Vietnamese – English support",
@@ -363,7 +363,7 @@ export const translations = {
     "footer.copy": "Graduation Thesis – Nguyen Tien Binh.",
     "footer.tech": "Built with Next.js · TypeScript · Tailwind CSS",
 
-    // ── Courses Page (/courses) ───────────────────────────────
+    // ── Trang khóa học (/courses) ───────────────────────────
     "courses.page.badge_count": "standard STEM courses",
     "courses.page.title": "STEM Courses",
     "courses.page.subtitle":
@@ -384,7 +384,7 @@ export const translations = {
     "courses.page.lessons": "lessons",
     "courses.page.level": "Grade",
 
-    // ── Dashboard (/dashboard) ────────────────────────────────
+    // ── Bảng điều khiển (/dashboard) ────────────────────────
     "dashboard.welcome": "Welcome back,",
     "dashboard.subtitle":
       "Your STEM learning progress and achievements at a glance.",
@@ -412,7 +412,7 @@ export const translations = {
     "dashboard.ach.streak7": "7-Day Streak",
     "dashboard.ach.streak7_desc": "Studied 7 consecutive days",
 
-    // ── AI Page (/ai) ─────────────────────────────────────────
+    // ── Trang trí tuệ nhân tạo (/ai) ────────────────────────
     "ai.title": "STEM AI Tutor",
     "ai.subtitle": "Ask anything about Math and Science",
     "ai.input_ph": "Type your question...",
@@ -420,13 +420,13 @@ export const translations = {
     "ai.suggestion": "Suggested questions:",
     "ai.thinking": "Thinking...",
 
-    // ── 3D Page (/three-d) ────────────────────────────────────
+    // ── Trang mô hình 3D (/three-d) ─────────────────────────
     "threed.title": "3D Model Library",
     "threed.subtitle": "Explore science through interactive 3D models",
     "threed.view": "View model",
     "threed.rotate": "Rotate & Explore",
 
-    // ── Teacher Studio (/teacher) ─────────────────────────────
+    // ── Studio Giáo viên (/teacher) ────────────────────────────
     "teacher.title": "Teacher Studio",
     "teacher.subtitle": "Manage your courses and teaching content",
     "teacher.create": "Create New Course",
@@ -440,7 +440,7 @@ export const translations = {
     "teacher.stat.students": "Students",
     "teacher.stat.lessons": "Lessons",
 
-    // ── Create Course (/teacher/courses/create) ───────────────
+    // ── Tạo khóa học (/teacher/courses/create) ────────────────
     "create.title": "Create New Course",
     "create.subtitle":
       "Enter general course information before composing detailed content.",
@@ -456,7 +456,7 @@ export const translations = {
     "create.creating": "Creating...",
     "create.back": "Back to Teacher Studio",
 
-    // ── Auth (/login, /register) ──────────────────────────────
+    // ── Xác thực (/login, /register) ────────────────────────
     "auth.login.title": "Log In",
     "auth.login.subtitle": "Welcome back to SmartExplorer",
     "auth.login.email": "Email",
@@ -478,7 +478,7 @@ export const translations = {
     "auth.register.has_acc": "Already have an account?",
     "auth.register.login": "Log In",
 
-    // ── Upload Video ──────────────────────────────────────────
+    // ── Tải video lên ────────────────────────────────────────
     "upload.video.title": "Attach Lecture Video",
     "upload.video.tab.file": "Upload from Device",
     "upload.video.tab.url": "Paste URL",
@@ -491,7 +491,7 @@ export const translations = {
     "upload.cancel": "Cancel",
     "upload.save": "Save Video",
 
-    // ── Common ────────────────────────────────────────────────
+    // ── Nội dung dùng chung ──────────────────────────────────
     "common.class": "Grade",
     "common.back": "Back",
     "common.loading": "Loading...",

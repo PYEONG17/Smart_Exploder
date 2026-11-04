@@ -174,7 +174,7 @@ const imageUrlSchema = z.string().trim().min(1).max(2000).superRefine((value, co
   try {
     if (new URL(value).protocol === "https:") return;
   } catch {
-    // Report the same validation error for malformed and insecure URLs.
+    // Trả về cùng một lỗi xác thực cho URL sai định dạng và URL không an toàn.
   }
   context.addIssue({ code: "custom", message: "Image URLs must be internal paths or HTTPS URLs" });
 });

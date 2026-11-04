@@ -172,9 +172,9 @@ export async function findLessonResources(req: Request, res: Response) {
   res.json(success(answer, "Resources found"));
 }
 
-// Teacher-authored context so the student AI answers using this lesson's own material.
+// Ngữ cảnh do giáo viên biên soạn để AI trả lời học sinh dựa trên tài liệu của chính bài học này.
 export async function buildLessonKnowledge(lessonId: string): Promise<string> {
-  // Extra context must never block the tutor, e.g. before a migration is applied.
+  // Ngữ cảnh bổ sung không được làm gián đoạn trợ giảng, chẳng hạn khi migration chưa được áp dụng.
   try {
     return await loadLessonKnowledge(lessonId);
   } catch (error) {

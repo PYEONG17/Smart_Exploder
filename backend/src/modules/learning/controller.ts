@@ -8,6 +8,7 @@ import {
   submitQuizSchema,
   submitInteractiveEventSchema,
   submitVideoActivitySchema,
+  saveVideoStudyMarkerSchema,
 } from "./schema.js";
 import { learningService } from "./service.js";
 
@@ -41,6 +42,24 @@ export async function createLessonVideo(req: Request, res: Response) {
     input,
   );
   res.status(201).json(success(data, "Lesson video created"));
+}
+
+export async function listVideoStudyMarkers(req: Request, res: Response) {
+  const data = await learningService.listVideoStudyMarkers(
+    authenticatedUserId(req),
+    String(req.params.videoId),
+  );
+  res.json(success(data));
+}
+
+export async function saveVideoStudyMarker(req: Request, res: Response) {
+  const input = saveVideoStudyMarkerSchema.parse(req.body);
+  const data = await learningService.saveVideoStudyMarker(
+    authenticatedUserId(req),
+    String(req.params.videoId),
+    input,
+  );
+  res.json(success(data, "Video study marker saved"));
 }
 
 export async function submitVideoActivityAnswer(req: Request, res: Response) {

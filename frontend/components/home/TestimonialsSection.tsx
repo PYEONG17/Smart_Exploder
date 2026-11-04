@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Star } from "lucide-react";
 
 /**
- * Testimonials & Trust Section: NoraClass Social Proof.
+ * Mục cảm nhận & niềm tin: Bằng chứng xã hội của NoraClass.
  */
 export default function TestimonialsSection() {
   const { locale } = useLang();

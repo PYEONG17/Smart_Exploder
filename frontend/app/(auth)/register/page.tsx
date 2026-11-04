@@ -51,7 +51,7 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
-      // Gọi Backend API
+      // Gọi API của máy chủ.
       const result = await registerUser({
         name: name.trim(),
         email: email.trim(),
@@ -59,7 +59,7 @@ export default function RegisterPage() {
         role,
       });
 
-      // Lưu auth state vào context
+      // Lưu trạng thái xác thực vào ngữ cảnh ứng dụng.
       login(result);
 
       // Thông báo thành công

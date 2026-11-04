@@ -290,7 +290,7 @@ export default function AIPage() {
 
   return (
     <div className="relative flex h-[calc(100dvh-4rem)] overflow-hidden bg-background">
-      {/* Sidebar - History */}
+      {/* Thanh bên - Lịch sử */}
       <aside
         className={`absolute inset-y-0 left-0 z-20 flex w-[min(19rem,86vw)] flex-col border-r border-border/70 bg-card/95 pt-4 shadow-2xl shadow-slate-950/10 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:static lg:w-72 lg:translate-x-0 lg:bg-card lg:pt-0 lg:shadow-none ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -358,9 +358,9 @@ export default function AIPage() {
         />
       )}
 
-      {/* Main Chat Area */}
+      {/* Khu vực trò chuyện chính */}
       <main className="relative flex min-w-0 flex-1 flex-col bg-background/60">
-        {/* Mobile Header */}
+        {/* Tiêu đề di động */}
         <div className="flex items-center border-b border-border/70 bg-card/80 p-3 backdrop-blur-xl lg:hidden">
           <Button
             variant="ghost"
@@ -378,7 +378,7 @@ export default function AIPage() {
           </div>
         </div>
 
-        {/* Messages List */}
+        {/* Danh sách tin nhắn */}
         <div className="flex-1 space-y-6 overflow-y-auto p-4 md:p-7">
           <div className="mx-auto max-w-3xl space-y-6">
             {messages.length === 0 ? (
@@ -400,7 +400,7 @@ export default function AIPage() {
                     : "Ask about math, science, STEM words, or schoolwork. You can write in English or Vietnamese."}
                 </p>
 
-                {/* Quick Prompts */}
+                {/* Gợi ý nhanh */}
                 <div className="grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
                   {quickPrompts.map((prompt, idx) => {
                     const Icon = prompt.icon;

@@ -11,8 +11,8 @@ interface AuthGuardOptions {
 }
 
 /**
- * Redirect unauthenticated users to /login.
- * Use in protected pages: Dashboard, Profile, Teacher Studio, etc.
+ * Chuyển hướng người dùng chưa đăng nhập về /login.
+ * Dùng cho các trang được bảo vệ: Dashboard, Hồ sơ, Studio Giáo viên, v.v.
  *
  * @example
  * export default function DashboardPage() {

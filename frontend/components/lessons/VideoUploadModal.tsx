@@ -20,7 +20,7 @@ interface VideoUploadModalProps {
   lessonTitle: string;
   lessonId: string;
   onClose: () => void;
-  /** Called with the resolved URL/objectURL when the teacher confirms */
+  /** Được gọi với URL/objectURL đã giải quyết khi giáo viên xác nhận */
   onSave: (lessonId: string, videoTitle: string, videoUrl: string) => void;
 }
 
@@ -42,7 +42,7 @@ export function VideoUploadModal({
   const { t, locale } = useLang();
   const [tab, setTab] = useState<Tab>("file");
 
-  // File upload state
+  // Trạng thái tải lên tệp
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -50,10 +50,10 @@ export function VideoUploadModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // URL state
+  // Trạng thái URL
   const [videoUrl, setVideoUrl] = useState("");
 
-  // Common
+  // Chung
   const [videoTitle, setVideoTitle] = useState("");
 
   /* ─── Helpers ─── */
@@ -93,8 +93,8 @@ export function VideoUploadModal({
   };
 
   /**
-   * Simulates upload progress (replace with real FormData fetch when backend is ready).
-   * In production: POST /api/upload/video with FormData, then use returned URL.
+   * Mô phỏng tiến trình tải lên; thay bằng yêu cầu FormData thật khi backend sẵn sàng.
+   * Khi chạy thật: gửi POST /api/upload/video cùng FormData rồi dùng URL nhận được.
    */
   const simulateUpload = (): Promise<string> => {
     return new Promise((resolve) => {
@@ -107,7 +107,7 @@ export function VideoUploadModal({
           clearInterval(interval);
           setUploadProgress(100);
           setUploadStatus("done");
-          // In real implementation, resolve with server URL:
+          // Khi triển khai thật, trả về URL do máy chủ cung cấp.
           resolve(previewUrl || "");
         } else {
           setUploadProgress(Math.min(progress, 99));
@@ -144,20 +144,20 @@ export function VideoUploadModal({
 
   return (
     <AnimatePresence>
-      {/* Backdrop */}
+      {/* Lớp nền */}
       <motion.div
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        {/* Blur overlay */}
+        {/* Lớp phủ làm mờ */}
         <div
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           onClick={onClose}
         />
 
-        {/* Modal */}
+        {/* Hộp thoại */}
         <motion.div
           className="relative bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
           initial={{ scale: 0.92, opacity: 0, y: 20 }}
@@ -165,7 +165,7 @@ export function VideoUploadModal({
           exit={{ scale: 0.92, opacity: 0, y: 20 }}
           transition={{ type: "spring", duration: 0.35 }}
         >
-          {/* Header */}
+          {/* Tiêu đề */}
           <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-blue-500/10 rounded-xl">
@@ -188,7 +188,7 @@ export function VideoUploadModal({
             </button>
           </div>
 
-          {/* Tab Switcher */}
+          {/* Chuyển tab */}
           <div className="flex mx-6 mt-4 mb-1 p-1 bg-muted rounded-xl gap-1">
             {(["file", "url"] as Tab[]).map((tabKey) => (
               <button
@@ -210,10 +210,10 @@ export function VideoUploadModal({
           </div>
 
           <form onSubmit={handleSave} className="p-6 pt-3 space-y-4">
-            {/* Tab content */}
+            {/* Nội dung tab */}
             {tab === "file" ? (
               <div className="space-y-3">
-                {/* Drop zone */}
+                {/* Vùng kéo thả */}
                 <div
                   onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                   onDragLeave={() => setDragOver(false)}
@@ -318,7 +318,7 @@ export function VideoUploadModal({
                 )}
               </div>
             ) : (
-              /* URL tab */
+              /* Thẻ URL */
               <div>
                 <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
                   {t("upload.video.url.ph")}

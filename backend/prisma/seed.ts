@@ -51,7 +51,7 @@ const mockLessons = [
 async function main() {
   console.log("Start seeding...");
 
-  // Clean existing data
+  // Xóa dữ liệu hiện có
   await prisma.class.deleteMany();
   await prisma.course.deleteMany();
   await prisma.lesson.deleteMany();
@@ -59,28 +59,28 @@ async function main() {
   await prisma.tenantMembership.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create Classes
+  // Tạo lớp học
   for (const c of mockClasses) {
     await prisma.class.create({ data: c });
   }
 
-  // Create Courses
+  // Tạo khóa học
   for (const course of mockCourses) {
     await prisma.course.create({ data: course });
   }
 
-  // Create Lessons
+  // Tạo bài học
   for (const lesson of mockLessons) {
     await prisma.lesson.create({ data: lesson });
   }
 
-  // Create User
+  // Tạo người dùng
   const user = await prisma.user.create({
     data: {
       id: "u1",
       name: "Nguyễn Tiến Bình",
       email: "binh.nguyen@example.com",
-      passwordHash: "$2b$10$xyz123", // mock hash
+      passwordHash: "$2b$10$xyz123", // hàm băm giả lập
       role: "STUDENT",
     },
   });

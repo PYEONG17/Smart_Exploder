@@ -139,7 +139,7 @@ export function FloatingLessonChatbot({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Update welcome message if lesson changes
+  // Cập nhật tin nhắn chào khi bài học thay đổi
   useEffect(() => {
     setMessages([
       {
@@ -216,7 +216,7 @@ export function FloatingLessonChatbot({
     }
 
     window.speechSynthesis.cancel();
-    // Strip markdown characters for cleaner speech
+    // Loại bỏ ký tự markdown để giọng nói rõ hơn
     const cleanText = text
       .replace(/[#*`_~[\]()]/g, " ")
       .replace(/-\s+/g, " ")
@@ -403,7 +403,7 @@ export function FloatingLessonChatbot({
             className={`fixed bottom-6 ${positionClasses} z-50 flex w-[min(26rem,94vw)] flex-col rounded-3xl bg-card/95 backdrop-blur-2xl border border-border/80 shadow-2xl overflow-hidden ring-1 ring-primary/20`}
             style={{ maxHeight: isMinimized ? "auto" : "85vh" }}
           >
-            {/* Header */}
+            {/* Tiêu đề */}
             <div className="flex items-center justify-between border-b border-border/70 bg-gradient-to-r from-primary/10 via-background/80 to-cyan-500/10 px-4 py-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-primary to-cyan-500 text-white shadow-md shadow-primary/25">
@@ -457,7 +457,7 @@ export function FloatingLessonChatbot({
             {/* Chat Body - Collapsed when Minimized */}
             {!isMinimized && (
               <>
-                {/* Messages Container */}
+                {/* Khung tin nhắn */}
                 <div
                   ref={scrollContainerRef}
                   onScroll={handleScroll}
@@ -468,7 +468,7 @@ export function FloatingLessonChatbot({
                       key={msg.id}
                       className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                     >
-                      {/* Avatar */}
+                      {/* Ảnh đại diện */}
                       <div
                         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs ${
                           msg.role === "user"
