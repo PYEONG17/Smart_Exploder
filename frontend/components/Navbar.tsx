@@ -271,7 +271,7 @@ export default function Navbar() {
               href="/courses"
               className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
                 pathname.startsWith("/courses")
-                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                  ? "bg-blue-600 text-white font-bold shadow-xs"
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
@@ -282,7 +282,7 @@ export default function Navbar() {
               href="/quiz"
               className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
                 pathname.startsWith("/quiz")
-                  ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                  ? "bg-blue-600 text-white font-bold shadow-xs"
                   : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
               }`}
             >
@@ -295,7 +295,7 @@ export default function Navbar() {
                 href="/dashboard"
                 className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
                   pathname.startsWith("/dashboard")
-                    ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                    ? "bg-blue-600 text-white font-bold shadow-xs"
                     : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
                 }`}
               >
@@ -308,7 +308,7 @@ export default function Navbar() {
                 href="/teacher"
                 className={`text-xs sm:text-sm py-2 px-3.5 rounded-full transition-all duration-200 font-medium whitespace-nowrap ${
                   pathname.startsWith("/teacher")
-                    ? "bg-neutral-100 text-neutral-900 dark:bg-slate-800 dark:text-white font-bold"
+                    ? "bg-blue-600 text-white font-bold shadow-xs"
                     : "text-neutral-700 dark:text-slate-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-slate-800/60"
                 }`}
               >
@@ -467,7 +467,7 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between ${
                     pathname.startsWith("/whiteboard")
-                      ? "bg-indigo-600 text-white font-bold"
+                      ? "bg-blue-600 text-white font-bold"
                       : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -485,11 +485,11 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
                     pathname.startsWith("/courses")
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+                      ? "bg-blue-600 text-white font-bold"
                       : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <BookOpen className="w-4 h-4 text-indigo-500" />
+                  <BookOpen className={`w-4 h-4 ${pathname.startsWith("/courses") ? "text-white" : "text-indigo-500"}`} />
                   <span>{locale === "vi" ? "Kho học liệu tương tác" : "Courses Library"}</span>
                 </Link>
 
@@ -498,11 +498,11 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
                     pathname.startsWith("/quiz")
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+                      ? "bg-blue-600 text-white font-bold"
                       : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <Trophy className={`w-4 h-4 ${pathname.startsWith("/quiz") ? "text-white" : "text-amber-500"}`} />
                   <span>{locale === "vi" ? "Đấu trường Quiz" : "Quiz Arena"}</span>
                 </Link>
 
@@ -510,9 +510,13 @@ export default function Navbar() {
                   <Link
                     href="/dashboard"
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                    className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                      pathname.startsWith("/dashboard")
+                        ? "bg-blue-600 text-white font-bold"
+                        : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                    }`}
                   >
-                    <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                    <LayoutDashboard className={`w-4 h-4 ${pathname.startsWith("/dashboard") ? "text-white" : "text-purple-500"}`} />
                     <span>Dashboard</span>
                   </Link>
                 )}
@@ -521,9 +525,13 @@ export default function Navbar() {
                   <Link
                     href="/teacher"
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-3.5 py-2.5 text-sm font-semibold text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                    className={`rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-colors flex items-center gap-2 ${
+                      pathname.startsWith("/teacher")
+                        ? "bg-blue-600 text-white font-bold"
+                        : "text-neutral-700 dark:text-slate-300 hover:bg-neutral-100 dark:hover:bg-slate-800"
+                    }`}
                   >
-                    <GraduationCap className="w-4 h-4 text-rose-500" />
+                    <GraduationCap className={`w-4 h-4 ${pathname.startsWith("/teacher") ? "text-white" : "text-rose-500"}`} />
                     <span>{locale === "vi" ? "Dành cho Thầy Cô" : "Teacher Studio"}</span>
                   </Link>
                 )}
