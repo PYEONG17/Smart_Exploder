@@ -4,7 +4,7 @@ import { AppError } from "../../utils/app-error.js";
 import { success } from "../../utils/api-response.js";
 import { z } from "zod";
 import { Prisma, type ActivityType } from "@prisma/client";
-import { toBilingualText } from "../ai/translate.js";
+import { toBilingualList, toBilingualText } from "../ai/translate.js";
 import { chatWithGroq } from "../ai/groq.js";
 import { removeCourseMediaByUrls } from "../../utils/course-media.js";
 
@@ -209,6 +209,90 @@ const updateLessonSchema = createLessonSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, "Nothing to update");
 
+const createLessonQuizSchema = z.object({
+  title: z.string().trim().min(2).max(150),
+  titleEn: z.string().trim().max(150).optional(),
+  videoId: z.string().uuid().optional(),
+  sourceLanguage: z.enum(["vi", "en"]).optional(),
+  questions: z.array(z.object({
+    question: z.string().trim().min(2).max(1000),
+    questionEn: z.string().trim().max(1000).optional(),
+    options: z.array(z.object({
+      content: z.string().trim().min(1).max(300),
+      contentEn: z.string().trim().max(300).optional(),
+    })).length(4),
+    correctIndex: z.number().int().min(0).max(3),
+  })).min(1).max(20),
+});
+
+export const createLessonQuiz = async (req: Request, res: Response) => {
+  const lesson = await getManagedLessonForRequest(req);
+  const input = createLessonQuizSchema.parse(req.body);
+  if (input.videoId) {
+    const video = await prisma.video.findFirst({
+      where: { id: input.videoId, lessonId: lesson.id },
+      select: { id: true },
+    });
+    if (!video) throw new AppError("Video not found in this lesson", 404);
+  }
+  const textItems = [
+    input.title,
+    ...input.questions.flatMap((question) => [
+      question.question,
+      ...question.options.map((option) => option.content),
+    ]),
+  ];
+  const translated = input.sourceLanguage
+    ? await toBilingualList(textItems, input.sourceLanguage)
+    : null;
+  let translationIndex = 0;
+  const titleTranslation = translated?.[translationIndex++];
+  const questions = input.questions.map((question) => {
+    const questionTranslation = translated?.[translationIndex++];
+    const options = question.options.map((option) => {
+      const optionTranslation = translated?.[translationIndex++];
+      return {
+        content:
+          optionTranslation?.vi ?? option.content,
+        contentEn:
+          optionTranslation?.en ?? option.contentEn ?? option.content,
+        isCorrect: option === question.options[question.correctIndex],
+      };
+    });
+    return {
+      question: questionTranslation?.vi ?? question.question,
+      questionEn:
+        questionTranslation?.en ?? question.questionEn ?? question.question,
+      options,
+    };
+  });
+  const quiz = await prisma.quiz.create({
+    data: {
+      title: titleTranslation?.vi ?? input.title,
+      titleEn: titleTranslation?.en ?? input.titleEn ?? input.title,
+      lessonId: lesson.id,
+      videoId: input.videoId,
+      questions: {
+        create: questions.map((question) => ({
+          question: question.question,
+          questionEn: question.questionEn,
+          type: "MULTIPLE_CHOICE",
+          answers: {
+            create: question.options,
+          },
+        })),
+      },
+    },
+    include: {
+      questions: {
+        orderBy: { createdAt: "asc" },
+        include: { answers: { orderBy: { createdAt: "asc" } } },
+      },
+    },
+  });
+  res.status(201).json(success(quiz, "Quiz created"));
+};
+
 const bilingualDraftInputSchema = z.object({
   sourceText: z.string().trim().min(40).max(5000),
   grade: z.string().trim().min(1).max(20),
@@ -390,9 +474,22 @@ export const getLessonById = async (req: Request, res: Response) => {
           orderBy: [{ order: "asc" }, { createdAt: "asc" }],
           include: {
             activities: { orderBy: [{ timestampMs: "asc" }, { timestamp: "asc" }] },
+            quizzes: {
+              include: {
+                questions: {
+                  orderBy: { createdAt: "asc" },
+                  include: {
+                    answers: {
+                      select: { id: true, content: true, contentEn: true },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         quizzes: {
+          where: { videoId: null },
           include: {
             questions: {
               include: {

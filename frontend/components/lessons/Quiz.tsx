@@ -26,6 +26,7 @@ interface QuizQuestion {
 }
 
 interface QuizProps {
+  displayAllQuestions?: boolean;
   quiz: {
     id: string;
     title: string;
@@ -34,7 +35,7 @@ interface QuizProps {
   };
 }
 
-export function Quiz({ quiz }: QuizProps) {
+export function Quiz({ quiz, displayAllQuestions = false }: QuizProps) {
   const router = useRouter();
   const { token } = useAuth();
   const { locale } = useLang();
@@ -46,6 +47,11 @@ export function Quiz({ quiz }: QuizProps) {
     score: number;
     totalQuestions: number;
     percentage: number;
+    review: {
+      questionId: string;
+      selectedAnswerId: string | null;
+      correctAnswerIds: string[];
+    }[];
   } | null>(null);
 
   const question = quiz.questions[currentQuestionIdx];
@@ -54,6 +60,49 @@ export function Quiz({ quiz }: QuizProps) {
   const handleSelectAnswer = (answerId: string) => {
     if (!question || isSubmitting) return;
     setAnswers((current) => ({ ...current, [question.id]: answerId }));
+  };
+
+  const handleSelectAnswerForQuestion = (
+    questionId: string,
+    answerId: string,
+  ) => {
+    if (isSubmitting) return;
+    setAnswers((current) => ({ ...current, [questionId]: answerId }));
+  };
+
+  const handleSubmitAll = async () => {
+    if (quiz.questions.some((item) => !answers[item.id])) {
+      toast.error(
+        isVietnamese
+          ? "Vui lòng trả lời tất cả câu hỏi trước khi nộp."
+          : "Please answer every question before submitting.",
+      );
+      return;
+    }
+    if (!token) {
+      toast.error("Vui lòng đăng nhập để lưu kết quả bài kiểm tra.");
+      router.push("/login");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const attempt = await submitQuizResult(token, quiz.id, answers);
+      setResult(attempt);
+      if (attempt.percentage >= 80) {
+        toast.success("Tuyệt vời! Bạn đã hoàn thành xuất sắc bài kiểm tra.");
+      } else {
+        toast.info("Hoàn thành! Hãy ôn lại bài để củng cố kiến thức nhé.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể lưu kết quả bài kiểm tra.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleNext = async () => {
@@ -130,6 +179,65 @@ export function Quiz({ quiz }: QuizProps) {
           </div>
         </div>
 
+        <div className="mb-8 space-y-3 text-left">
+          <h4 className="font-bold">
+            {isVietnamese ? "Xem lại đáp án" : "Answer review"}
+          </h4>
+          {quiz.questions.map((reviewQuestion, index) => {
+            const review = result.review.find(
+              (item) => item.questionId === reviewQuestion.id,
+            );
+            const correctIds = new Set(review?.correctAnswerIds ?? []);
+            const selectedId = review?.selectedAnswerId;
+            const isCorrect = !!selectedId && correctIds.has(selectedId);
+            return (
+              <article
+                key={reviewQuestion.id}
+                className="rounded-xl border border-border p-4"
+              >
+                <p className="mb-2 text-sm font-semibold">
+                  {index + 1}.{" "}
+                  {isVietnamese
+                    ? reviewQuestion.question
+                    : reviewQuestion.questionEn || reviewQuestion.question}
+                </p>
+                <ul className="space-y-1.5 text-sm">
+                  {reviewQuestion.answers.map((answer) => {
+                    const isAnswerCorrect = correctIds.has(answer.id);
+                    const wasSelected = selectedId === answer.id;
+                    return (
+                      <li
+                        key={answer.id}
+                        className={
+                          isAnswerCorrect
+                            ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                            : wasSelected
+                              ? "font-semibold text-rose-700 dark:text-rose-400"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {wasSelected ? "• " : ""}
+                        {isVietnamese
+                          ? answer.content
+                          : answer.contentEn || answer.content}
+                        {isAnswerCorrect
+                          ? isVietnamese
+                            ? " — Đáp án đúng"
+                            : " — Correct answer"
+                          : wasSelected && !isCorrect
+                            ? isVietnamese
+                              ? " — Bạn đã chọn"
+                              : " — Your answer"
+                            : ""}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </article>
+            );
+          })}
+        </div>
+
         <Button
           onClick={() => {
             setResult(null);
@@ -150,6 +258,86 @@ export function Quiz({ quiz }: QuizProps) {
         {isVietnamese
           ? "Bài kiểm tra chưa có câu hỏi."
           : "This quiz has no questions yet."}
+      </div>
+    );
+  }
+
+  if (displayAllQuestions) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-5">
+        <div className="border-b border-border/60 pb-2">
+          <h3 className="text-lg font-bold tracking-tight text-foreground">
+            {isVietnamese ? quiz.title : quiz.titleEn || quiz.title}
+          </h3>
+          {quiz.titleEn && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {isVietnamese ? quiz.titleEn : quiz.title}
+            </p>
+          )}
+        </div>
+        {quiz.questions.map((item, questionIndex) => (
+          <fieldset
+            key={item.id}
+            className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6"
+          >
+            <legend className="px-1 text-sm font-bold">
+              {isVietnamese ? `Câu ${questionIndex + 1}` : `Question ${questionIndex + 1}`}
+            </legend>
+            <p className="mb-4 text-sm font-semibold leading-relaxed">
+              {isVietnamese ? item.question : item.questionEn || item.question}
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {item.answers.map((answer, answerIndex) => {
+                const isSelected = answers[item.id] === answer.id;
+                return (
+                  <button
+                    key={answer.id}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() =>
+                      handleSelectAnswerForQuestion(item.id, answer.id)
+                    }
+                    className={`flex items-start gap-3 rounded-xl border p-3 text-left text-sm transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/8 ring-2 ring-primary/20"
+                        : "border-border/80 bg-background/50 hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="font-bold text-primary">
+                      {OPTION_LETTERS[answerIndex % OPTION_LETTERS.length]}.
+                    </span>
+                    <span>
+                      {isVietnamese
+                        ? answer.content
+                        : answer.contentEn || answer.content}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ))}
+        <div className="flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+          <span className="text-xs text-muted-foreground">
+            {isVietnamese
+              ? `${Object.keys(answers).filter((id) => answers[id]).length}/${quiz.questions.length} câu đã trả lời`
+              : `${Object.keys(answers).filter((id) => answers[id]).length}/${quiz.questions.length} questions answered`}
+          </span>
+          <Button
+            type="button"
+            onClick={() => void handleSubmitAll()}
+            disabled={isSubmitting}
+            className="rounded-xl px-5 font-semibold"
+          >
+            {isSubmitting
+              ? isVietnamese
+                ? "Đang nộp..."
+                : "Submitting..."
+              : isVietnamese
+                ? "Nộp bài"
+                : "Submit"}
+          </Button>
+        </div>
       </div>
     );
   }

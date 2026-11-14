@@ -344,6 +344,7 @@ model Video {
 
   // Các mối quan hệ
   activities   InteractiveActivity[]
+  quizzes      Quiz[]
   watchEvents  VideoWatchEvent[]
   questions    LessonQuestion[]
   studyMarkers VideoStudyMarker[]
@@ -458,12 +459,17 @@ model Quiz {
   lessonId String
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
+  videoId String?
+  video   Video?  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
   // Các mối quan hệ
   questions Question[]
   attempts  QuizAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([videoId])
 }
 
 enum QuestionType {

@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Loader2,
   Sparkles,
+  ClipboardList,
   Bookmark,
   Clock3,
   StickyNote,
@@ -108,7 +109,7 @@ export default function LessonDetailPage({
   const [isLessonLocked, setIsLessonLocked] = useState(false);
 
   const [activeTab, setActiveTab] = useState<
-    "video" | "content" | "threed" | "materials" | "quiz" | "questions"
+    "video" | "content" | "threed" | "materials" | "quiz"
   >("video");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -474,8 +475,13 @@ export default function LessonDetailPage({
   const currentVideo =
     lessonVideos.find((video) => video.id === selectedVideoId) ??
     lessonVideos[0];
+  const videoQuizzes = currentVideo?.quizzes ?? [];
   const activeVideoStudyMarkers = studyMarkers.filter(
     (marker) => marker.videoId === currentVideo?.id,
+  );
+  const isCurrentTimeBookmarked = activeVideoStudyMarkers.some(
+    (marker) =>
+      marker.timestampSeconds === playbackPositionSeconds && marker.isBookmarked,
   );
   const lessonMaterials = lesson.materials ?? [];
   const selectedMaterial =
@@ -526,11 +532,6 @@ export default function LessonDetailPage({
       id: "quiz" as const,
       label: isVietnamese ? "Bài tập" : "Assignments",
       icon: HelpCircle,
-    },
-    {
-      id: "questions" as const,
-      label: isVietnamese ? "Hỏi giáo viên" : "Ask the teacher",
-      icon: MessageCircle,
     },
   ];
 
@@ -699,27 +700,35 @@ export default function LessonDetailPage({
     }
   };
 
-  const handleToggleStudyBookmark = async () => {
+  const handleSetStudyBookmark = async (
+    timestampSeconds: number,
+    isBookmarked: boolean,
+  ) => {
     if (!token || user?.role !== "STUDENT" || !videoForStudyTools) {
       toast.error(isVietnamese ? "Chỉ học sinh mới lưu dấu xem lại." : "Only students can bookmark a video.");
       return;
     }
-    const existing = studyMarkers.find(
-      (marker) =>
-        marker.videoId === videoForStudyTools.id &&
-        marker.timestampSeconds === playbackPositionSeconds,
-    );
+    const videoId = videoForStudyTools.id;
     setIsSavingStudyMarker(true);
     try {
-      await saveVideoStudyMarker(token, videoForStudyTools.id, {
-        timestampSeconds: playbackPositionSeconds,
-        isBookmarked: !existing?.isBookmarked,
+      const savedMarker = await saveVideoStudyMarker(token, videoId, {
+        timestampSeconds,
+        isBookmarked,
       });
-      setStudyMarkers(await fetchVideoStudyMarkers(token, videoForStudyTools.id));
+      setStudyMarkers((current) =>
+        [
+          ...current.filter(
+            (marker) =>
+              marker.videoId !== videoId ||
+              marker.timestampSeconds !== timestampSeconds,
+          ),
+          ...(savedMarker ? [savedMarker] : []),
+        ].sort((a, b) => a.timestampSeconds - b.timestampSeconds),
+      );
       toast.success(
-        existing?.isBookmarked
-          ? isVietnamese ? "Đã bỏ dấu xem lại." : "Bookmark removed."
-          : isVietnamese ? "Đã đánh dấu thời điểm này." : "This moment was bookmarked.",
+        isBookmarked
+          ? isVietnamese ? "Đã đánh dấu thời điểm này." : "This moment was bookmarked."
+          : isVietnamese ? "Đã bỏ dấu xem lại." : "Bookmark removed.",
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể lưu dấu xem lại.");
@@ -1110,6 +1119,33 @@ export default function LessonDetailPage({
                   )}
                 </div>
 
+                {user?.role === "STUDENT" && videoQuizzes.length > 0 && (
+                  <section className="mt-5 space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-bold">
+                        <ClipboardList className="h-4 w-4 text-emerald-600" />
+                        {isVietnamese
+                          ? "Bài tập củng cố video"
+                          : "Video practice"}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {isVietnamese
+                          ? "Các câu hỏi được hiển thị cùng một trang. Chọn đáp án rồi nộp bài để xem điểm."
+                          : "All questions appear on one page. Choose your answers and submit to see your score."}
+                      </p>
+                    </div>
+                    <div className="space-y-6">
+                      {videoQuizzes.map((quiz) => (
+                        <Quiz
+                          key={quiz.id}
+                          quiz={quiz}
+                          displayAllQuestions
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {user?.role === "STUDENT" &&
                   videoForStudyTools &&
                   videoForStudyTools.contentType !== "H5P" && (
@@ -1128,16 +1164,23 @@ export default function LessonDetailPage({
                         </div>
                         <Button
                           type="button"
-                          variant={activeVideoStudyMarkers.some((marker) =>
-                            marker.timestampSeconds === playbackPositionSeconds && marker.isBookmarked,
-                          ) ? "default" : "outline"}
+                          variant={isCurrentTimeBookmarked ? "default" : "outline"}
                           disabled={isSavingStudyMarker}
-                          onClick={() => void handleToggleStudyBookmark()}
+                          onClick={() =>
+                            void handleSetStudyBookmark(
+                              playbackPositionSeconds,
+                              !isCurrentTimeBookmarked,
+                            )
+                          }
                         >
                           <Bookmark className="mr-2 h-4 w-4" />
-                          {isVietnamese
-                            ? `Đánh dấu ${formatVideoTimestamp(playbackPositionSeconds)}`
-                            : `Bookmark ${formatVideoTimestamp(playbackPositionSeconds)}`}
+                          {isCurrentTimeBookmarked
+                            ? isVietnamese
+                              ? `Bỏ dấu ${formatVideoTimestamp(playbackPositionSeconds)}`
+                              : `Remove bookmark ${formatVideoTimestamp(playbackPositionSeconds)}`
+                            : isVietnamese
+                              ? `Đánh dấu ${formatVideoTimestamp(playbackPositionSeconds)}`
+                              : `Bookmark ${formatVideoTimestamp(playbackPositionSeconds)}`}
                         </Button>
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -1174,7 +1217,29 @@ export default function LessonDetailPage({
                               <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm">
                                 {marker.note || (isVietnamese ? "Đã đánh dấu để xem lại" : "Bookmarked to revisit")}
                               </p>
-                              {marker.isBookmarked ? <Bookmark className="h-4 w-4 shrink-0 text-primary" /> : null}
+                              {marker.isBookmarked && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={isSavingStudyMarker}
+                                  aria-label={
+                                    isVietnamese
+                                      ? `Bỏ dấu xem lại tại ${formatVideoTimestamp(marker.timestampSeconds)}`
+                                      : `Remove bookmark at ${formatVideoTimestamp(marker.timestampSeconds)}`
+                                  }
+                                  onClick={() =>
+                                    void handleSetStudyBookmark(
+                                      marker.timestampSeconds,
+                                      false,
+                                    )
+                                  }
+                                  className="h-auto shrink-0 px-2 py-1 text-xs text-destructive"
+                                >
+                                  <X className="mr-1 h-3.5 w-3.5" />
+                                  {isVietnamese ? "Bỏ dấu" : "Remove"}
+                                </Button>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -1459,7 +1524,7 @@ export default function LessonDetailPage({
               </div>
             )}
 
-            {activeTab === "questions" && (
+            {activeTab === "video" && (
               <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-5">
                 <div>
                   <h2 className="flex items-center gap-2 text-xl font-bold">

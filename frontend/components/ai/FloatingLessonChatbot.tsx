@@ -32,7 +32,7 @@ export type FloatingLessonChatbotProps = {
   token?: string | null;
   lessonId?: string;
   lessonTitle: string;
-  lessonDescription?: string;
+  lessonDescription?: string | null;
   courseLevel?: string;
   courseSubject?: string;
   isVietnamese?: boolean;
@@ -244,6 +244,14 @@ export function FloatingLessonChatbot({
   const handleSend = async (textToSend?: string) => {
     const text = (textToSend ?? inputValue).trim();
     if (!text || isTyping) return;
+    if (text.length > 2000) {
+      toast.error(
+        isVietnamese
+          ? "Câu hỏi không được dài quá 2.000 ký tự."
+          : "Questions must be at most 2,000 characters.",
+      );
+      return;
+    }
 
     const newUserMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -574,6 +582,7 @@ export function FloatingLessonChatbot({
                   <div className="relative flex items-end gap-2 rounded-2xl border border-input bg-card p-1.5 focus-within:ring-2 focus-within:ring-primary/30 transition-all">
                     <textarea
                       ref={textareaRef}
+                      maxLength={2000}
                       value={inputValue}
                       onChange={handleTextareaChange}
                       onKeyDown={handleKeyDown}

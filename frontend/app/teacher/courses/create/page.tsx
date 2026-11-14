@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import {
   createCourse,
   createLesson,
+  createLessonQuiz,
   createLessonVideo,
   uploadCourseMedia,
 } from "@/lib/api";
@@ -30,6 +31,10 @@ import {
   MAX_LECTURE_VIDEO_BYTES,
   type LectureDraft,
 } from "@/components/teacher/LectureBuilder";
+import {
+  BilingualTextField,
+  type BilingualTextValue,
+} from "@/components/teacher/BilingualTextField";
 
 const teacherRoles = ["TEACHER"] as const;
 
@@ -43,13 +48,15 @@ export default function CreateCoursePage() {
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
-  const [title, setTitle] = useState("");
+  const [titleVi, setTitleVi] = useState("");
+  const [titleEn, setTitleEn] = useState("");
   const [contentLanguage, setContentLanguage] = useState<AuthoringLanguage>(
     locale === "en" ? "en" : "vi",
   );
   const [subject, setSubject] = useState<SubjectType>("math");
   const [level, setLevel] = useState("8");
-  const [description, setDescription] = useState("");
+  const [descriptionVi, setDescriptionVi] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
   const [thumbnail, setThumbnail] = useState("");
   const [lectures, setLectures] = useState<LectureDraft[]>([]);
 
@@ -87,8 +94,10 @@ export default function CreateCoursePage() {
     const failures: string[] = [];
     let order = 1;
     for (const lecture of lectures) {
-      const lectureTitle = lecture.title.trim();
-      const lectureDescription = lecture.description.trim();
+      const lectureTitle = lecture.title.trim() || lecture.titleEn.trim();
+      const lectureTitleEn = lecture.titleEn.trim() || lecture.title.trim();
+      const lectureDescription =
+        lecture.description.trim() || lecture.descriptionEn.trim();
       const videos = lecture.videos.filter((video) =>
         video.mode === "url" ? video.url.trim() : video.file,
       );
@@ -101,12 +110,16 @@ export default function CreateCoursePage() {
           title:
             lectureTitle ||
             (contentLanguage === "vi" ? `Bài ${order}` : `Lesson ${order}`),
+          titleEn: lectureTitleEn || undefined,
           description: lectureDescription || undefined,
+          descEn:
+            lecture.descriptionEn.trim() ||
+            lecture.description.trim() ||
+            undefined,
           duration: videos.length > 0 && videos.every((video) => video.durationSeconds != null)
             ? `${Math.max(1, Math.round(videos.reduce((sum, video) => sum + (video.durationSeconds ?? 0), 0) / 60))} phút`
             : undefined,
           order,
-          sourceLanguage: contentLanguage,
         });
         order += 1;
         for (const [index, video] of videos.entries()) {
@@ -118,9 +131,9 @@ export default function CreateCoursePage() {
                     lessonId: lesson.data.id,
                   })
                 : null;
-            await createLessonVideo(authToken, lesson.data.id, {
-              title: video.title.trim() || `${label} - Video phần ${index + 1}`,
-              sourceLanguage: contentLanguage,
+            const createdVideo = await createLessonVideo(authToken, lesson.data.id, {
+              title: video.title.trim() || video.titleEn.trim() || `${label} - Video phần ${index + 1}`,
+              titleEn: video.titleEn.trim() || video.title.trim() || undefined,
               url: uploaded?.url ?? video.url.trim(),
               durationSeconds: video.durationSeconds ?? undefined,
               activities: video.questions.map((question) => ({
@@ -136,6 +149,24 @@ export default function CreateCoursePage() {
                 },
               })),
             });
+            for (const [quizIndex, quiz] of video.practiceQuizzes.entries()) {
+              try {
+                await createLessonQuiz(authToken, lesson.data.id, {
+                  title: quiz.title.trim(),
+                  videoId: createdVideo.id,
+                  sourceLanguage: contentLanguage,
+                  questions: quiz.questions.map((question) => ({
+                    question: question.question.trim(),
+                    options: question.options.map((content) => ({ content: content.trim() })),
+                    correctIndex: question.correctIndex,
+                  })),
+                });
+              } catch (quizError) {
+                failures.push(
+                  `${label} – video ${index + 1}, bài tập ${quizIndex + 1}: ${quizError instanceof Error ? quizError.message : "lỗi không xác định"}`,
+                );
+              }
+            }
           } catch (videoError) {
             failures.push(
               `${label} – video ${index + 1}: ${videoError instanceof Error ? videoError.message : "lỗi không xác định"}`,
@@ -153,7 +184,7 @@ export default function CreateCoursePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
+    if (!titleVi.trim() && !titleEn.trim()) {
       toast.error("Vui lòng nhập tên khóa học");
       return;
     }
@@ -167,6 +198,10 @@ export default function CreateCoursePage() {
         }
         if (video.questions.length > 20) {
           toast.error("Mỗi video chỉ hỗ trợ tối đa 20 câu hỏi tương tác.");
+          return;
+        }
+        if (video.practiceQuizzes.length > 10) {
+          toast.error("Mỗi video chỉ hỗ trợ tối đa 10 bài tập củng cố.");
           return;
         }
         if (video.questions.length && !(video.mode === "file" ? video.file : url)) {
@@ -189,6 +224,29 @@ export default function CreateCoursePage() {
           return;
         }
         if (
+          video.practiceQuizzes.some(
+            (quiz) =>
+              quiz.title.trim().length < 2 ||
+              quiz.questions.length < 1 ||
+              quiz.questions.length > 20 ||
+              quiz.questions.some(
+                (question) =>
+                  question.question.trim().length < 2 ||
+                  question.options.some((option) => !option.trim()),
+              ),
+          )
+        ) {
+          toast.error("Mỗi bài tập cần có tên và ít nhất một câu hỏi đủ 4 lựa chọn.");
+          return;
+        }
+        if (
+          video.practiceQuizzes.length &&
+          !(video.mode === "file" ? video.file : url)
+        ) {
+          toast.error("Hãy chọn video trước khi thêm bài tập củng cố.");
+          return;
+        }
+        if (
           video.mode === "file" &&
           video.file &&
           video.file.size > MAX_LECTURE_VIDEO_BYTES
@@ -207,9 +265,11 @@ export default function CreateCoursePage() {
         );
       }
       const res = await createCourse(token, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        sourceLanguage: contentLanguage,
+        title: titleVi.trim() || titleEn.trim(),
+        titleEn: titleEn.trim() || titleVi.trim(),
+        description:
+          descriptionVi.trim() || descriptionEn.trim() || undefined,
+        descEn: descriptionEn.trim() || descriptionVi.trim() || undefined,
         subject,
         level,
         thumbnail: thumbnail.trim() || undefined,
@@ -303,48 +363,35 @@ export default function CreateCoursePage() {
               </div>
             </div>
 
-            {/* Title & description in a single language; the other is auto-translated */}
             <div className="space-y-4">
               <AuthoringLanguageToggle
                 value={contentLanguage}
                 onChange={setContentLanguage}
                 disabled={loading}
               />
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-foreground">
-                  {contentLanguage === "vi" ? "Tên khóa học" : "Course title"}
-                </label>
-                <input
-                  type="text"
-                  placeholder={
-                    contentLanguage === "vi"
-                      ? "Ví dụ: Hình học phẳng và Định lý Pythagoras"
-                      : "Example: Plane Geometry & Pythagorean Theorem"
-                  }
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-foreground">
-                  {contentLanguage === "vi"
+              <BilingualTextField
+                label={locale === "vi" ? "Tên khóa học" : "Course title"}
+                value={{ vi: titleVi, en: titleEn }}
+                onChange={(value: BilingualTextValue) => {
+                  setTitleVi(value.vi);
+                  setTitleEn(value.en);
+                }}
+                disabled={loading}
+              />
+              <BilingualTextField
+                label={
+                  locale === "vi"
                     ? "Mô tả khóa học (không bắt buộc)"
-                    : "Course description (optional)"}
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder={
-                    contentLanguage === "vi"
-                      ? "Tóm tắt nội dung chính và mục tiêu đầu ra của khóa học..."
-                      : "Course summary and learning outcomes..."
-                  }
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
-                />
-              </div>
+                    : "Course description (optional)"
+                }
+                value={{ vi: descriptionVi, en: descriptionEn }}
+                onChange={(value: BilingualTextValue) => {
+                  setDescriptionVi(value.vi);
+                  setDescriptionEn(value.en);
+                }}
+                multiline
+                disabled={loading}
+              />
             </div>
 
             {/* Thumbnail upload or URL */}

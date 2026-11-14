@@ -650,6 +650,7 @@ export const learningService = {
   async listAvailableQuizzes(userId: string) {
     const [quizzes, lessons, completedRows] = await Promise.all([
       prisma.quiz.findMany({
+      where: { videoId: null },
       orderBy: { createdAt: "desc" },
       include: {
         lesson: {

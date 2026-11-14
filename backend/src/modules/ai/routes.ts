@@ -6,6 +6,7 @@ import {
   findLessonResources,
   generateCourseOutline,
   generateLessonDraft,
+  generateLessonQuizDraft,
 } from "./studio.controller.js";
 import { lessonTutorChat } from "./lesson-tutor.controller.js";
 import {
@@ -109,6 +110,7 @@ router.post(
 router.delete("/conversations/:id", requireAuth, deleteAiConversation);
 router.post("/studio/outline", ...teacherAi, generateCourseOutline);
 router.post("/studio/lessons/:lessonId/draft", ...teacherAi, generateLessonDraft);
+router.post("/studio/lessons/:lessonId/quiz-draft", ...teacherAi, generateLessonQuizDraft);
 router.post(
   "/studio/lessons/bilingual-draft",
   ...teacherAi,

@@ -328,6 +328,18 @@ export const getCourseById = async (req: Request, res: Response) => {
                 contentType: true,
                 durationSeconds: true,
                 lessonId: true,
+                quizzes: {
+                  include: {
+                    questions: {
+                      orderBy: { createdAt: "asc" },
+                      include: {
+                        answers: {
+                          select: { id: true, content: true, contentEn: true },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             quizzes: {

@@ -51,6 +51,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { AiLessonAssistant } from "@/components/teacher/AiLessonAssistant";
 import { AiOutlineModal } from "@/components/teacher/AiOutlineModal";
+import { LessonQuizBuilder } from "@/components/teacher/LessonQuizBuilder";
+import {
+  BilingualTextField,
+  type BilingualTextValue,
+} from "@/components/teacher/BilingualTextField";
 import { SortableList } from "@/components/teacher/SortableList";
 import { VideoCheckpointManager } from "@/components/teacher/VideoCheckpointManager";
 import { VideoTimePicker } from "@/components/teacher/VideoTimePicker";
@@ -286,7 +291,8 @@ export default function CourseEditStudioPage({
   const [contentLanguage, setContentLanguage] = useState<AuthoringLanguage>(
     locale === "en" ? "en" : "vi",
   );
-  const [newLessonTitle, setNewLessonTitle] = useState("");
+  const [lessonTitleVi, setLessonTitleVi] = useState("");
+  const [lessonTitleEn, setLessonTitleEn] = useState("");
   const [lessonContentVi, setLessonContentVi] = useState("");
   const [lessonContentEn, setLessonContentEn] = useState("");
   const [lessonVocabulary, setLessonVocabulary] = useState<LessonVocabularyTerm[]>([]);
@@ -355,7 +361,8 @@ export default function CourseEditStudioPage({
   }
 
   const resetLessonForm = () => {
-    setNewLessonTitle("");
+    setLessonTitleVi("");
+    setLessonTitleEn("");
     setLessonContentVi("");
     setLessonContentEn("");
     setLessonVocabulary([]);
@@ -376,9 +383,8 @@ export default function CourseEditStudioPage({
 
   const openEditLesson = (lesson: Lesson) => {
     setEditingLessonId(lesson.id);
-    setNewLessonTitle(
-      (contentLanguage === "en" ? lesson.titleEn : lesson.title) || lesson.title,
-    );
+    setLessonTitleVi(lesson.title);
+    setLessonTitleEn(lesson.titleEn ?? "");
     setLessonContentVi(lesson.description ?? "");
     setLessonContentEn(lesson.descEn ?? "");
     setLessonVocabulary(lesson.vocabulary ?? []);
@@ -490,13 +496,19 @@ export default function CourseEditStudioPage({
                 : lesson.duration,
           };
         }));
-      } else {
+      } else if (kind === "quizzes") {
         setLessons((prev) =>
           prev.map((lesson) => ({
             ...lesson,
-            [kind]: (lesson[kind] ?? []).filter(
-              (item: { id: string }) => item.id !== contentId,
+            quizzes: (lesson.quizzes ?? []).filter(
+              (item) => item.id !== contentId,
             ),
+            videos: (lesson.videos ?? []).map((video) => ({
+              ...video,
+              quizzes: (video.quizzes ?? []).filter(
+                (item) => item.id !== contentId,
+              ),
+            })),
           })),
         );
       }
@@ -598,7 +610,7 @@ export default function CourseEditStudioPage({
 
   const handleAddLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLessonTitle.trim()) {
+    if (!lessonTitleVi.trim() && !lessonTitleEn.trim()) {
       toast.error("Nhập tên bài học.");
       return;
     }
@@ -627,12 +639,12 @@ export default function CourseEditStudioPage({
       setIsSavingLesson(true);
       try {
         const updated = await updateLesson(token, editingLessonId, {
-          title: newLessonTitle.trim(),
+          title: lessonTitleVi.trim() || lessonTitleEn.trim(),
+          titleEn: lessonTitleEn.trim() || lessonTitleVi.trim(),
           description: lessonContentVi.trim(),
           descEn: lessonContentEn.trim() || undefined,
           vocabulary: lessonVocabulary,
           duration: newLessonDuration.trim() || undefined,
-          sourceLanguage: contentLanguage,
         });
         setLessons((prev) =>
           prev.map((lesson) =>
@@ -657,11 +669,11 @@ export default function CourseEditStudioPage({
     try {
       const res = await createLesson(token, {
         courseId: id,
-        title: newLessonTitle.trim(),
+        title: lessonTitleVi.trim() || lessonTitleEn.trim(),
+        titleEn: lessonTitleEn.trim() || lessonTitleVi.trim(),
         description: lessonContentVi.trim() || undefined,
         descEn: lessonContentEn.trim() || undefined,
         vocabulary: lessonVocabulary,
-        sourceLanguage: contentLanguage,
         order:
           lessons.reduce(
             (maxOrder, lesson) => Math.max(maxOrder, lesson.order),
@@ -1343,33 +1355,25 @@ export default function CourseEditStudioPage({
                   onChange={setContentLanguage}
                   disabled={isSavingLesson}
                 />
+                <BilingualTextField
+                  label="Tên bài học"
+                  value={{ vi: lessonTitleVi, en: lessonTitleEn }}
+                  onChange={(value: BilingualTextValue) => {
+                    setLessonTitleVi(value.vi);
+                    setLessonTitleEn(value.en);
+                  }}
+                  disabled={isSavingLesson}
+                />
                 <div>
-                  <label className="text-xs font-semibold text-foreground mb-1 block">
-                    {contentLanguage === "vi" ? "Tên bài học" : "Lesson title"}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={
-                      contentLanguage === "vi"
-                        ? "Ví dụ: Bài 4: Nhân và chia phân số"
-                        : "Example: Lesson 4: Multiplying and dividing fractions"
-                    }
-                    value={newLessonTitle}
-                    onChange={(e) => setNewLessonTitle(e.target.value)}
-                    className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-foreground mb-1 block">
-                    Nội dung bài giảng — Tiếng Việt
-                  </label>
-                  <textarea
-                    rows={6}
-                    maxLength={5000}
-                    value={lessonContentVi}
-                    onChange={(e) => setLessonContentVi(e.target.value)}
-                    placeholder="Nhập nội dung bài giảng, các ý chính và ví dụ bằng tiếng Việt..."
-                    className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none resize-none"
+                  <BilingualTextField
+                    label="Nội dung bài giảng"
+                    value={{ vi: lessonContentVi, en: lessonContentEn }}
+                    onChange={(value: BilingualTextValue) => {
+                      setLessonContentVi(value.vi);
+                      setLessonContentEn(value.en);
+                    }}
+                    multiline
+                    disabled={isSavingLesson}
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Nội dung này là nguồn để AI tạo bản tiếng Anh đơn giản và từ vựng trọng tâm.
@@ -1378,7 +1382,7 @@ export default function CourseEditStudioPage({
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="text-xs font-semibold text-foreground">
-                      Bản tiếng Anh cho học sinh
+                      Từ vựng bài học
                     </label>
                     <Button
                       type="button"
@@ -1397,14 +1401,6 @@ export default function CourseEditStudioPage({
                         : "Tạo tiếng Anh + từ vựng bằng AI"}
                     </Button>
                   </div>
-                  <textarea
-                    rows={6}
-                    maxLength={5000}
-                    value={lessonContentEn}
-                    onChange={(e) => setLessonContentEn(e.target.value)}
-                    placeholder="Bản tiếng Anh đơn giản sẽ xuất hiện ở đây. Giáo viên có thể chỉnh sửa trước khi lưu."
-                    className="w-full resize-y rounded-xl border border-border bg-background px-4 py-2 text-sm focus:outline-none"
-                  />
                 </div>
                 <div className="space-y-3 rounded-xl border border-border bg-background p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2426,6 +2422,67 @@ export default function CourseEditStudioPage({
                             selectedTime={savedVideoSelectedTimes[video.id] ?? "0"}
                           />
                         )}
+                        {token && (
+                          <section className="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                            <h4 className="text-xs font-bold text-emerald-700">
+                              Bài tập củng cố theo video
+                            </h4>
+                            <LessonQuizBuilder
+                              token={token}
+                              lessonId={lesson.id}
+                              lessonTitle={video.title}
+                              videoId={video.id}
+                              onCreated={(quiz) =>
+                                setLessons((current) =>
+                                  current.map((item) =>
+                                    item.id === lesson.id
+                                      ? {
+                                          ...item,
+                                          videos: (item.videos ?? []).map((entry) =>
+                                            entry.id === video.id
+                                              ? {
+                                                  ...entry,
+                                                  quizzes: [
+                                                    ...(entry.quizzes ?? []),
+                                                    quiz,
+                                                  ],
+                                                }
+                                              : entry,
+                                          ),
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                            {(video.quizzes ?? []).map((quiz) => (
+                              <div
+                                key={quiz.id}
+                                className="flex items-center justify-between gap-2 rounded-md border border-emerald-500/20 bg-background px-2.5 py-2 text-xs"
+                              >
+                                <span className="truncate">
+                                  {quiz.title} · {quiz.questions.length} câu
+                                </span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 shrink-0 text-destructive"
+                                  aria-label={`Xóa bài tập ${quiz.title}`}
+                                  onClick={() =>
+                                    void handleDeleteContent(
+                                      "quizzes",
+                                      quiz.id,
+                                      quiz.title,
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ))}
+                          </section>
+                        )}
                         {openAnalyticsVideoId === video.id && (
                           <div className="rounded-lg border border-border bg-muted/20 p-3">
                             {loadingAnalyticsVideoId === video.id ? (
@@ -2491,6 +2548,23 @@ export default function CourseEditStudioPage({
                       )}
                     />
                   </div>
+                )}
+
+                {token && (
+                  <LessonQuizBuilder
+                    token={token}
+                    lessonId={lesson.id}
+                    lessonTitle={lesson.title}
+                    onCreated={(quiz) =>
+                      setLessons((current) =>
+                        current.map((item) =>
+                          item.id === lesson.id
+                            ? { ...item, quizzes: [...(item.quizzes ?? []), quiz] }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
                 )}
 
                 {(lesson.quizzes ?? []).length > 0 && (

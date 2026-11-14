@@ -12,6 +12,7 @@ import type {
 } from "@/types";
 import type { CustomLabInput, CustomLabRecord } from "@/types/custom-lab";
 import type { ExploreMaterial } from "@/lib/explore-data.config";
+import { buildLessonTutorHistory } from "@/lib/lesson-tutor-history";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -375,7 +376,16 @@ export async function submitQuizResult(
   token: string,
   quizId: string,
   answers: Record<string, string>,
-): Promise<{ score: number; totalQuestions: number; percentage: number }> {
+): Promise<{
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  review: {
+    questionId: string;
+    selectedAnswerId: string | null;
+    correctAnswerIds: string[];
+  }[];
+}> {
   const res = await fetch(`${API_URL}/quizzes/${quizId}/attempts`, {
     method: "POST",
     headers: {
@@ -821,8 +831,8 @@ export function createLessonVideo(
   token: string,
   lessonId: string,
   data: CreateLessonVideoInput,
-) {
-  return postLessonContent(token, lessonId, data);
+): Promise<Video> {
+  return postLessonContent<Video>(token, lessonId, data);
 }
 
 export async function updateLessonVideoMetadata(
@@ -1128,6 +1138,45 @@ export async function createLesson(
   return json;
 }
 
+export type LessonQuizDraftQuestion = {
+  question: string;
+  questionEn: string;
+  options: string[];
+  optionsEn: string[];
+  correctIndex: number;
+};
+
+export type LessonQuizDraft = {
+  title: string;
+  titleEn: string;
+  questions: LessonQuizDraftQuestion[];
+};
+
+export async function createLessonQuiz(
+  token: string,
+  lessonId: string,
+  input: {
+    title: string;
+    titleEn?: string;
+    videoId?: string;
+    sourceLanguage?: "vi" | "en";
+    questions: {
+      question: string;
+      questionEn?: string;
+      options: { content: string; contentEn?: string }[];
+      correctIndex: number;
+    }[];
+  },
+): Promise<NonNullable<Lesson["quizzes"]>[number]> {
+  return sendManagedRequest(
+    token,
+    "POST",
+    `/lessons/${encodeURIComponent(lessonId)}/quizzes`,
+    input,
+    "Không thể tạo bài tập.",
+  );
+}
+
 export type BilingualLessonDraft = {
   contentEn: string;
   vocabulary: LessonVocabularyTerm[];
@@ -1385,25 +1434,14 @@ export async function sendLessonTutorMessage(
   prompt: string,
   history: { role: "user" | "assistant"; content: string }[] = [],
   context?: {
-    grade?: string;
-    subject?: string;
-    lessonTitle?: string;
-    lessonDescription?: string;
-    lessonId?: string;
+    grade?: string | null;
+    subject?: string | null;
+    lessonTitle?: string | null;
+    lessonDescription?: string | null;
+    lessonId?: string | null;
     locale?: "vi" | "en";
   },
 ): Promise<string> {
-  const completeHistory: typeof history = [];
-  let pendingQuestion: (typeof history)[number] | null = null;
-  for (const message of history) {
-    if (message.role === "user") {
-      pendingQuestion = message;
-    } else if (pendingQuestion) {
-      completeHistory.push(pendingQuestion, message);
-      pendingQuestion = null;
-    }
-  }
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -1416,7 +1454,7 @@ export async function sendLessonTutorMessage(
     headers,
     body: JSON.stringify({
       prompt,
-      history: completeHistory.slice(-10),
+      history: buildLessonTutorHistory(history, prompt),
       context,
     }),
   });
@@ -1645,6 +1683,18 @@ export function generateAiLessonDraft(token: string, lessonId: string) {
     token,
     `/lessons/${encodeURIComponent(lessonId)}/draft`,
     {},
+  );
+}
+
+export function generateAiLessonQuizDraft(
+  token: string,
+  lessonId: string,
+  input: { questionCount: number; focus?: string; videoId?: string },
+) {
+  return postAiStudio<LessonQuizDraft>(
+    token,
+    `/lessons/${encodeURIComponent(lessonId)}/quiz-draft`,
+    input,
   );
 }
 

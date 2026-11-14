@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ClipboardList, PlayCircle } from "lucide-react";
+import { Bot, ClipboardList, PlayCircle, Sparkles } from "lucide-react";
 import { Quiz } from "@/components/lessons/Quiz";
+import { FloatingLessonChatbot } from "@/components/ai/FloatingLessonChatbot";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useLang } from "@/contexts/LanguageContext";
@@ -29,6 +30,7 @@ export default function AssignmentsPage() {
   const [activeQuiz, setActiveQuiz] = useState<AvailableQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAiTutorOpen, setIsAiTutorOpen] = useState(false);
 
   useEffect(() => {
     if (!token || user?.role !== "STUDENT") return;
@@ -109,11 +111,40 @@ export default function AssignmentsPage() {
                     : activeQuiz.titleEn || activeQuiz.title}
                 </h2>
               </div>
-              <Button variant="outline" onClick={() => setActiveQuiz(null)}>
-                {isVietnamese ? "Danh sách bài tập" : "All assignments"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAiTutorOpen(true)}
+                  className="border-violet-500/30 text-violet-700 dark:text-violet-300"
+                >
+                  <Bot className="mr-2 h-4 w-4" />
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  {isVietnamese ? "Hỏi Nora AI" : "Ask Nora AI"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAiTutorOpen(false);
+                    setActiveQuiz(null);
+                  }}
+                >
+                  {isVietnamese ? "Danh sách bài tập" : "All assignments"}
+                </Button>
+              </div>
             </div>
             <Quiz key={activeQuiz.id} quiz={activeQuiz} />
+            <FloatingLessonChatbot
+              token={token}
+              lessonId={activeQuiz.lesson.id}
+              lessonTitle={
+                isVietnamese
+                  ? activeQuiz.lesson.title
+                  : activeQuiz.lesson.titleEn || activeQuiz.lesson.title
+              }
+              isVietnamese={isVietnamese}
+              isOpen={isAiTutorOpen}
+              onOpenChange={setIsAiTutorOpen}
+            />
           </section>
         ) : quizzes.length === 0 ? (
           <p className="py-16 text-center text-muted-foreground">

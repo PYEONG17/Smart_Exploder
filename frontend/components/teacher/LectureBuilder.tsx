@@ -1,11 +1,15 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Trash2, Video } from "lucide-react";
+import { ArrowDown, ArrowUp, ClipboardList, Plus, Trash2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getYouTubeEmbedUrl } from "@/lib/video-url";
 import { SortableList } from "./SortableList";
 import { moveItem } from "./useDragReorder";
 import { VideoTimePicker } from "./VideoTimePicker";
+import {
+  BilingualTextField,
+  type BilingualTextValue,
+} from "./BilingualTextField";
 
 export type VideoQuestionDraft = {
   id: string;
@@ -16,20 +20,37 @@ export type VideoQuestionDraft = {
   explanation: string;
 };
 
+export type VideoPracticeQuestionDraft = {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+};
+
+export type VideoPracticeQuizDraft = {
+  id: string;
+  title: string;
+  questions: VideoPracticeQuestionDraft[];
+};
+
 export type LectureVideoDraft = {
   id: string;
   title: string;
+  titleEn: string;
   mode: "url" | "file";
   url: string;
   file: File | null;
   durationSeconds: number | null;
   questions: VideoQuestionDraft[];
+  practiceQuizzes: VideoPracticeQuizDraft[];
 };
 
 export type LectureDraft = {
   id: string;
   title: string;
+  titleEn: string;
   description: string;
+  descriptionEn: string;
   videos: LectureVideoDraft[];
 };
 
@@ -38,11 +59,13 @@ export const MAX_LECTURE_VIDEO_BYTES = 1024 * 1024 * 1024;
 export const createVideoDraft = (): LectureVideoDraft => ({
   id: crypto.randomUUID(),
   title: "",
+  titleEn: "",
   mode: "url",
   url: "",
   file: null,
   durationSeconds: null,
   questions: [],
+  practiceQuizzes: [],
 });
 
 const createVideoQuestionDraft = (): VideoQuestionDraft => ({
@@ -54,10 +77,25 @@ const createVideoQuestionDraft = (): VideoQuestionDraft => ({
   explanation: "",
 });
 
+const createVideoPracticeQuizDraft = (): VideoPracticeQuizDraft => ({
+  id: crypto.randomUUID(),
+  title: "",
+  questions: [createVideoPracticeQuestionDraft()],
+});
+
+const createVideoPracticeQuestionDraft = (): VideoPracticeQuestionDraft => ({
+  id: crypto.randomUUID(),
+  question: "",
+  options: ["", "", "", ""],
+  correctIndex: 0,
+});
+
 export const createLectureDraft = (): LectureDraft => ({
   id: crypto.randomUUID(),
   title: "",
+  titleEn: "",
   description: "",
+  descriptionEn: "",
   videos: [createVideoDraft()],
 });
 
@@ -186,28 +224,28 @@ export function LectureBuilder({ value, onChange, language, disabled }: Props) {
             </Button>
           </div>
 
-          <input
-            value={lecture.title}
-            onChange={(event) =>
-              updateLecture(lecture.id, { title: event.target.value })
+          <BilingualTextField
+            label={isVi ? "Tên bài giảng (không bắt buộc)" : "Lecture title (optional)"}
+            value={{ vi: lecture.title, en: lecture.titleEn }}
+            onChange={(title: BilingualTextValue) =>
+              updateLecture(lecture.id, {
+                title: title.vi,
+                titleEn: title.en,
+              })
             }
-            placeholder={
-              isVi ? "Tên bài giảng (không bắt buộc)" : "Lecture title (optional)"
-            }
-            className={inputClass}
+            disabled={disabled}
           />
-          <textarea
-            rows={3}
-            value={lecture.description}
-            onChange={(event) =>
-              updateLecture(lecture.id, { description: event.target.value })
+          <BilingualTextField
+            label={isVi ? "Mô tả bài giảng (không bắt buộc)" : "Lecture description (optional)"}
+            value={{ vi: lecture.description, en: lecture.descriptionEn }}
+            onChange={(description: BilingualTextValue) =>
+              updateLecture(lecture.id, {
+                description: description.vi,
+                descriptionEn: description.en,
+              })
             }
-            placeholder={
-              isVi
-                ? "Nội dung bài giảng / mô tả chủ đề (không bắt buộc)"
-                : "Lecture content / topic description (optional)"
-            }
-            className={`${inputClass} resize-none`}
+            multiline
+            disabled={disabled}
           />
 
           <div className="space-y-3">
@@ -315,11 +353,16 @@ export function LectureBuilder({ value, onChange, language, disabled }: Props) {
                   </div>
                 )}
 
-                <input
-                  value={video.title}
-                  onChange={(event) => updateVideo(lecture.id, video.id, { title: event.target.value })}
-                  placeholder={isVi ? `Tên video / phần ${videoIndex + 1} (không bắt buộc)` : `Video / section ${videoIndex + 1} title (optional)`}
-                  className={inputClass}
+                <BilingualTextField
+                  label={isVi ? `Tên video / phần ${videoIndex + 1} (không bắt buộc)` : `Video / section ${videoIndex + 1} title (optional)`}
+                  value={{ vi: video.title, en: video.titleEn }}
+                  onChange={(title: BilingualTextValue) =>
+                    updateVideo(lecture.id, video.id, {
+                      title: title.vi,
+                      titleEn: title.en,
+                    })
+                  }
+                  disabled={disabled}
                 />
                 <VideoTimePicker
                   src={video.mode === "url" ? video.url : undefined}
@@ -340,6 +383,240 @@ export function LectureBuilder({ value, onChange, language, disabled }: Props) {
                           ? "Kéo thanh thời gian trong video xem trước để đặt mốc xuất hiện. Học sinh cần trả lời đúng mới xem tiếp."
                           : "Drag the preview timeline to set when each question appears. Students must answer correctly to continue."}
                       </p>
+                    </div>
+                    <div className="space-y-3 border-t border-border pt-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="flex items-center gap-2 text-sm font-semibold">
+                            <ClipboardList className="h-4 w-4 text-emerald-600" />
+                            {isVi ? "Bài tập củng cố sau video" : "Video practice quizzes"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {isVi
+                              ? "Tạo một hoặc nhiều bài tập; mỗi bài có nhiều câu học sinh làm lần lượt."
+                              : "Add one or more quizzes; students answer each quiz question by question."}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={disabled || video.practiceQuizzes.length >= 10}
+                          onClick={() =>
+                            updateVideo(lecture.id, video.id, {
+                              practiceQuizzes: [
+                                ...video.practiceQuizzes,
+                                createVideoPracticeQuizDraft(),
+                              ],
+                            })
+                          }
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          {isVi ? "Thêm bài tập" : "Add quiz"}
+                        </Button>
+                      </div>
+                      {video.practiceQuizzes.map((quiz, quizIndex) => (
+                        <fieldset
+                          key={quiz.id}
+                          className="space-y-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold">
+                              {isVi ? "Bài tập" : "Quiz"} {quizIndex + 1}
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              disabled={disabled}
+                              onClick={() =>
+                                updateVideo(lecture.id, video.id, {
+                                  practiceQuizzes: video.practiceQuizzes.filter(
+                                    (item) => item.id !== quiz.id,
+                                  ),
+                                })
+                              }
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              {isVi ? "Xóa bài tập" : "Remove quiz"}
+                            </Button>
+                          </div>
+                          <label className="block text-xs text-muted-foreground">
+                            {isVi ? "Tên bài tập" : "Quiz title"}
+                            <input
+                              required
+                              maxLength={150}
+                              value={quiz.title}
+                              onChange={(event) =>
+                                updateVideo(lecture.id, video.id, {
+                                  practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                    item.id === quiz.id
+                                      ? { ...item, title: event.target.value }
+                                      : item,
+                                  ),
+                                })
+                              }
+                              className={`${inputClass} mt-1`}
+                            />
+                          </label>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs font-semibold">
+                              {isVi ? "Câu hỏi" : "Questions"} ({quiz.questions.length})
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={disabled || quiz.questions.length >= 20}
+                              onClick={() =>
+                                updateVideo(lecture.id, video.id, {
+                                  practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                    item.id === quiz.id
+                                      ? {
+                                          ...item,
+                                          questions: [
+                                            ...item.questions,
+                                            createVideoPracticeQuestionDraft(),
+                                          ],
+                                        }
+                                      : item,
+                                  ),
+                                })
+                              }
+                            >
+                              <Plus className="mr-1 h-3.5 w-3.5" />
+                              {isVi ? "Thêm câu" : "Add question"}
+                            </Button>
+                          </div>
+                          {quiz.questions.map((question, questionIndex) => (
+                            <fieldset
+                              key={question.id}
+                              className="space-y-2 rounded-md border border-border bg-background p-3"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-semibold">
+                                  {isVi ? "Câu" : "Question"} {questionIndex + 1}
+                                </p>
+                                {quiz.questions.length > 1 && (
+                                  <button
+                                    type="button"
+                                    disabled={disabled}
+                                    aria-label={`${isVi ? "Xóa câu" : "Remove question"} ${questionIndex + 1}`}
+                                    className="text-destructive disabled:opacity-50"
+                                    onClick={() =>
+                                      updateVideo(lecture.id, video.id, {
+                                        practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                          item.id === quiz.id
+                                            ? {
+                                                ...item,
+                                                questions: item.questions.filter(
+                                                  (entry) => entry.id !== question.id,
+                                                ),
+                                              }
+                                            : item,
+                                        ),
+                                      })
+                                    }
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <input
+                                required
+                                maxLength={1000}
+                                value={question.question}
+                                placeholder={isVi ? "Nội dung câu hỏi" : "Question"}
+                                onChange={(event) =>
+                                  updateVideo(lecture.id, video.id, {
+                                    practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                      item.id === quiz.id
+                                        ? {
+                                            ...item,
+                                            questions: item.questions.map((entry) =>
+                                              entry.id === question.id
+                                                ? { ...entry, question: event.target.value }
+                                                : entry,
+                                            ),
+                                          }
+                                        : item,
+                                    ),
+                                  })
+                                }
+                                className={inputClass}
+                              />
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                {question.options.map((option, optionIndex) => (
+                                  <label
+                                    key={optionIndex}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <input
+                                      type="radio"
+                                      name={`practice-${video.id}-${quiz.id}-${question.id}`}
+                                      checked={question.correctIndex === optionIndex}
+                                      onChange={() =>
+                                        updateVideo(lecture.id, video.id, {
+                                          practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                            item.id === quiz.id
+                                              ? {
+                                                  ...item,
+                                                  questions: item.questions.map((entry) =>
+                                                    entry.id === question.id
+                                                      ? { ...entry, correctIndex: optionIndex }
+                                                      : entry,
+                                                  ),
+                                                }
+                                              : item,
+                                          ),
+                                        })
+                                      }
+                                      aria-label={`${isVi ? "Đáp án đúng" : "Correct answer"} ${optionIndex + 1}`}
+                                    />
+                                    <input
+                                      required
+                                      maxLength={300}
+                                      value={option}
+                                      placeholder={`${isVi ? "Lựa chọn" : "Option"} ${optionIndex + 1}`}
+                                      onChange={(event) =>
+                                        updateVideo(lecture.id, video.id, {
+                                          practiceQuizzes: video.practiceQuizzes.map((item) =>
+                                            item.id === quiz.id
+                                              ? {
+                                                  ...item,
+                                                  questions: item.questions.map((entry) =>
+                                                    entry.id === question.id
+                                                      ? {
+                                                          ...entry,
+                                                          options: entry.options.map(
+                                                            (value, index) =>
+                                                              index === optionIndex
+                                                                ? event.target.value
+                                                                : value,
+                                                          ),
+                                                        }
+                                                      : entry,
+                                                  ),
+                                                }
+                                              : item,
+                                          ),
+                                        })
+                                      }
+                                      className={`${inputClass} px-3 py-2`}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                {isVi
+                                  ? "Chọn nút tròn bên cạnh đáp án đúng."
+                                  : "Select the radio button next to the correct answer."}
+                              </p>
+                            </fieldset>
+                          ))}
+                        </fieldset>
+                      ))}
                     </div>
                     <Button
                       type="button"

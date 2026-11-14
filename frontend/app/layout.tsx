@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import { LearningAccessGuard } from "@/components/LearningAccessGuard";
 
 export const metadata: Metadata = {
   title: {
@@ -55,7 +56,9 @@ export default function RootLayout({
               {/* Fixed Navbar sits outside <main> for correct semantic HTML */}
               <Navbar />
               {/* pt-16 offsets content below the fixed 64px navbar */}
-              <main className="min-h-screen pt-16">{children}</main>
+              <main className="min-h-screen pt-16">
+                <LearningAccessGuard>{children}</LearningAccessGuard>
+              </main>
               <Toaster richColors position="top-right" />
             </LanguageProvider>
           </AuthProvider>

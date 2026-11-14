@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRoleHomePath } from "@/contexts/AuthContext";
+import { getAuthRedirectPath } from "@/lib/auth-redirect";
 import { loginUser } from "@/lib/api";
 
 export default function LoginPage() {
@@ -47,7 +48,8 @@ export default function LoginPage() {
         }!`,
       );
 
-      router.push(getRoleHomePath(result.user.role));
+      const redirectPath = getAuthRedirectPath(window.location.search);
+      router.push(redirectPath ?? getRoleHomePath(result.user.role));
     } catch (error) {
       const message =
         error instanceof Error
@@ -140,7 +142,8 @@ export default function LoginPage() {
         onSuccess={(result) => {
           login(result);
           toast.success(t("common.success"));
-          router.push(getRoleHomePath(result.user.role));
+          const redirectPath = getAuthRedirectPath(window.location.search);
+          router.push(redirectPath ?? getRoleHomePath(result.user.role));
         }}
         onError={(error) =>
           toast.error(
@@ -153,6 +156,15 @@ export default function LoginPage() {
         {t("auth.login.no_acc")}{" "}
         <Link
           href="/register"
+          onClick={(event) => {
+            const redirectPath = getAuthRedirectPath(window.location.search);
+            if (redirectPath) {
+              event.preventDefault();
+              router.push(
+                `/register?redirect=${encodeURIComponent(redirectPath)}`,
+              );
+            }
+          }}
           className="font-semibold text-blue-600 hover:underline"
         >
           {t("auth.login.register")}

@@ -7,6 +7,12 @@ import { generateGeminiJson, generateGroundedText } from "./gemini.js";
 
 const bilingual = (max: number) => z.string().trim().min(1).max(max);
 
+const quizDraftRequestSchema = z.object({
+  questionCount: z.number().int().min(3).max(20).default(5),
+  focus: z.string().trim().max(300).optional(),
+  videoId: z.string().uuid().optional(),
+});
+
 const outlineRequestSchema = z.object({
   courseId: z.string().uuid(),
   topic: z.string().trim().max(300).optional(),
@@ -48,6 +54,18 @@ const draftSchema = z.object({
     )
     .min(3)
     .max(8),
+});
+
+const quizDraftSchema = z.object({
+  title: bilingual(150),
+  titleEn: bilingual(150),
+  questions: z.array(z.object({
+    question: bilingual(1000),
+    questionEn: bilingual(1000),
+    options: z.array(bilingual(300)).length(4),
+    optionsEn: z.array(bilingual(300)).length(4),
+    correctIndex: z.number().int().min(0).max(3),
+  })).min(3).max(20),
 });
 
 async function getOwnedCourse(req: Request, courseId: string) {
@@ -150,6 +168,45 @@ export async function generateLessonDraft(req: Request, res: Response) {
     { maxOutputTokens: 6000 },
   );
   res.json(success(draft, "Lesson draft generated"));
+}
+
+export async function generateLessonQuizDraft(req: Request, res: Response) {
+  const input = quizDraftRequestSchema.parse(req.body ?? {});
+  const lesson = await getOwnedLesson(req);
+  let videoTitle: string | undefined;
+  if (input.videoId) {
+    const video = await prisma.video.findFirst({
+      where: { id: input.videoId, lessonId: String(req.params.lessonId) },
+      select: { title: true, titleEn: true },
+    });
+    if (!video) throw new AppError("Video not found in this lesson", 404);
+    videoTitle = video.titleEn || video.title;
+  }
+  const data = JSON.stringify({
+    courseTitle: lesson.course.title,
+    subject: subjectName(lesson.course.subject),
+    grade: lesson.course.level,
+    lessonTitle: lesson.titleEn || lesson.title,
+    lessonDescription: lesson.description,
+    videoTitle,
+    focus: input.focus,
+  });
+  const quiz = await generateGeminiJson(
+    [
+      "You are an expert K-12 teacher creating a fair formative assessment for students in Vietnam.",
+      `Create exactly ${input.questionCount} multiple-choice questions based only on the supplied lesson. Each question must have exactly four options and exactly one correct option.`,
+      "Use age-appropriate language, vary recall and understanding, avoid trick questions, and provide parallel Vietnamese and English text with the same meaning.",
+      "Return only JSON: {\"title\":\"Vietnamese title\",\"titleEn\":\"English title\",\"questions\":[{\"question\":\"Vietnamese question\",\"questionEn\":\"English question\",\"options\":[\"four Vietnamese options\"],\"optionsEn\":[\"the four English options\"],\"correctIndex\":0}]}.",
+      DATA_NOTICE,
+      `<data>${data}</data>`,
+    ].join("\n"),
+    quizDraftSchema,
+    { maxOutputTokens: 10000 },
+  );
+  if (quiz.questions.length !== input.questionCount) {
+    throw new AppError("AI returned an unexpected number of questions. Please try again.", 502);
+  }
+  res.json(success(quiz, "Quiz draft generated"));
 }
 
 export async function findLessonResources(req: Request, res: Response) {

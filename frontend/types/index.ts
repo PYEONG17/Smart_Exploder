@@ -62,6 +62,7 @@ export interface Quiz {
   title: string;
   titleEn?: string;
   lessonId: string;
+  videoId?: string | null;
   questions: Question[];
 }
 
@@ -116,6 +117,7 @@ export interface Video {
   duration?: string;
   lessonId: string;
   activities?: InteractiveActivity[];
+  quizzes?: Quiz[];
 }
 
 export interface Lesson {

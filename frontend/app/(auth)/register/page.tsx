@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRoleHomePath } from "@/contexts/AuthContext";
+import { getAuthRedirectPath } from "@/lib/auth-redirect";
 
 import { registerUser } from "@/lib/api";
 
@@ -65,8 +66,8 @@ export default function RegisterPage() {
       // Thông báo thành công
       toast.success("Đăng ký tài khoản thành công!");
 
-      // Chuyển sang dashboard
-      router.push(getRoleHomePath(result.user.role));
+      const redirectPath = getAuthRedirectPath(window.location.search);
+      router.push(redirectPath ?? getRoleHomePath(result.user.role));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Đăng ký thất bại";
@@ -211,7 +212,8 @@ export default function RegisterPage() {
         onSuccess={(result) => {
           login(result);
           toast.success("Đăng nhập bằng Google thành công!");
-          router.push(getRoleHomePath(result.user.role));
+          const redirectPath = getAuthRedirectPath(window.location.search);
+          router.push(redirectPath ?? getRoleHomePath(result.user.role));
         }}
         onError={(error) =>
           toast.error(
@@ -225,6 +227,15 @@ export default function RegisterPage() {
         {t("auth.register.has_acc")}{" "}
         <Link
           href="/login"
+          onClick={(event) => {
+            const redirectPath = getAuthRedirectPath(window.location.search);
+            if (redirectPath) {
+              event.preventDefault();
+              router.push(
+                `/login?redirect=${encodeURIComponent(redirectPath)}`,
+              );
+            }
+          }}
           className="font-semibold text-blue-600 hover:underline"
         >
           {t("auth.register.login")}
